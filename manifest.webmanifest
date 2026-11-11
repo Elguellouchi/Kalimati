@@ -1,0 +1,16 @@
+{
+  "name": "Kalimati — mes mots en images",
+  "short_name": "Kalimati",
+  "description": "Communication par images pour enfant non verbal, en français et en darija.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#F7F5F0",
+  "theme_color": "#1F6F5C",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

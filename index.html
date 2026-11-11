@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1F6F5C">
+  <title>Kalimati</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div id="strip" class="strip empty" aria-label="Phrase">
+      <div id="strip-cards" class="strip-cards"></div>
+      <button type="button" id="btn-play" class="strip-btn play" aria-label="Dire la phrase">▶</button>
+      <button type="button" id="btn-back" class="strip-btn" aria-label="Effacer le dernier mot">⌫</button>
+      <button type="button" id="btn-clear" class="strip-btn" aria-label="Tout effacer">✕</button>
+    </div>
+    <button type="button" id="lock" class="lock" aria-label="Mode parent : rester appuyé">🔒</button>
+  </header>
+
+  <section id="parent-bar" class="parent-bar" aria-label="Réglages du parent">
+    <span class="pb-title">Mode parent</span>
+    <div class="seg">
+      <button type="button" data-lang-choice="fr">Français</button>
+      <button type="button" data-lang-choice="dr">Darija</button>
+    </div>
+    <label>Taille
+      <select id="cols">
+        <option value="2">Très grandes</option>
+        <option value="3">Grandes</option>
+        <option value="4">Moyennes</option>
+        <option value="5">Petites</option>
+      </select>
+    </label>
+    <button type="button" id="export" class="btn ghost">💾 Sauvegarder</button>
+    <label class="btn ghost">📂 Restaurer<input type="file" id="import" accept="application/json,.json" hidden></label>
+    <span class="pb-hint">Touchez une carte pour la modifier. Touchez 🔓 pour revenir au mode enfant.</span>
+  </section>
+
+  <nav id="core" class="core" aria-label="Mots essentiels"></nav>
+  <nav id="tabs" class="tabs" aria-label="Catégories"></nav>
+  <main id="grid" class="grid"></main>
+
+  <dialog id="editor"></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
