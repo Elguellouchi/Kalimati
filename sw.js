@@ -1,9 +1,16 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v1';
+const CACHE = 'kalimati-v3';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',
+  './modules/util.js', './modules/drag.js', './modules/goals.js', './modules/content.js', './modules/aba.js',
+  './modules/progress.js', './modules/nour.js', './modules/timer.js', './modules/widgets.js',
+  './modules/grid-layout.js', './modules/arasaac.js', './modules/spaces.js', './modules/dashboard.js',
+  './modules/profil.js', './modules/visuals.js', './modules/ex-emotions.js',
+  './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
+  './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
+  './modules/ex-autonomy.js',
 ];
 
 self.addEventListener('install', (event) => {
@@ -19,15 +26,19 @@ self.addEventListener('activate', (event) => {
 });
 
 // Réseau d'abord (pour recevoir les mises à jour), cache si pas de réseau.
+// Seuls les fichiers de l'application sont mis en cache (pas les recherches ARASAAC).
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
+  const { request } = event;
+  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
   event.respondWith(
-    fetch(event.request)
+    fetch(request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, copy));
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE).then((cache) => cache.put(request, copy));
+        }
         return response;
       })
-      .catch(() => caches.match(event.request).then((hit) => hit || caches.match('./index.html'))),
+      .catch(() => caches.match(request).then((hit) => hit || caches.match('./index.html'))),
   );
 });

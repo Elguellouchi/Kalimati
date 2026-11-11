@@ -17,9 +17,13 @@
       <button type="button" id="btn-play" class="strip-btn play" aria-label="Dire la phrase">▶</button>
       <button type="button" id="btn-back" class="strip-btn" aria-label="Effacer le dernier mot">⌫</button>
       <button type="button" id="btn-clear" class="strip-btn" aria-label="Tout effacer">✕</button>
+      <button type="button" id="btn-lang" class="strip-btn lang" aria-label="Changer de langue (français / darija)">FR</button>
     </div>
-    <button type="button" id="lock" class="lock" aria-label="Mode parent : rester appuyé">🔒</button>
+    <button type="button" id="toilet" class="toilet" aria-label="Toilettes / Bit lma">🚽<span>Toilettes<br>Bit lma</span><b id="toilet-count"></b></button>
+    <button type="button" id="lock" class="lock" aria-label="Mode parent : rester appuyé 3 secondes">🔒</button>
   </header>
+
+  <div id="reminder" class="reminder" role="status" hidden></div>
 
   <section id="parent-bar" class="parent-bar" aria-label="Réglages du parent">
     <span class="pb-title">Mode parent</span>
@@ -35,16 +39,17 @@
         <option value="5">Petites</option>
       </select>
     </label>
+    <button type="button" id="photos" class="btn primary">📸 Nos vraies photos</button>
     <button type="button" id="export" class="btn ghost">💾 Sauvegarder</button>
     <label class="btn ghost">📂 Restaurer<input type="file" id="import" accept="application/json,.json" hidden></label>
-    <span class="pb-hint">Touchez une carte pour la modifier. Touchez 🔓 pour revenir au mode enfant.</span>
+    <span class="pb-hint">Touchez une carte pour la modifier, ou le petit 📷 d'une image pour y mettre une vraie photo. Touchez 🔓 pour revenir au mode enfant.</span>
   </section>
 
-  <nav id="core" class="core" aria-label="Mots essentiels"></nav>
-  <nav id="tabs" class="tabs" aria-label="Catégories"></nav>
-  <main id="grid" class="grid"></main>
+  <main id="view" class="view"></main>
+  <nav id="spaces" class="spaces" aria-label="Espaces"></nav>
 
   <dialog id="editor"></dialog>
+  <div id="print-area" class="print-area" aria-hidden="true"></div>
   <script type="module" src="app.js"></script>
 </body>
 </html>
