@@ -1,4 +1,6 @@
 // Contenus des exercices du PEI (images = emojis par défaut ; le parent peut filmer des modèles).
+import { CATALOG } from './catalog.js';
+import { MORE_COMMANDS, MORE_GESTURES, MORE_FINE_GESTURES, MORE_VERBS, MORE_RHYMES, MORE_ASSOCIATIONS, MORE_PAIRS, MORE_PHRASES } from './content-plus.js';
 
 export const REINFORCERS = [
   { id: 'chatouilles', kind: 'social', emoji: '🤭', fr: 'Chatouilles' },
@@ -37,7 +39,7 @@ export const NON_IDENTICAL = [
 export const DISTRACTORS = ['🚲', '🧦', '📘', '🔑', '🪑', '🍌', '⚽', '🛏️', '✂️', '🐟', '🎈', '🚪'];
 
 // B.4 et C.4 : paires logiques
-export const PAIRS = [
+const BASE_PAIRS = [
   { id: 'dents', a: { emoji: '🪥', fr: 'brosse à dents' }, b: { emoji: '🧴', fr: 'dentifrice' } },
   { id: 'pied', a: { emoji: '🧦', fr: 'chaussette' }, b: { emoji: '👟', fr: 'chaussure' } },
   { id: 'bol', a: { emoji: '🥄', fr: 'cuillère' }, b: { emoji: '🥣', fr: 'bol' } },
@@ -70,7 +72,7 @@ export const CATEGORY_BOXES = [
 ];
 
 // C.1 : 10 consignes en audio pur
-export const COMMANDS = [
+const BASE_COMMANDS = [
   'Tape des mains', 'Touche ta tête', 'Donne-moi le crayon', 'Assieds-toi', 'Lève-toi',
   'Viens ici', 'Ouvre la porte', 'Range le jouet', 'Montre ton nez', 'Fais coucou',
 ].map((fr, i) => ({ id: `cmd${i + 1}`, fr }));
@@ -99,12 +101,12 @@ export const TWO_STEP_REAL = [
 ];
 
 // D : gestes
-export const GESTURE_SEQUENCE = [
+const BASE_GESTURE_SEQUENCE = [
   { id: 'taper', emoji: '👏', fr: 'Taper des mains' }, { id: 'tete', emoji: '🙆', fr: 'Toucher sa tête' },
   { id: 'bras', emoji: '🙌', fr: 'Lever les bras' }, { id: 'ventre', emoji: '🫃', fr: 'Toucher son ventre' },
   { id: 'pieds', emoji: '🦶', fr: 'Taper des pieds' }, { id: 'coucou', emoji: '👋', fr: 'Faire coucou' },
 ];
-export const FINE_GESTURES = [
+const BASE_FINE_GESTURES = [
   { id: 'pince', emoji: '🤏', fr: 'Pince pouce-index' }, { id: 'croiser', emoji: '🤞', fr: 'Croiser les doigts' },
   { id: 'pouce', emoji: '👍', fr: 'Lever le pouce' }, { id: 'index', emoji: '☝️', fr: "Pointer l'index" },
   { id: 'poing', emoji: '✊', fr: 'Fermer le poing', alt: '🖐️' },
@@ -122,13 +124,13 @@ export const SONGS = [
 ];
 
 // E
-export const ECHO_WORDS = [
+const BASE_ECHO_WORDS = [
   ['vélo', 'Vé', 'lo', '🚲'], ['gâteau', 'Gâ', 'teau', '🍰'], ['chapeau', 'Cha', 'peau', '👒'], ['ballon', 'Ba', 'llon', '⚽'],
   ['mouton', 'Mou', 'ton', '🐑'], ['pomme', 'Po', 'mme', '🍎'], ['banane', 'Ba', 'nane', '🍌'], ['poupée', 'Pou', 'pée', '🪆'],
   ['camion', 'Ca', 'mion', '🚚'], ['lapin', 'La', 'pin', '🐰'],
 ].map(([fr, s1, s2, emoji]) => ({ id: fr, fr, syllables: [s1, s2], emoji }));
 
-export const ECHO_PHRASES = [
+const BASE_ECHO_PHRASES = [
   { id: 'jeveux', words: [['🙋', 'Je veux'], ['👉', 'ça']] },
   { id: 'eau', words: [['🫴', 'Donne'], ['💧', "l'eau"]] },
   { id: 'gateau', words: [['➕', 'Encore'], ['🍰', 'gâteau']] },
@@ -148,7 +150,7 @@ export const TACT_ITEMS = [
   ['livre', '📘'], ['verre', '🥛'], ['chaussure', '👟'], ['fleur', '🌷'], ['arbre', '🌳'], ['clé', '🔑'], ['téléphone', '📱'],
 ].map(([fr, emoji]) => ({ id: fr, fr, emoji }));
 
-export const VERBS = [
+const BASE_VERBS = [
   ['court', '🏃'], ['mange', '😋'], ['boit', '🥤'], ['dort', '😴'], ['saute', '🦘'],
   ['pleure', '😭'], ['nage', '🏊'], ['dessine', '🖍️'], ['se lave', '🧼'], ['joue', '🧸'],
 ].map(([fr, emoji]) => ({ id: fr, fr, emoji }));
@@ -164,7 +166,7 @@ export const PERSONAL_QUESTIONS = [
 ];
 
 // scene = grande image de la comptine ; emoji = image du mot à trouver (remplaçables par des photos).
-export const RHYMES = [
+const BASE_RHYMES = [
   { id: 'tours', start: 'Trois petits tours et puis s’en…', end: 'vont', scene: '🎭', emoji: '👋', sceneLabel: 'marionnettes' },
   { id: 'bois', start: 'Un, deux, trois, nous irons au…', end: 'bois', scene: '🧺', emoji: '🌳', sceneLabel: 'panier' },
   { id: 'bateau', start: 'Bateau sur…', end: "l'eau", scene: '⛵', emoji: '🌊', sceneLabel: 'bateau' },
@@ -172,7 +174,7 @@ export const RHYMES = [
   { id: 'fontaine', start: 'À la claire…', end: 'fontaine', scene: '🌙', emoji: '⛲', sceneLabel: 'lune' },
 ];
 
-export const ASSOCIATIONS = [
+const BASE_ASSOCIATIONS = [
   ['Le dodo, c’est dans le…', 'lit', '🛏️', '😴', 'dodo'], ['Le jus, ça se…', 'boit', '🧃', '👄', 'bouche'], ['Le pain, ça se…', 'mange', '🍞', '🍽️', 'assiette'],
   ['Les chaussures, on les met aux…', 'pieds', '🦶', '👟', 'chaussures'], ['Le bonnet, on le met sur la…', 'tête', '🧒', '🧢', 'bonnet'],
   ['On se lave les mains avec du…', 'savon', '🧼', '👐', 'mains'], ['On coupe avec des…', 'ciseaux', '✂️', '📄', 'papier'],
@@ -214,3 +216,20 @@ export const SEQUENCES = {
   'X.2': [['🧻', "S'essuyer"], ['👖', 'Remonter le pantalon'], ['🚽', "Tirer la chasse d'eau"], ['🧼', 'Se laver les mains']],
   'Y.1': [['⭕', 'Sauter dans les cerceaux'], ['🐛', 'Ramper sous le tunnel'], ['🏀', 'Lancer la balle dans le panier']],
 };
+
+// ---------- Banques étendues (v4) : les exemples d'origine d'abord, puis les nouveaux ----------
+export const PAIRS = [...BASE_PAIRS, ...MORE_PAIRS];
+export const COMMANDS = [...BASE_COMMANDS, ...MORE_COMMANDS.map((fr, i) => ({ id: `cmd${i + 11}`, fr }))];
+export const GESTURE_SEQUENCE = [...BASE_GESTURE_SEQUENCE, ...MORE_GESTURES];
+export const FINE_GESTURES = [...BASE_FINE_GESTURES, ...MORE_FINE_GESTURES];
+export const VERBS = [...BASE_VERBS, ...MORE_VERBS];
+export const RHYMES = [...BASE_RHYMES, ...MORE_RHYMES];
+export const ASSOCIATIONS = [...BASE_ASSOCIATIONS, ...MORE_ASSOCIATIONS];
+export const ECHO_PHRASES = [...BASE_ECHO_PHRASES, ...MORE_PHRASES];
+// E.1 : mots de 2 syllabes (puis 3) tirés du catalogue, 120 au total.
+const knownWords = new Set(BASE_ECHO_WORDS.map((w) => w.fr));
+export const ECHO_WORDS = [
+  ...BASE_ECHO_WORDS,
+  ...[2, 3].flatMap((n) => CATALOG.filter((c) => !c.fr.includes(' ') && c.syllables.length === n && !knownWords.has(c.fr)))
+    .map((c) => ({ id: c.fr, fr: c.fr, syllables: c.syllables.map((s, i) => (i ? s : s.charAt(0).toUpperCase() + s.slice(1))), emoji: c.emoji })),
+].slice(0, 120);

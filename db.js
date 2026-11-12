@@ -4,7 +4,7 @@
 import { GOALS } from './modules/goals.js';
 
 const DB_NAME = 'kalimati';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 let dbPromise = null;
 
@@ -27,6 +27,10 @@ function upgrade(db, transaction, oldVersion) {
   }
   if (oldVersion < 3 && !db.objectStoreNames.contains('visual_overrides')) {
     db.createObjectStore('visual_overrides', { keyPath: 'key' });
+  }
+  // v4 : images téléchargées en ligne (pictogrammes ARASAAC, photos Wikipédia), gardées pour le mode hors ligne.
+  if (oldVersion < 4 && !db.objectStoreNames.contains('online_cache')) {
+    db.createObjectStore('online_cache', { keyPath: 'key' });
   }
 }
 
@@ -97,3 +101,8 @@ export const deleteVisualOverride = (key) => run('visual_overrides', 'readwrite'
 export function putVisualOverrides(items) {
   return run('visual_overrides', 'readwrite', (s) => { items.forEach((i) => s.put(i)); return null; });
 }
+
+// Images en ligne mises en cache : { key: <id du mot>, pictos: [Blob], photo: Blob | null, ts }
+export const getOnlineCache = (key) => run('online_cache', 'readonly', (s) => s.get(key));
+export const putOnlineCache = (rec) => run('online_cache', 'readwrite', (s) => s.put(rec));
+export const getAllOnlineKeys = () => run('online_cache', 'readonly', (s) => s.getAllKeys());

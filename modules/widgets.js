@@ -18,7 +18,7 @@ export function choiceBoard({ choices, cols = 2, onAnswer, praise = 'Bravo' }) {
   let finished = false;
   const buttons = shuffle(choices).map((choice) => {
     const el = h('button', { type: 'button', class: 'choice' },
-      renderVisual(choice), choice.label ? h('span', { class: 'label' }, choice.label) : null);
+      (choice.render ? choice.render() : renderVisual(choice)), choice.label ? h('span', { class: 'label' }, choice.label) : null);
     el.onclick = () => {
       if (finished) return;
       if (choice.correct) {
@@ -111,7 +111,7 @@ export function sorter({ bins, items, onPlace, onDone }) {
   };
 
   shuffle(items).forEach((item) => {
-    const el = h('button', { type: 'button', class: 'sort-item' }, renderVisual({ emoji: item.emoji, fr: item.fr }, { button: false }));
+    const el = h('button', { type: 'button', class: 'sort-item' }, (item.render ? item.render() : renderVisual({ emoji: item.emoji, fr: item.fr }, { button: false })));
     el.onclick = () => { pile.querySelectorAll('.selected').forEach((s) => s.classList.remove('selected')); selected = { el, item }; el.classList.add('selected'); };
     draggable(el, { onDrop: ({ x, y }) => { const target = hitTest(x, y, binEls); return target ? place(el, item, target) : false; } });
     pile.append(el);

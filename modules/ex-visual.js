@@ -58,14 +58,17 @@ function sceneCanvas(source, width, height) {
   return canvas;
 }
 
-function buildPuzzle(area, source, pieces, onDone) {
-  const rows = 2; const cols = pieces === 8 ? 4 : 3;
+// Grilles possibles : 4 (2×2), 6 (2×3), 8 (2×4), 9 (3×3), 12 (3×4) pièces.
+const GRIDS = { 4: [2, 2], 6: [2, 3], 8: [2, 4], 9: [3, 3], 12: [3, 4] };
+
+export function buildPuzzle(area, source, pieces, onDone) {
+  const [rows, cols] = GRIDS[pieces] || GRIDS[6];
   const width = Math.min(area.clientWidth || 360, 480) - 8;
-  const height = Math.round(width * 0.62);
+  const height = Math.round(width * (rows === 3 ? 0.8 : 0.62));
   const pw = width / cols; const ph = height / rows;
   const image = sceneCanvas(source, width, height);
   const frame = h('div', { class: 'puzzle-frame', style: { width: `${width}px`, height: `${height}px`, left: '4px', top: '4px' } });
-  area.style.height = `${height + 2 * ph + 40}px`;
+  area.style.height = `${height + rows * (ph + 6) + 40}px`;
   area.replaceChildren(frame);
   let placed = 0;
   const slots = shuffle(Array.from({ length: pieces }, (_, i) => i));
@@ -77,7 +80,7 @@ function buildPuzzle(area, source, pieces, onDone) {
     piece.className = 'puzzle-piece';
     const target = { x: 4 + c * pw, y: 4 + r * ph };
     const slot = slots[i];
-    const trayCols = Math.ceil(pieces / 2);
+    const trayCols = cols;
     let x = 4 + (slot % trayCols) * ((width - pw) / Math.max(1, trayCols - 1));
     let y = height + 20 + Math.floor(slot / trayCols) * (ph + 6);
     piece.style.left = `${x}px`; piece.style.top = `${y}px`;

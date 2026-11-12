@@ -18,6 +18,8 @@ import { EXERCISES as KP } from './ex-social.js';
 import { EXERCISES as QRT } from './ex-academic.js';
 import { EXERCISES as S } from './ex-writing.js';
 import { EXERCISES as UZ, mealTitle } from './ex-autonomy.js';
+import { ONLINE_EXERCISES } from './ex-online.js';
+import { levelHeader, onLevelChange } from './levels.js';
 
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ };
 export const missingExercises = () => GOALS.filter((g) => !REGISTRY[g.id]).map((g) => g.id);
@@ -60,11 +62,25 @@ export function createNavigator(app) {
   const context = () => ({ lang: app.state.lang, parent: app.state.parent, cards: app.state.cards, onCleanup: (fn) => cleanups.push(fn) });
   const photoHint = () => (app.state.parent ? h('p', { class: 'photo-hint' }, '📸 Mode parent : touchez le petit 📷 d’une image pour mettre une vraie photo.') : null);
 
+  // En ligne : version enrichie (catalogue + images en ligne) quand elle existe ; hors ligne : exercice d'origine.
+  const exerciseFor = (goalId) => (navigator.onLine && ONLINE_EXERCISES[goalId]) || REGISTRY[goalId];
+
   function exerciseScreen(goalId) {
     const goal = goalById(goalId);
-    let body;
-    try { body = REGISTRY[goalId](context()); } catch (error) { body = h('p', { class: 'note' }, `Exercice indisponible : ${error.message}`); }
-    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), clinicBar(), photoHint(), body);
+    let local = []; // nettoyages propres à l'exercice affiché (micro, caméra, minuteurs)
+    const mount = () => {
+      const ctx = { ...context(), goalId, onCleanup: (fn) => local.push(fn) };
+      try { return exerciseFor(goalId)(ctx); } catch (error) { return h('p', { class: 'note' }, `Exercice indisponible : ${error.message}`); }
+    };
+    const unmount = () => { local.forEach((fn) => { try { fn(); } catch { /* déjà fermé */ } }); local = []; stopSpeaking(); };
+    const holder = h('div', { class: 'exercise-body' }, mount());
+    // Changer de niveau relance l'exercice avec les nouveaux paramètres.
+    const remount = () => { unmount(); holder.replaceChildren(mount()); };
+    const bar = levelHeader(goalId, remount);
+    // Montée de niveau automatique : seuls les exercices qui dépendent du niveau sont relancés (un minuteur en cours n'est jamais coupé).
+    const offLevel = onLevelChange((id, state, reason) => { if (id === goalId && reason === 'levelup' && navigator.onLine && ONLINE_EXERCISES[goalId]) remount(); });
+    cleanups.push(() => { unmount(); bar.cleanup(); offLevel(); });
+    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), bar, clinicBar(), photoHint(), holder);
   }
 
   function sectionScreen(sectionId) {

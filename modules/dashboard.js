@@ -6,6 +6,7 @@ import { SECTIONS, GOALS, goalsOf } from './goals.js';
 import { reinforcerStats, accidentStats } from './progress.js';
 import { evaluateAll, statusChip } from './spaces.js';
 import { matrixTable } from './ex-social.js';
+import { levelOf } from './levels.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur'], ['city', 'Ville']];
@@ -56,7 +57,7 @@ export function dashboardScreen(nav) {
         goalsOf(s.id).map((g) => {
           const r = results.get(g.id);
           return h('button', { type: 'button', class: 'dash-row', onclick: () => nav.openGoal(g.id, self) },
-            h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title, h('small', {}, `${r.detail} · ${r.count} essai(s)`)),
+            h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title, h('small', {}, `${r.detail} · ${r.count} essai(s) · 🌟 niveau ${levelOf(g.id).currentLevel}`)),
             statusChip(r), h('div', { class: 'progress-bar' }, h('span', { style: { width: `${r.pct}%` } })));
         }))),
       h('section', { class: 'card-box' }, h('h3', {}, '🌍 P.3 Lieu × intervenant (taux de réussite)'), matrixTable(all)),

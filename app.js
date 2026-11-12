@@ -10,6 +10,7 @@ import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/gri
 import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
 import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
+import { loadLevels } from './modules/levels.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -17,7 +18,7 @@ const MAX_STRIP = 8;
 const CORE_CAT = 'base';
 const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
-const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder'];
+const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'talk', playing: -1 };
 const photoUrls = new Map();
@@ -307,6 +308,7 @@ function setupParentBar() {
       for (const key of EXPORTED_SETTINGS) if (backup.settings[key] !== undefined) await db.setSetting(key, backup.settings[key]);
       await loadContext();
       await loadVisuals();
+      await loadLevels();
       state.cards = cards; state.strip = [];
       renderAll();
     } catch (error) {
@@ -372,6 +374,7 @@ async function init() {
   await loadContext();
   await loadVisuals();
   await loadDefaultVoices();
+  await loadLevels();
   state.cards = await loadCards();
   setupLock(); setupParentBar(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
