@@ -3,7 +3,9 @@
 
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
-const AFTER_CANCEL_MS = 150;
+// Jamais sur iPhone / iPad : Safari n'accepte la voix que si elle part directement du toucher.
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const AFTER_CANCEL_MS = IS_ANDROID ? 150 : 0;
 let currentAudio = null;
 let queueToken = 0;
 let lastCancel = 0;
@@ -61,11 +63,20 @@ function pickVoice(lang) {
 
 export const hasArabicVoice = () => Boolean(pickVoice('ar'));
 
-// Android ne parle qu'après un premier geste : à appeler au premier toucher.
+// iPhone et Android ne parlent qu'après un premier toucher : on y dit une phrase muette pour débloquer la voix.
+let unlocked = false;
 export function unlockAudio() {
-  if (!('speechSynthesis' in window)) return;
+  if (unlocked || !('speechSynthesis' in window)) return;
+  unlocked = true;
   voices();
-  window.speechSynthesis.resume();
+  const synth = window.speechSynthesis;
+  synth.resume();
+  if (!synth.speaking && !synth.pending) {
+    const silent = new SpeechSynthesisUtterance(' ');
+    silent.volume = 0;
+    silent.lang = 'fr-FR';
+    synth.speak(silent);
+  }
 }
 
 // Dit un texte avec la voix du téléphone. lang : 'fr' ou 'ar'.

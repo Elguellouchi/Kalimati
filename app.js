@@ -364,7 +364,8 @@ async function init() {
   await loadVisuals();
   state.cards = await loadCards();
   setupLock(); setupParentBar(); setupStrip(); setupToilet();
-  document.addEventListener('pointerdown', unlockAudio, { once: true });
+  // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
+  ['touchend', 'click'].forEach((type) => document.addEventListener(type, unlockAudio));
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.
   document.addEventListener('visual-changed', () => { if (state.space === 'talk') renderView(); renderStrip(); });
   renderAll();
