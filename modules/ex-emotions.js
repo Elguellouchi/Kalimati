@@ -95,6 +95,7 @@ function groups() {
   const routines = uniqueByKey(Object.values(SEQUENCES).flat().map(([emoji, label]) => ({ emoji, label })));
   return [
     { title: '😊 Les émotions', hint: `Mettez les vraies photos d’${firstName()}, de ${sisterName()}, de Papa ou de Maman.`, items: EMOTIONS.map((e) => ({ vkey: e.vkey, label: e.fr })) },
+    { title: '🌟 Le compagnon de l’app', hint: `L’image qui accompagne ${firstName()} sur l’accueil et dans les jeux. Choisissez une image de votre téléphone (par exemple son personnage préféré). Sans image, c’est la photo d’${firstName()}.`, items: [{ vkey: 'compagnon', emoji: '🌟', label: 'Le compagnon' }] },
     { title: '👨‍👩‍👧‍👧 La famille et les proches', items: family },
     { title: '🍽️ Le repas', items: [{ vkey: 'meal:plat', emoji: '🍛', label: 'Mon plat' }, { vkey: 'obj:prise-tripode', emoji: '✏️', label: 'Prise du crayon' }] },
     { title: '🧼 Les étapes des routines', items: routines, arasaac: true },

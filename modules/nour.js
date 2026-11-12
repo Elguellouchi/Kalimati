@@ -1,5 +1,8 @@
-import { renderVisual } from './visuals.js';
+import { renderVisual, hasPhoto } from './visuals.js';
 import { firstName } from './aba.js';
+
+// Image du compagnon choisie par le parent : elle reste dans le téléphone (jamais dans le code publié).
+export const COMPANION_KEY = 'compagnon';
 
 // Ancienne mascotte (loutre dessinée), gardée en secours ; l'app affiche désormais Abir elle-même (nour()).
 // La petite loutre de mer (sans nom) qui encourage Abir : SVG plat, formes rondes, aucun clignotement.
@@ -72,7 +75,9 @@ const bubblesOnly = `<svg class="bubbles-overlay" viewBox="76 10 44 50" aria-hid
 export function nour({ pose = 'stand', size = 120, says = '' } = {}) {
   const box = document.createElement('div');
   box.className = 'nour-box';
-  const picture = renderVisual({ vkey: 'person:abir', label: firstName() }, { cls: 'buddy' });
+  // Le parent peut choisir l'image du compagnon (« Nos vraies photos ➜ Le compagnon ») ; sinon, la photo ou le portrait d'Abir.
+  const key = hasPhoto(COMPANION_KEY) ? COMPANION_KEY : 'person:abir';
+  const picture = renderVisual({ vkey: key, label: key === COMPANION_KEY ? 'Le compagnon' : firstName() }, { cls: 'buddy', button: false });
   picture.style.setProperty('--vs', `${size}px`);
   box.append(picture);
   if (pose === 'bubbles') picture.insertAdjacentHTML('beforeend', bubblesOnly);

@@ -402,7 +402,7 @@ async function init() {
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
   ['touchend', 'click'].forEach((type) => document.addEventListener(type, unlockAudio));
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.
-  document.addEventListener('visual-changed', () => { if (state.space === 'talk') renderView(); renderStrip(); });
+  document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
   checkReminder();
   setInterval(checkReminder, REMINDER_CHECK_MS);
