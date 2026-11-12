@@ -572,3 +572,10 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .space-btn .emoji { font-size: 22px; }
   .home-tile { min-height: 150px; }
 }
+
+/* v4.3 : le compagnon est Abir (sa photo ou son portrait), en cercle doux */
+.visual.buddy { border-radius: 50%; }
+.visual.buddy > img, .visual.buddy .visual-art svg { border-radius: 50%; }
+.visual.buddy { box-shadow: 0 0 0 4px #FFF, 0 3px 8px rgb(0 0 0 / .15); background: #fff; }
+.bubbles-overlay { position: absolute; right: -28%; top: -12%; width: 48%; height: auto; pointer-events: none; }
+.bubbles-overlay .nour-bubbles { transform-origin: 98px 40px; }

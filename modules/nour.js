@@ -1,4 +1,8 @@
-// La petite loutre de mer (mascotte sans nom, en coin d'écran) qui encourage Abir : SVG plat, formes rondes, aucun clignotement.
+import { renderVisual } from './visuals.js';
+import { firstName } from './aba.js';
+
+// Ancienne mascotte (loutre dessinée), gardée en secours ; l'app affiche désormais Abir elle-même (nour()).
+// La petite loutre de mer (sans nom) qui encourage Abir : SVG plat, formes rondes, aucun clignotement.
 // Pelage caramel clair, museau crème, robe turquoise, petit sac à dos jaune, casque anti-bruit bleu autour du cou.
 
 const C = {
@@ -60,11 +64,18 @@ export function nourSvg({ pose = 'stand', size = 120, label = 'La petite loutre'
 </svg>`;
 }
 
-// Élément DOM prêt à insérer, avec une bulle de texte optionnelle.
+// Bulles seules (écho vocal) : posées à côté de la photo d'Abir.
+const bubblesOnly = `<svg class="bubbles-overlay" viewBox="76 10 44 50" aria-hidden="true">${bubbles}</svg>`;
+
+// Le compagnon de l'app = Abir elle-même (demande d'Aziz, 12/11) : sa vraie photo si le parent l'a mise
+// (carte « Abir », 📷 ou « Nos vraies photos »), sinon son portrait dessiné. La photo reste dans le téléphone.
 export function nour({ pose = 'stand', size = 120, says = '' } = {}) {
   const box = document.createElement('div');
   box.className = 'nour-box';
-  box.innerHTML = nourSvg({ pose, size });
+  const picture = renderVisual({ vkey: 'person:abir', label: firstName() }, { cls: 'buddy' });
+  picture.style.setProperty('--vs', `${size}px`);
+  box.append(picture);
+  if (pose === 'bubbles') picture.insertAdjacentHTML('beforeend', bubblesOnly);
   if (says) {
     const bubble = document.createElement('p');
     bubble.className = 'nour-says';

@@ -6,7 +6,7 @@ import { openEditor } from './editor.js';
 import { exportBackup, readBackup } from './backup.js';
 import { h } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName } from './modules/aba.js';
-import { nourSvg } from './modules/nour.js';
+import { nour } from './modules/nour.js';
 import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/grid-layout.js';
 import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
@@ -212,7 +212,7 @@ function homeScreen() {
   const hello = `Bonjour ${firstName()} !`;
   return h('div', { class: 'screen home' },
     h('button', { type: 'button', class: 'home-hello', onclick: () => speak(hello) },
-      h('span', { class: 'home-nour', html: nourSvg({ pose: 'wave', size: 96 }) }),
+      h('span', { class: 'home-nour' }, nour({ pose: 'wave', size: 96 })),
       h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, 'Qu’est-ce qu’on fait aujourd’hui ?'))),
     h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, title, sub, cls]) => h('button', {
       type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(title); openSpace(id); },
