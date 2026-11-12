@@ -106,15 +106,57 @@ export function recordingFor(card, lang) {
   return lang === 'dr' ? card.audioDr : card.audioFr;
 }
 
-// Voix enregistrée, sinon voix arabe pour la darija (si graphie arabe), sinon français.
-// sayFr / sayAr : phrase à dire quand elle diffère du mot affiché (ex. « Ghita, ma sœur »).
-export function sayCard(card, lang) {
-  const recording = recordingFor(card, lang);
-  if (recording) return playBlob(recording);
+// Voix par défaut livrées avec l'app (voix/fr/<id>.mp3, voix/dr/<id>.mp3) : marchent sans voix installée sur le téléphone.
+// voix/index.json = { fr: { <id>: <texte dit> }, dr: { <id>: <texte dit> } } ; un mot modifié par le parent n'utilise plus le fichier.
+let defaultVoices = { fr: {}, dr: {} };
+export async function loadDefaultVoices() {
+  try {
+    const response = await fetch('./voix/index.json');
+    if (response.ok) defaultVoices = { fr: {}, dr: {}, ...(await response.json()) };
+  } catch { /* pas de voix par défaut : on garde la voix du téléphone */ }
+}
+
+const spokenText = (card, lang) => (lang === 'dr' ? (card.sayAr || card.ar) : (card.sayFr || card.fr));
+
+export function defaultVoiceUrl(card, lang) {
+  const key = lang === 'dr' ? 'dr' : 'fr';
+  const text = spokenText(card, key);
+  return text && defaultVoices[key][card.id] === text ? `./voix/${key}/${encodeURIComponent(card.id)}.mp3` : null;
+}
+
+// Joue un fichier son ; renvoie false s'il n'a pas pu être lu (pour passer à la voix du téléphone).
+function playUrl(url) {
+  return new Promise((resolve) => {
+    const audio = new Audio(url);
+    currentAudio = audio;
+    let started = false;
+    const done = (ok) => { if (currentAudio === audio) currentAudio = null; resolve(ok); };
+    audio.onplaying = () => { started = true; };
+    audio.onended = () => done(true);
+    audio.onerror = () => done(started);
+    audio.play().catch(() => done(false));
+  });
+}
+
+// Voix du téléphone : voix arabe pour la darija (si graphie arabe), sinon français.
+function sayWithPhoneVoice(card, lang) {
   const arabic = card.sayAr || card.ar;
   if (lang === 'dr' && arabic && hasArabicVoice()) return speak(arabic, { lang: 'ar' });
   return speak(card.sayFr || card.fr, { lang: 'fr' });
 }
+
+// Ordre : 1) voix enregistrée par le parent ; 2) voix par défaut livrée avec l'app ; 3) voix du téléphone.
+// sayFr / sayAr : phrase à dire quand elle diffère du mot affiché (ex. « Ghita, ma sœur »).
+export async function sayCard(card, lang) {
+  const recording = recordingFor(card, lang);
+  if (recording) return playBlob(recording);
+  const url = defaultVoiceUrl(card, lang);
+  if (url && await playUrl(url)) return undefined;
+  return sayWithPhoneVoice(card, lang);
+}
+
+// Fait entendre la voix par défaut d'une carte (fenêtre d'édition), même si une voix est enregistrée.
+export const sayDefault = (card, lang) => sayCard({ ...card, audioFr: null, audioDr: null }, lang);
 
 // items : [{ card, lang }] — chaque mot garde sa langue (code-switching).
 export async function sayCards(items, { onStep } = {}) {

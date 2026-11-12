@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v3-2';
+const CACHE = 'kalimati-v3-3';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -13,8 +13,26 @@ const FILES = [
   './modules/ex-autonomy.js',
 ];
 
+// Voix par défaut des cartes (voix/index.json) : mises en cache aussi, pour parler sans internet.
+async function voiceFiles() {
+  try {
+    const response = await fetch('./voix/index.json', { cache: 'no-cache' });
+    if (!response.ok) return [];
+    const index = await response.json();
+    return ['./voix/index.json', ...Object.entries(index).flatMap(([lang, ids]) => Object.keys(ids).map((id) => `./voix/${lang}/${encodeURIComponent(id)}.mp3`))];
+  } catch {
+    return [];
+  }
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE).then((cache) => cache.addAll(FILES)).then(() => self.skipWaiting()));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(FILES);
+    // Une voix manquante ne doit pas empêcher l'installation.
+    await Promise.all((await voiceFiles()).map((file) => cache.add(file).catch(() => {})));
+    await self.skipWaiting();
+  })());
 });
 
 self.addEventListener('activate', (event) => {

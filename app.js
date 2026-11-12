@@ -1,7 +1,7 @@
 // Kalimati v3 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). Tout reste dans le téléphone.
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
-import { sayCard, sayCards, stopSpeaking, speak, unlockAudio } from './speech.js';
+import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl } from './speech.js';
 import { openEditor } from './editor.js';
 import { exportBackup, readBackup } from './backup.js';
 import { h } from './modules/util.js';
@@ -54,7 +54,7 @@ function cardElement(card, { small = false, lang = state.lang } = {}) {
   button.style.setProperty('--gram', gram.color);
   button.style.setProperty('--cat', category ? category.color : '#999');
   if (state.parent && !small) {
-    if (state.lang === 'dr' && !card.audioDr) button.append(h('span', { class: 'badge dr' }, '🎙️ Voix Darija à enregistrer'));
+    if (state.lang === 'dr' && !card.audioDr && !defaultVoiceUrl(card, 'dr')) button.append(h('span', { class: 'badge dr' }, '🎙️ Voix Darija à enregistrer'));
     if (card.hidden) button.append(h('span', { class: 'badge hidden-badge' }, '🙈 masquée'));
     if (card.cat === 'personnes' && !card.photo && !button.querySelector('.has-photo')) button.append(h('span', { class: 'badge add-photo' }, `📷 Ajouter la photo`));
   }
@@ -362,6 +362,7 @@ async function init() {
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
   await loadVisuals();
+  await loadDefaultVoices();
   state.cards = await loadCards();
   setupLock(); setupParentBar(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.

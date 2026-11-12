@@ -3,6 +3,7 @@ import { CATEGORIES, GRAMMAR } from './data.js';
 import { preparePhoto, prepareVideo, startRecording, canRecord } from './media.js';
 import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './modules/arasaac.js';
 import { escapeHtml } from './modules/util.js';
+import { sayDefault, stopSpeaking } from './speech.js';
 
 const dialog = document.getElementById('editor');
 
@@ -82,12 +83,18 @@ function renderVoice(draft, lang, state) {
   const name = lang === 'dr' ? 'Darija' : 'Français';
   const has = Boolean(draft[key]);
   const recording = state.recordingLang === lang;
-  const badge = lang === 'dr' && !has ? '<span class="badge-dr">🎙️ Voix Darija à enregistrer</span>' : '';
+  // Sans enregistrement, la carte parle avec la voix par défaut ; le parent choisit de la remplacer par sa voix.
+  const status = has ? 'ma voix ✅' : 'voix par défaut';
   box.innerHTML = `
-    <span class="voice-name">${name} ${has ? '✅' : '—'}</span>
-    <button type="button" class="btn ${recording ? 'danger' : ''}" data-act="rec" ${canRecord() ? '' : 'disabled'}>${recording ? '⏹ Arrêter' : '🎙️ Enregistrer'}</button>
-    <button type="button" class="btn ghost" data-act="play" ${has ? '' : 'disabled'}>▶</button>
-    <button type="button" class="btn ghost" data-act="clear" ${has ? '' : 'disabled'}>✕</button>${badge}`;
+    <span class="voice-name">${name} : ${status}</span>
+    <button type="button" class="btn ghost" data-act="default">▶ Voix par défaut</button>
+    <button type="button" class="btn ${recording ? 'danger' : ''}" data-act="rec" ${canRecord() ? '' : 'disabled'}>${recording ? '⏹ Arrêter' : (has ? '🎙️ Réenregistrer' : '🎙️ Remplacer par ma voix')}</button>
+    <button type="button" class="btn ghost" data-act="play" ${has ? '' : 'disabled'}>▶ Ma voix</button>
+    <button type="button" class="btn ghost" data-act="clear" ${has ? '' : 'disabled'} title="Revenir à la voix par défaut">✕</button>`;
+  box.querySelector('[data-act="default"]').onclick = () => {
+    stopSpeaking();
+    sayDefault({ ...draft, fr: $('#ed-fr').value.trim() || draft.fr, ar: $('#ed-ar').value.trim() }, lang);
+  };
   box.querySelector('[data-act="rec"]').onclick = () => toggleRecording(draft, lang, state);
   box.querySelector('[data-act="play"]').onclick = () => {
     const url = URL.createObjectURL(draft[key]);
