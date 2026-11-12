@@ -40,7 +40,13 @@ export const people = () => [
 
 export async function loadContext() {
   Object.assign(clinic, (await db.getSetting('clinic')) || {});
-  Object.assign(profile, (await db.getSetting('profile')) || {});
+  const saved = await db.getSetting('profile');
+  Object.assign(profile, saved || {});
+  // Correction du 12/11 : la famille habite Salé (un profil enregistré avec l'ancienne ville est corrigé tout seul).
+  if (saved && ['', 'Témara', 'Temara'].includes(String(saved.city ?? '').trim())) {
+    profile.city = PROFIL.city || 'Salé';
+    await db.setSetting('profile', { ...profile });
+  }
 }
 export const saveClinic = () => db.setSetting('clinic', { ...clinic });
 export const saveProfile = (values) => { Object.assign(profile, values); return db.setSetting('profile', { ...profile }); };

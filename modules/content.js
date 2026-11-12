@@ -165,30 +165,30 @@ export const PERSONAL_QUESTIONS = [
 
 // scene = grande image de la comptine ; emoji = image du mot à trouver (remplaçables par des photos).
 export const RHYMES = [
-  { id: 'tours', start: 'Trois petits tours et puis s’en…', end: 'vont', scene: '🎭', emoji: '👋' },
-  { id: 'bois', start: 'Un, deux, trois, nous irons au…', end: 'bois', scene: '🧺', emoji: '🌳' },
-  { id: 'bateau', start: 'Bateau sur…', end: "l'eau", scene: '⛵', emoji: '🌊' },
-  { id: 'jacques', start: 'Frère Jacques, dormez-…', end: 'vous', scene: '🔔', emoji: '🛌' },
-  { id: 'fontaine', start: 'À la claire…', end: 'fontaine', scene: '🌙', emoji: '⛲' },
+  { id: 'tours', start: 'Trois petits tours et puis s’en…', end: 'vont', scene: '🎭', emoji: '👋', sceneLabel: 'marionnettes' },
+  { id: 'bois', start: 'Un, deux, trois, nous irons au…', end: 'bois', scene: '🧺', emoji: '🌳', sceneLabel: 'panier' },
+  { id: 'bateau', start: 'Bateau sur…', end: "l'eau", scene: '⛵', emoji: '🌊', sceneLabel: 'bateau' },
+  { id: 'jacques', start: 'Frère Jacques, dormez-…', end: 'vous', scene: '🔔', emoji: '🛌', sceneLabel: 'cloche' },
+  { id: 'fontaine', start: 'À la claire…', end: 'fontaine', scene: '🌙', emoji: '⛲', sceneLabel: 'lune' },
 ];
 
 export const ASSOCIATIONS = [
-  ['Le dodo, c’est dans le…', 'lit', '🛏️'], ['Le jus, ça se…', 'boit', '🧃'], ['Le pain, ça se…', 'mange', '🍞'],
-  ['Les chaussures, on les met aux…', 'pieds', '🦶'], ['Le bonnet, on le met sur la…', 'tête', '🧢'],
-  ['On se lave les mains avec du…', 'savon', '🧼'], ['On coupe avec des…', 'ciseaux', '✂️'],
-  ['On dessine avec un…', 'crayon', '✏️'], ['On roule dans une…', 'voiture', '🚗'], ['On joue avec un…', 'ballon', '⚽'],
-].map(([start, end, emoji]) => ({ id: end, start, end, emoji, scene: '❓' }));
+  ['Le dodo, c’est dans le…', 'lit', '🛏️', '😴', 'dodo'], ['Le jus, ça se…', 'boit', '🧃', '👄', 'bouche'], ['Le pain, ça se…', 'mange', '🍞', '🍽️', 'assiette'],
+  ['Les chaussures, on les met aux…', 'pieds', '🦶', '👟', 'chaussures'], ['Le bonnet, on le met sur la…', 'tête', '🧒', '🧢', 'bonnet'],
+  ['On se lave les mains avec du…', 'savon', '🧼', '👐', 'mains'], ['On coupe avec des…', 'ciseaux', '✂️', '📄', 'papier'],
+  ['On dessine avec un…', 'crayon', '✏️', '🎨', 'dessin'], ['On roule dans une…', 'voiture', '🚗', '🛣️', 'route'], ['On joue avec un…', 'ballon', '⚽', '🥅', 'but'],
+].map(([start, end, emoji, scene, sceneLabel]) => ({ id: end, start, end, emoji, scene, sceneLabel }));
 
 // Situations de vie pour le studio des émotions ({sister} = prénom de la sœur, {name} = prénom de l'enfant).
 export const SITUATIONS = [
-  { id: 'partage', scene: '🧸', text: '{sister} partage son jouet avec {name}', emotion: 'content' },
-  { id: 'glace', scene: '🍦', text: 'La glace est tombée par terre', emotion: 'triste' },
-  { id: 'bruit', scene: '📢', text: 'Il y a un très gros bruit', emotion: 'peur' },
-  { id: 'dodo', scene: '🌙', text: "C'est l'heure de dormir", emotion: 'fatigue' },
-  { id: 'casse', scene: '🧩', text: 'Quelqu’un a cassé mon puzzle', emotion: 'colere' },
-  { id: 'genou', scene: '🩹', text: '{name} est tombée sur le genou', emotion: 'mal' },
-  { id: 'bravo', scene: '🏅', text: '{name} a fini son travail toute seule', emotion: 'fier' },
-  { id: 'calin', scene: '🤗', text: 'Un câlin avec Maman sur le canapé', emotion: 'calme' },
+  { id: 'partage', label: 'jouet', scene: '🧸', text: '{sister} partage son jouet avec {name}', emotion: 'content' },
+  { id: 'glace', label: 'glace', scene: '🍦', text: 'La glace est tombée par terre', emotion: 'triste' },
+  { id: 'bruit', label: 'bruit', scene: '📢', text: 'Il y a un très gros bruit', emotion: 'peur' },
+  { id: 'dodo', label: 'dormir', scene: '🌙', text: "C'est l'heure de dormir", emotion: 'fatigue' },
+  { id: 'casse', label: 'puzzle', scene: '🧩', text: 'Quelqu’un a cassé mon puzzle', emotion: 'colere' },
+  { id: 'genou', label: 'genou', scene: '🩹', text: '{name} est tombée sur le genou', emotion: 'mal' },
+  { id: 'bravo', label: 'médaille', scene: '🏅', text: '{name} a fini son travail toute seule', emotion: 'fier' },
+  { id: 'calin', label: 'câlin', scene: '🤗', text: 'Un câlin avec Maman sur le canapé', emotion: 'calme' },
 ];
 
 // Q

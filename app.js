@@ -10,7 +10,7 @@ import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/gri
 import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
 import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
-import { loadVisuals, renderVisual } from './modules/visuals.js';
+import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -39,7 +39,9 @@ function photoUrl(card) {
 
 // Image d'une carte : photo mise dans la carte, sinon photo / illustration partagée (visualKey), sinon emoji.
 function cardVisual(card) {
-  const url = photoUrl(card);
+  const key = visualKeyOf(card);
+  // Une photo partagée (éditeur, « Nos vraies photos », miroir magique) passe toujours en premier.
+  const url = hasPhoto(key) ? null : photoUrl(card);
   if (url) return h('img', { src: url, alt: '' });
   return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔' }, { button: false });
 }
@@ -149,8 +151,12 @@ async function saveCards(changed) {
   state.cards = [...state.cards.filter((c) => !ids.has(c.id)), ...changed];
 }
 
-function editCard(card) {
-  openEditor(card, {
+async function editCard(card) {
+  // L'éditeur montre la photo partagée de la carte (visual_overrides) si elle existe.
+  const key = card ? visualKeyOf(card) : null;
+  const shared = key ? await db.getVisualOverride(key) : null;
+  const before = card ? ((shared && shared.blob) || card.photo || null) : null;
+  openEditor(card ? { ...card, photo: before } : null, {
     defaultCat: state.cat,
     onSave: async (saved, { slot, catChanged }) => {
       let cards = state.cards.filter((c) => c.id !== saved.id);
@@ -160,6 +166,9 @@ function editCard(card) {
       if (slot && slot.col <= state.cols) cards = moveCard(cards, placed.id, slot.row, slot.col);
       const changed = cards.filter((c) => c !== state.cards.find((old) => old.id === c.id));
       await saveCards(changed);
+      // La photo de la carte vaut partout : repas en famille, studio des émotions, exercices.
+      if (saved.photo && saved.photo !== before) await setVisual(visualKeyOf(saved), saved.photo, { source: 'editor', label: saved.fr });
+      if (!saved.photo && before) await clearVisual(visualKeyOf(saved));
       state.strip = state.strip.map((item) => (item.card.id === saved.id ? { ...item, card: state.cards.find((c) => c.id === saved.id) } : item));
       renderAll();
     },

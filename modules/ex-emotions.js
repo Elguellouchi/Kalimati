@@ -7,7 +7,8 @@ import { firstName, sisterName, people } from './aba.js';
 import { choiceBoard, bigCard, praise, modeTabs } from './widgets.js';
 import { trialLoop } from './ex-visual.js';
 import { EMOTIONS, B1_OBJECTS, renderVisual, setVisual, clearVisual, hasPhoto, openPhotoPickerModal, fillWithArasaac, keyFor } from './visuals.js';
-import { SITUATIONS, SEQUENCES, TACT_ITEMS, VERBS } from './content.js';
+import { SITUATIONS, SEQUENCES, TACT_ITEMS, VERBS, PAIRS, FUNCTION_BASKETS, CATEGORY_BOXES, ECHO_WORDS, RHYMES, ASSOCIATIONS, REINFORCERS, GESTURE_SEQUENCE, TWO_STEP_OBJECTS } from './content.js';
+import { answerKey } from './ex-verbal.js';
 
 const emotionChoices = (target) => [
   { vkey: target.vkey, label: target.fr, correct: true },
@@ -99,13 +100,31 @@ function groups() {
     { title: '🧼 Les étapes des routines', items: routines, arasaac: true },
     { title: '🏷️ Les objets à nommer', items: TACT_ITEMS.map((t) => ({ emoji: t.emoji, label: t.fr })), arasaac: true },
     { title: '🏃 Les verbes', items: VERBS.map((v) => ({ emoji: v.emoji, label: v.fr })), arasaac: true },
+    { title: '🔗 Ce qui va ensemble (B.4, C.4)', items: uniqueByKey(PAIRS.flatMap((p) => [p.a, p.b]).map((x) => ({ emoji: x.emoji, label: x.fr }))), arasaac: true },
+    { title: '🧺 Tri par fonction et par catégorie (B.5, B.6)', items: uniqueByKey([...FUNCTION_BASKETS, ...CATEGORY_BOXES].flatMap((g) => g.items).map((x) => ({ emoji: x.emoji, label: x.fr }))), arasaac: true },
+    { title: '👉 Consignes et gestes (C.3, D.1)', items: uniqueByKey([...TWO_STEP_OBJECTS.map((o) => ({ emoji: o.emoji, label: o.fr.replace(/^(la|le) /, '') })), ...GESTURE_SEQUENCE.map((g) => ({ emoji: g.emoji, label: g.fr }))]), arasaac: true },
+    { title: '🗣️ Mots à répéter (E.1)', items: ECHO_WORDS.map((w) => ({ emoji: w.emoji, label: w.fr })), arasaac: true },
+    { title: '🎵 Comptines (H.2)', items: uniqueByKey(RHYMES.flatMap((r) => [{ vkey: `scene:${r.id}`, emoji: r.scene, label: r.sceneLabel }, { vkey: answerKey(r), emoji: r.emoji, label: r.end }])), arasaac: true },
+    { title: '💬 Associations (H.3)', items: uniqueByKey(ASSOCIATIONS.flatMap((a) => [{ vkey: `scene:${a.id}`, emoji: a.scene, label: a.sceneLabel }, { vkey: answerKey(a), emoji: a.emoji, label: a.end }])), arasaac: true },
+    { title: '🏠 Situations de vie (émotions)', items: SITUATIONS.map((s) => ({ vkey: `situation:${s.id}`, emoji: s.scene, label: s.label })), arasaac: true },
+    { title: '🎁 Renforçateurs (A.2)', items: REINFORCERS.map((r) => ({ emoji: r.emoji, label: r.fr })), arasaac: true },
     { title: '🧩 Les objets de « Trouve le même »', hint: 'Photo du vrai objet de la maison (sa tasse, sa chaussure…).', items: B1_OBJECTS.map((o) => ({ vkey: o.a, label: o.fr })) },
   ];
 }
 
 export function photoGallery() {
+  const allStatus = h('span', { class: 'note' });
+  const fillAll = async (e) => {
+    e.target.disabled = true;
+    const items = uniqueByKey(groups().filter((g) => g.arasaac).flatMap((g) => g.items));
+    allStatus.textContent = `Téléchargement… (${items.length} images à vérifier)`;
+    const done = await fillWithArasaac(items, (n) => { allStatus.textContent = `${n} pictogramme(s) ajouté(s)…`; });
+    allStatus.textContent = done ? `${done} pictogramme(s) ajouté(s). Ils marchent aussi sans internet.` : 'Aucune image ajoutée (déjà faites, ou pas d’internet).';
+    e.target.disabled = false;
+  };
   return h('div', { class: 'stack' },
     h('p', { class: 'note' }, 'Touchez une image pour la remplacer par une vraie photo (caméra ou galerie). Elle change partout : cartes, routines et exercices.'),
+    h('div', { class: 'row' }, btn('🎨 Télécharger tous les pictogrammes ARASAAC manquants en 1 clic', fillAll, 'primary'), allStatus),
     groups().map((group) => {
       const status = h('span', { class: 'note' });
       return h('section', { class: 'card-box' }, h('h3', {}, group.title), group.hint ? h('p', { class: 'note' }, group.hint) : null,

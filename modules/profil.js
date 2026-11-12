@@ -3,6 +3,6 @@
 // AVANT toute mise en ligne publique : anonymiser CE SEUL FICHIER.
 
 export const PROFIL = {
-  name: 'Abir', age: '8 ans', father: 'Aziz', mother: 'Maman', sister: 'Ghita', city: 'Témara',
+  name: 'Abir', age: '8 ans', father: 'Aziz', mother: 'Maman', sister: 'Ghita', city: 'Salé',
   psy: 'Hosna', period: 'Avril – Juin 2026',
 };

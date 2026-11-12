@@ -7,6 +7,7 @@ import { startListening, startRecording, canRecord } from '../media.js';
 import { recordTrial, ratingPanel } from './aba.js';
 import { bigCard, videoModel, modeTabs } from './widgets.js';
 import { nour, setBubbleLevel } from './nour.js';
+import { renderVisual } from './visuals.js';
 import { GESTURE_SEQUENCE, FINE_GESTURES, SONGS, ECHO_WORDS, ECHO_PHRASES, PHONEMES } from './content.js';
 
 const itemSelect = (items, label, onPick) => h('select', { 'aria-label': label, onchange: (e) => onPick(items.find((i) => i.id === e.target.value)) },
@@ -17,7 +18,7 @@ function d1(ctx) {
   let seq = sample(GESTURE_SEQUENCE, 3);
   let length = 3;
   const strip = h('div', { class: 'gesture-strip' });
-  const draw = () => strip.replaceChildren(...seq.slice(0, length).map((g, i) => h('div', { class: 'gesture', dataset: { i } }, h('span', { class: 'step-num' }, String(i + 1)), h('span', { class: 'emoji' }, g.emoji), h('span', { class: 'label' }, g.fr))));
+  const draw = () => strip.replaceChildren(...seq.slice(0, length).map((g, i) => h('div', { class: 'gesture', dataset: { i } }, h('span', { class: 'step-num' }, String(i + 1)), renderVisual({ emoji: g.emoji, fr: g.fr }), h('span', { class: 'label' }, g.fr))));
   const show = async () => {
     const cells = [...strip.children];
     for (let i = 0; i < cells.length; i += 1) {
@@ -96,7 +97,7 @@ function e1(ctx) {
   const micBtn = btn('🎙️ À toi !', () => toggleMic(), 'primary');
   const replay = btn('▶ Réécouter', () => { if (lastVoice) playBlob(lastVoice); }, 'ghost');
   replay.disabled = true;
-  const draw = () => pills.replaceChildren(h('span', { class: 'emoji big' }, word.emoji), ...word.syllables.map((s) => h('span', { class: 'pill' }, s)));
+  const draw = () => pills.replaceChildren(renderVisual({ emoji: word.emoji, fr: word.fr }), ...word.syllables.map((s) => h('span', { class: 'pill' }, s)));
   const model = async () => {
     const cells = [...pills.querySelectorAll('.pill')];
     for (let i = 0; i < cells.length; i += 1) {
@@ -179,7 +180,7 @@ function phonemeTab(phoneme) {
       grade('plus', 'Net'), grade('prompt', 'Approximatif'), grade('minus', 'Substitué / omis'), recs);
   };
   list.append(
-    h('div', { class: 'phon-cue' }, h('span', { class: 'emoji big' }, phoneme.emoji), h('p', {}, phoneme.cue)),
+    h('div', { class: 'phon-cue' }, renderVisual({ emoji: phoneme.emoji, vkey: `phoneme:${phoneme.id}`, label: `bouche son ${phoneme.id}` }), h('p', {}, phoneme.cue)),
     ...phoneme.words.map(wordRow),
     btn('✅ Progrès validé avec l’orthophoniste', async (e) => {
       if (!window.confirm('Confirmer que l’orthophoniste valide l’amélioration ?')) return;

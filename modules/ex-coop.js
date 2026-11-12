@@ -8,6 +8,7 @@ import { tokenBoard, bigCard } from './widgets.js';
 import { reinforcerStats } from './progress.js';
 import { REINFORCERS, ACTIVITIES } from './content.js';
 import { nour } from './nour.js';
+import { renderVisual } from './visuals.js';
 
 const VALID_MINUTES = 10;
 
@@ -75,7 +76,7 @@ function a2() {
   const group = (kind, title) => h('div', {},
     h('h3', {}, title),
     h('div', { class: 'choices', style: { '--cols': 5 } }, REINFORCERS.filter((r) => r.kind === kind).map((r) =>
-      h('button', { type: 'button', class: 'choice', onclick: () => choose(r) }, h('span', { class: 'emoji' }, r.emoji), h('span', { class: 'label' }, r.fr)))));
+      h('button', { type: 'button', class: 'choice', onclick: () => choose(r) }, renderVisual({ emoji: r.emoji, fr: r.fr }), h('span', { class: 'label' }, r.fr)))));
 
   drawActive();
   drawTable();

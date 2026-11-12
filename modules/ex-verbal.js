@@ -8,6 +8,8 @@ import { bigCard, videoModel, praise, choiceBoard } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { hourglass } from './timer.js';
 import { nour, setBubbleLevel } from './nour.js';
+import { renderVisual, slugKey } from './visuals.js';
+import { visualKeyOf } from '../data.js';
 import { TACT_ITEMS, VERBS, PERSONAL_QUESTIONS, RHYMES, ASSOCIATIONS } from './content.js';
 
 const VOCAL_DELAY_MS = 2500;
@@ -98,7 +100,7 @@ function f2(ctx) {
     const cards = shuffle(pecsCards(ctx)).slice(0, 6);
     stage.replaceChildren(h('p', { class: 'ask' }, 'Classeur de communication'),
       h('div', { class: 'choices', style: { '--cols': 3 } }, cards.map((card) => h('button', { type: 'button', class: 'choice', onclick: () => walk(card) },
-        h('span', { class: 'emoji' }, card.emoji || '📷'), h('span', { class: 'label' }, card.fr)))));
+        renderVisual({ vkey: visualKeyOf(card), emoji: card.emoji || '📷', label: card.fr }), h('span', { class: 'label' }, card.fr)))));
   };
   const walk = (card) => {
     const after = h('div', { class: 'stack' });
@@ -168,7 +170,7 @@ function g3() {
     const done = new Set(trials.map((t) => t.item)).size;
     total.textContent = `${done}/15 images dénommées hors séance (but : 8).`;
     list.replaceChildren(...TACT_ITEMS.map((item) => h('div', { class: 'g3-row' },
-      h('span', { class: 'emoji' }, item.emoji), h('span', {}, item.fr),
+      renderVisual({ emoji: item.emoji, fr: item.fr }), h('span', {}, item.fr),
       ...[['home', '🏠 Maison'], ['school', '🏫 Classe']].map(([place, label]) => h('button', {
         type: 'button', class: `pill-btn${seen(item.id, place) ? ' on' : ''}`,
         onclick: async () => { await recordTrial('G.3', 'plus', { item: item.id, meta: { place } }); draw(); },
@@ -202,6 +204,8 @@ function h1() {
 // H.2 / H.3 : aucune lecture demandée. Une grande image, la voix dit le début, puis :
 //  - 🎙️ mode vocal : l'enfant dit le mot (jauge du micro), l'image du mot apparaît ;
 //  - 🖼️ mode choix visuel (aide) : 3 grandes images, noté « guidé » car l'image aide.
+export const answerKey = (item) => `obj:${slugKey(item.end)}`;
+
 function completion(goalId, items) {
   return (ctx) => {
     let current = items[0];
@@ -209,7 +213,7 @@ function completion(goalId, items) {
     let stopMic = null;
     const stage = h('div', { class: 'stack' });
     ctx.onCleanup(() => { if (stopMic) stopMic(); });
-    const reveal = (box) => { playClap(); speak(current.end); box.replaceChildren(bigCard(current.emoji, '', 'reveal-card', `obj:${current.id}`)); };
+    const reveal = (box) => { playClap(); speak(current.end); box.replaceChildren(bigCard(current.emoji, current.end, 'reveal-card', answerKey(current))); };
     const next = () => { current = pick(items.filter((i) => i !== current)); draw(); };
     function draw() {
       const answer = h('div', { class: 'answer-slot' }, h('span', { class: 'mystery' }, '❓'));
@@ -232,17 +236,17 @@ function completion(goalId, items) {
         body.append(h('div', { class: 'row center' }, mic, btn('✨ Montrer l’image', () => reveal(answer), 'ghost')), gauge,
           ratingPanel(goalId, { item: () => current.id, labels: { plus: 'Mot dit seule ✅' }, onRated: next }));
       } else {
-        const others = sample(items.filter((i) => i !== current), 2).map((i) => ({ emoji: i.emoji, vkey: `obj:${i.id}`, correct: false }));
-        body.append(choiceBoard({ choices: [{ emoji: current.emoji, vkey: `obj:${current.id}`, correct: true }, ...others], cols: 3, praise: current.end, onAnswer: (first) => {
+        const others = sample(items.filter((i) => i !== current), 2).map((i) => ({ emoji: i.emoji, vkey: answerKey(i), fr: i.end, correct: false }));
+        body.append(choiceBoard({ choices: [{ emoji: current.emoji, vkey: answerKey(current), fr: current.end, correct: true }, ...others], cols: 3, praise: current.end, onAnswer: (first) => {
           playClap();
-          answer.replaceChildren(bigCard(current.emoji, '', 'reveal-card', `obj:${current.id}`));
+          answer.replaceChildren(bigCard(current.emoji, current.end, 'reveal-card', answerKey(current)));
           recordTrial(goalId, 'prompt', { item: current.id, prompt: 'visuel', meta: { aide: 'choix-visuel', first } });
           body.append(btn('➜ Suivant', next, 'primary'));
         } }));
       }
       const say = () => speak(current.start);
       stage.replaceChildren(
-        h('div', { class: 'scene' }, bigCard(current.scene, '', 'scene-card', `scene:${current.id}`), h('span', { class: 'scene-plus' }, '➜'), answer),
+        h('div', { class: 'scene' }, bigCard(current.scene, current.sceneLabel || '', 'scene-card', `scene:${current.id}`), h('span', { class: 'scene-plus' }, '➜'), answer),
         h('div', { class: 'row center' }, btn('🔊 Écouter', say, 'primary')),
         body,
         h('details', {}, h('summary', {}, 'Texte pour l’adulte'), h('p', { class: 'adult-text' }, `${current.start} ${current.end}`)));

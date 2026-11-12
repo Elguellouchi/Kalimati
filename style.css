@@ -289,6 +289,9 @@ body.parent .grid .card:not(.add), body.parent .core .card { outline: 3px dashed
 .gallery-tile { border: 2px solid var(--line); border-radius: 16px; background: var(--bg); padding: 8px 4px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; text-align: center; min-height: 88px; }
 .gallery-tile .visual { --vs: 68px; }
 .mirror-model { display: grid; place-items: center; }
+.g3-row .visual { --vs: 36px; }
+.gesture .visual { --vs: 52px; }
+.syllables .visual, .phon-cue .visual { --vs: 68px; }
 
 /* Repas en famille */
 .plate { align-self: center; position: relative; width: 210px; height: 210px; border-radius: 50%; border: 10px solid #E6E0D4; background: #fff; display: grid; place-items: center; }
