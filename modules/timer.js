@@ -1,4 +1,4 @@
-// « Le Temps avec Nour » : disque coloré qui diminue doucement, sans tic-tac ni clignotement.
+// « Mon sablier visuel » : disque coloré qui diminue doucement, sans tic-tac ni clignotement.
 import { h, btn, formatTime } from './util.js';
 import { nour } from './nour.js';
 
@@ -11,7 +11,7 @@ function sectorPath(fraction) {
   return `M50 50 L50 5 A45 45 0 ${f > 0.5 ? 1 : 0} 1 ${x.toFixed(2)} ${y.toFixed(2)} Z`;
 }
 
-// options : minutes, choices (liste de minutes proposées), pose de Nour, onEnd(elapsedSeconds), onTick(remaining)
+// options : minutes, choices (liste de minutes proposées), pose de la loutre, onEnd(elapsedSeconds), onTick(remaining)
 export function visualTimer({ minutes = 10, choices = [3, 5, 10, 12, 15], pose = 'stand', color = '#4FC3B8', onEnd, onStart } = {}) {
   let total = minutes * 60;
   let remaining = total;

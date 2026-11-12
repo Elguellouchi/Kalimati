@@ -86,7 +86,7 @@ function d3() {
     ratingPanel('D.3', { item: () => song.id, labels: { plus: 'A imité les gestes ✅' } }));
 }
 
-// E.1 : Écho-Studio bisyllabique ; Nour souffle des bulles quand Abir vocalise.
+// E.1 : Écho-Studio bisyllabique ; la loutre souffle des bulles quand Abir vocalise.
 function e1(ctx) {
   let word = ECHO_WORDS[0];
   let stop = null;

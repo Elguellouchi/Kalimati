@@ -100,7 +100,7 @@ function l3() {
     ratingPanel('L.3', { item: () => partner, meta: () => ({ exchanges }), labels: { plus: 'Tour de rôle tenu ✅' }, onRated: () => { exchanges = 0; abirTurn = true; draw(); } }));
 }
 
-// M : regroupement & classe — timer de 5 min avec Nour assise + compteurs M.1, M.2, M.3.
+// M : regroupement & classe — timer de 5 min avec la loutre assise + compteurs M.1, M.2, M.3.
 function groupMode() {
   const m2 = h('div');
   const timer = visualTimer({ minutes: 5, choices: [3, 5, 8, 10], pose: 'sit', onEnd: () => {

@@ -1,4 +1,4 @@
-// Nour, la petite loutre de mer qui accompagne Abir : SVG plat, formes rondes, aucun clignotement.
+// La petite loutre de mer (mascotte sans nom, en coin d'écran) qui encourage Abir : SVG plat, formes rondes, aucun clignotement.
 // Pelage caramel clair, museau crème, robe turquoise, petit sac à dos jaune, casque anti-bruit bleu autour du cou.
 
 const C = {
@@ -35,7 +35,7 @@ const bubbles = `<g class="nour-bubbles">
 </g>`;
 
 // pose : 'stand' | 'sit' | 'wave' | 'brush' | 'bubbles'
-export function nourSvg({ pose = 'stand', size = 120, label = 'Nour la loutre' } = {}) {
+export function nourSvg({ pose = 'stand', size = 120, label = 'La petite loutre' } = {}) {
   const mouth = pose === 'bubbles'
     ? `<ellipse cx="60" cy="61" rx="3.5" ry="3" fill="${C.ink}"/>`
     : `<path d="M54 60 q6 5 12 0" stroke="${C.ink}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
