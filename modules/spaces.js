@@ -56,9 +56,11 @@ export function createNavigator(app) {
   const show = (screen) => { runCleanups(); app.container.replaceChildren(screen()); app.container.scrollTop = 0; };
   const go = (screen) => { history.push(screen); show(screen); };
   const back = () => { history.pop(); show(history[history.length - 1]); };
+  // Partout : 🏠 Accueil (retour direct à l'écran d'accueil) et ← Retour (écran précédent).
   const header = (title, sub) => h('div', { class: 'screen-head' },
-    history.length > 1 ? btn('← Retour', back, 'ghost') : null,
-    h('div', {}, h('h2', {}, title), sub ? h('p', { class: 'note' }, sub) : null));
+    h('div', { class: 'nav-btns' }, app.goHome ? btn('🏠 Accueil', () => { runCleanups(); app.goHome(); }, 'home-btn') : null,
+      history.length > 1 ? btn('← Retour', back, 'back-btn') : null),
+    title ? h('div', {}, h('h2', {}, title), sub ? h('p', { class: 'note' }, sub) : null) : null);
   const context = () => ({ lang: app.state.lang, parent: app.state.parent, cards: app.state.cards, onCleanup: (fn) => cleanups.push(fn) });
   const photoHint = () => (app.state.parent ? h('p', { class: 'photo-hint' }, '📸 Mode parent : touchez le petit 📷 d’une image pour mettre une vraie photo.') : null);
 
@@ -93,16 +95,16 @@ export function createNavigator(app) {
   }
 
   function sessionHome() {
-    return h('div', { class: 'screen' },
-      h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, `🧩 Séance ABA d'${firstName()}`), h('p', { class: 'note' }, 'Choisissez l’intervenant et le lieu, puis une section du PEI.'))),
+    return h('div', { class: 'screen' }, header(''),
+      h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, `🎮 Les jeux d'${firstName()}`), h('p', { class: 'note' }, 'Pour l’adulte : choisissez l’intervenant et le lieu, puis un jeu.'))),
       clinicBar(),
       h('div', { class: 'section-grid' }, SECTIONS.map((s) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => sectionScreen(s.id)) },
         h('span', { class: 'emoji' }, s.emoji), h('strong', {}, s.id), h('span', {}, s.name)))));
   }
 
   function routinesHome() {
-    return h('div', { class: 'screen' },
-      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, '⏳ Routines & autonomie'), h('p', { class: 'note' }, `La journée d'${firstName()} : sablier, repas en famille, maison, classe et toilettes.`))),
+    return h('div', { class: 'screen' }, header(''),
+      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, '⏳ Ma journée'), h('p', { class: 'note' }, `La journée d'${firstName()} : sablier, repas en famille, maison, classe et toilettes.`))),
       clinicBar(),
       routines().map((group) => h('section', {}, h('h3', {}, group.title),
         h('div', { class: 'section-grid' }, group.items.map(([id, emoji, label]) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => exerciseScreen(id)) },
@@ -114,9 +116,10 @@ export function createNavigator(app) {
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));
 
   function emotionsHome() {
+    const head = header('');
     const family = [['person:abir', firstName()], ['person:ghita', sisterName()], ['person:papa', 'Papa'], ['person:maman', 'Maman']];
     return h('div', { class: 'screen' },
-      h('h2', {}, '😊 Émotions & famille'),
+      head, h('h2', {}, '😊 Mes émotions et ma famille'),
       h('div', { class: 'family-table' }, family.map(([vkey, label]) => h('div', { class: 'family-seat' }, renderVisual({ vkey, label }), h('span', {}, label)))),
       h('div', { class: 'section-grid' },
         h('button', { type: 'button', class: 'section-tile big', onclick: () => go(studioScreen) }, h('span', { class: 'emoji' }, '😊'), h('span', {}, 'Studio des émotions')),

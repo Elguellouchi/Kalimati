@@ -6,6 +6,7 @@ import { openEditor } from './editor.js';
 import { exportBackup, readBackup } from './backup.js';
 import { h } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName } from './modules/aba.js';
+import { nourSvg } from './modules/nour.js';
 import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/grid-layout.js';
 import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
@@ -20,10 +21,10 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'talk', playing: -1 };
+const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1 };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
-const nav = createNavigator({ container: null, state });
+const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
 
 // ---------- Cartes ----------
 const label = (card, lang = state.lang) => (lang === 'dr' ? (card.dr || card.fr) : card.fr);
@@ -184,7 +185,7 @@ async function editCard(card) {
 
 // ---------- Les 5 espaces ----------
 const SPACES = [
-  ['talk', '🗣️', 'Parler'], ['session', '🧩', 'Séance ABA'], ['routines', '⏳', 'Routines'], ['emotions', '😊', 'Émotions'], ['progress', '📊', 'Progrès'],
+  ['home', '🏠', 'Accueil'], ['talk', '🗣️', 'Parler'], ['session', '🎮', 'Jeux'], ['routines', '⏳', 'Ma journée'], ['emotions', '😊', 'Émotions'], ['progress', '📊', 'Progrès'],
 ];
 
 function renderSpaces() {
@@ -199,9 +200,30 @@ function openSpace(id) {
   renderView();
 }
 
+// ---------- Écran d'accueil : grandes tuiles colorées, une par espace ----------
+const HOME_TILES = [
+  ['talk', '🗣️', 'Je parle', 'Mes cartes et ma voix', 'tile-talk'],
+  ['session', '🎮', 'Je joue', 'Les jeux pour apprendre', 'tile-play'],
+  ['routines', '⏳', 'Ma journée', 'Repas, habits, toilettes', 'tile-day'],
+  ['emotions', '😊', 'Mes émotions', 'Content, triste, fâché…', 'tile-feel'],
+];
+
+function homeScreen() {
+  const hello = `Bonjour ${firstName()} !`;
+  return h('div', { class: 'screen home' },
+    h('button', { type: 'button', class: 'home-hello', onclick: () => speak(hello) },
+      h('span', { class: 'home-nour', html: nourSvg({ pose: 'wave', size: 96 }) }),
+      h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, 'Qu’est-ce qu’on fait aujourd’hui ?'))),
+    h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, title, sub, cls]) => h('button', {
+      type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(title); openSpace(id); },
+    }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, title), h('small', {}, sub)))),
+    h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès (adultes)' : '🔒 Progrès (adultes)'));
+}
+
 function renderView() {
   const view = $('#view');
   nav.leave();
+  if (state.space === 'home') { view.replaceChildren(homeScreen()); return; }
   if (state.space === 'talk') { view.replaceChildren(renderTalk()); return; }
   if (state.space === 'session') { nav.openSession(); return; }
   if (state.space === 'routines') { nav.openRoutines(); return; }
@@ -217,7 +239,7 @@ function renderAll() {
   renderStrip();
   renderSpaces();
   // On ne coupe pas un exercice en cours quand le parent verrouille ou déverrouille.
-  if (state.space === 'talk' || state.space === 'progress' || !$('#view').firstChild) renderView();
+  if (['home', 'talk', 'progress'].includes(state.space) || !$('#view').firstChild) renderView();
   renderToiletCount();
 }
 
