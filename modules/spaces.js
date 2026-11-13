@@ -21,6 +21,7 @@ import { EXERCISES as UZ, mealTitle } from './ex-autonomy.js';
 import { ONLINE_EXERCISES as ONLINE_BASE } from './ex-online.js';
 import { NEXT_EXERCISES } from './ex-next.js';
 import { levelHeader, onLevelChange, levelOf } from './levels.js';
+import { scheduleView } from './ex-schedule.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -117,13 +118,17 @@ export function createNavigator(app) {
         h('span', { class: 'emoji' }, s.emoji), h('strong', {}, s.id), h('span', {}, s.name)))));
   }
 
+  // « 📅 Ma journée » : le planning visuel d'abord (routine MATIN / SOIR), puis les autres activités de la journée.
   function routinesHome() {
+    const planning = scheduleView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) });
     return h('div', { class: 'screen' }, header(''),
-      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, '⏳ Ma journée'), h('p', { class: 'note' }, `La journée d'${firstName()} : sablier, repas en famille, maison, classe et toilettes.`))),
-      clinicBar(),
-      routines().map((group) => h('section', {}, h('h3', {}, group.title),
-        h('div', { class: 'section-grid' }, group.items.map(([id, emoji, label]) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => exerciseScreen(id)) },
-          h('span', { class: 'emoji' }, emoji), h('span', {}, label)))))));
+      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, `📅 Ma journée · ${firstName()}`), h('p', { class: 'note' }, 'Ma routine quotidienne : je coche chaque étape.'))),
+      planning,
+      h('details', { class: 'more-day' }, h('summary', {}, '⏳ Autres activités de la journée (sablier, repas, classe, toilettes)'),
+        clinicBar(),
+        routines().map((group) => h('section', {}, h('h3', {}, group.title),
+          h('div', { class: 'section-grid' }, group.items.map(([id, emoji, label]) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => exerciseScreen(id)) },
+            h('span', { class: 'emoji' }, emoji), h('span', {}, label))))))));
   }
 
   const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), photoHint(), emotionStudio(context()));

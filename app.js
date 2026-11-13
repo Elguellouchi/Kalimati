@@ -185,7 +185,7 @@ async function editCard(card) {
 
 // ---------- Les 5 espaces ----------
 const SPACES = [
-  ['home', '🏠', 'Accueil'], ['talk', '🗣️', 'Parler'], ['session', '🎮', 'Jeux'], ['routines', '⏳', 'Ma journée'], ['emotions', '😊', 'Émotions'], ['progress', '📊', 'Progrès'],
+  ['home', '🏠', 'Accueil'], ['talk', '🗣️', 'Parler'], ['session', '🎮', 'Jeux'], ['routines', '📅', 'Ma journée'], ['emotions', '😊', 'Émotions'], ['progress', '📊', 'Progrès'],
 ];
 
 function renderSpaces() {
@@ -204,7 +204,7 @@ function openSpace(id) {
 const HOME_TILES = [
   ['talk', '🗣️', 'Je parle', 'Mes cartes et ma voix', 'tile-talk'],
   ['session', '🎮', 'Je joue', 'Les jeux pour apprendre', 'tile-play'],
-  ['routines', '⏳', 'Ma journée', 'Repas, habits, toilettes', 'tile-day'],
+  ['routines', '📅', 'Ma journée', 'Ma routine du matin et du soir', 'tile-day'],
   ['emotions', '😊', 'Mes émotions', 'Content, triste, fâché…', 'tile-feel'],
 ];
 
@@ -238,6 +238,7 @@ function renderAll() {
   $('#cols').value = String(state.cols);
   renderStrip();
   renderSpaces();
+  document.dispatchEvent(new CustomEvent('kalimati-parent', { detail: { parent: state.parent, lang: state.lang } }));
   // On ne coupe pas un exercice en cours quand le parent verrouille ou déverrouille.
   if (['home', 'talk', 'progress'].includes(state.space) || !$('#view').firstChild) renderView();
   renderToiletCount();

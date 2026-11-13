@@ -4,7 +4,7 @@
 import { GOALS } from './modules/goals.js';
 
 const DB_NAME = 'kalimati';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let dbPromise = null;
 
@@ -39,6 +39,14 @@ function upgrade(db, transaction, oldVersion) {
       const existing = goals.get(goal.id);
       existing.onsuccess = () => { if (!existing.result) goals.put({ ...goal, status: 'todo', updatedAt: null }); };
     });
+  }
+  // v6 : planning visuel « Ma routine quotidienne » (coches du jour et routines réglées par le parent). Rien d'autre n'est touché.
+  if (oldVersion < 6) {
+    if (!db.objectStoreNames.contains('schedule_logs')) {
+      const logs = db.createObjectStore('schedule_logs', { keyPath: 'id' });
+      ['day', 'routineId', 'stepId', 'autonomy'].forEach((index) => logs.createIndex(index, index));
+    }
+    if (!db.objectStoreNames.contains('schedule_config')) db.createObjectStore('schedule_config', { keyPath: 'id' });
   }
 }
 
@@ -114,3 +122,12 @@ export function putVisualOverrides(items) {
 export const getOnlineCache = (key) => run('online_cache', 'readonly', (s) => s.get(key));
 export const putOnlineCache = (rec) => run('online_cache', 'readwrite', (s) => s.put(rec));
 export const getAllOnlineKeys = () => run('online_cache', 'readonly', (s) => s.getAllKeys());
+
+// Planning visuel : une coche = { id, day, ts, routineId, stepId, autonomy: 'seule' | 'rappel' } ; réglages = { id, ... }
+export const addScheduleLog = (log) => run('schedule_logs', 'readwrite', (s) => s.put(log));
+export const deleteScheduleLog = (id) => run('schedule_logs', 'readwrite', (s) => s.delete(id));
+export const getScheduleLogsOfDay = (day) => run('schedule_logs', 'readonly', (s) => s.index('day').getAll(day));
+export const getAllScheduleLogs = () => run('schedule_logs', 'readonly', (s) => s.getAll());
+export const getScheduleConfig = (id) => run('schedule_config', 'readonly', (s) => s.get(id));
+export const putScheduleConfig = (record) => run('schedule_config', 'readwrite', (s) => s.put(record));
+export const deleteScheduleConfig = (id) => run('schedule_config', 'readwrite', (s) => s.delete(id));
