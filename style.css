@@ -685,3 +685,23 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .ps-label small { font-weight: 400; color: #444; }
   .ps-circle { width: 1.1cm; height: 1.1cm; border: 3px solid #000; border-radius: 50%; flex: none; }
 }
+
+/* v6.1 : X.2 toilettes en 9 étapes (puzzle, étape suivante, en vrai) */
+.shake-soft { animation: shake-soft .45s ease; }
+@keyframes shake-soft { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+.puzzle-slots { display: grid; grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr)); gap: 8px; }
+.puzzle-slot { position: relative; min-height: 110px; border: 3px dashed var(--line); border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 6px; background: var(--bg); text-align: center; font-size: 13px; font-weight: 700; }
+.puzzle-slot.filled { border-style: solid; border-color: #A5D6A7; background: #EEF8EF; animation: pop-in .4s ease; }
+.puzzle-slot .visual { --vs: 56px; width: 56px; height: 56px; }
+.slot-num { position: absolute; top: 4px; left: 8px; font-weight: 800; color: var(--muted); }
+.puzzle-slot:not(.filled) .slot-num { position: static; font-size: 30px; }
+.puzzle-tray { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
+.toilet-card { position: relative; }
+.toilet-card .visual { --vs: 64px; }
+.toilet-now { width: 100%; border-color: #4FC3B8; }
+.toilet-now .visual { --vs: 150px; width: 150px; height: 150px; }
+.toilet-now .label { font-size: 22px; font-weight: 800; }
+.bubble-timer { text-align: center; font-size: 18px; font-weight: 700; color: var(--brand); }
+.bubble-bar { height: 22px; border-radius: 999px; background: var(--soft); overflow: hidden; border: 2px solid #4FC3B8; }
+.bubble-fill { display: block; height: 100%; background: repeating-radial-gradient(circle at 10px 11px, #B3E5FC 0 6px, #E1F5FE 6px 12px); transform-origin: left; animation: bubble-drain linear forwards; }
+@keyframes bubble-drain { from { transform: scaleX(1); } to { transform: scaleX(0); } }

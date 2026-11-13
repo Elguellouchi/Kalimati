@@ -18,7 +18,7 @@ const S = (id, fr, dr, ar, emoji, minutes, extra = {}) => ({ id, fr, dr, ar, emo
 // Micro-étapes (analyse de tâche) ouvertes en touchant une étape.
 const WUDU = [['🙌', 'Se laver les mains'], ['👄', 'Se rincer la bouche'], ['👃', 'Se rincer le nez'], ['😊', 'Se laver le visage'],
   ['💪', 'Se laver les bras'], ['🙆', 'Passer l’eau sur la tête'], ['👂', 'Les oreilles'], ['🦶', 'Se laver les pieds'], ['🧎', 'Prier sur le tapis']];
-const TOILET = [['🚽', 'Aller aux toilettes'], ...SEQUENCES['X.2']];
+const TOILET = SEQUENCES['X.2']; // les 9 étapes détaillées (photos « toilet:<id> »)
 const TEETH = SEQUENCES['W.3'];
 const DRESS = SEQUENCES['U.1'];
 const HAIR = [['🪮', 'Prendre la brosse'], ['💇‍♀️', 'Brosser doucement'], ['🎀', 'Mettre l’élastique'], ['🪞', 'Se regarder dans le miroir']];
@@ -79,11 +79,16 @@ const SURPRISE_ID = 'surprise';
 const READING = [['0', '🖼️ Image + texte'], ['1', '🌫️ Image estompée'], ['2', '🔤 Texte seul']];
 
 // ---------- Lecture / écriture ----------
+// Les routines gardées par le parent reprennent les micro-étapes à jour (ex. toilettes en 9 étapes depuis la v6.1).
+function withDefaultSubSteps(routines) {
+  const defaults = new Map(DEFAULT_ROUTINES().flatMap((r) => r.steps).map((s) => [s.id, s.sub]));
+  return routines.map((r) => ({ ...r, steps: r.steps.map((s) => (defaults.get(s.id) ? { ...s, sub: defaults.get(s.id) } : s)) }));
+}
 async function loadState() {
   const [config, prefs, surprise, logs] = await Promise.all([db.getScheduleConfig(CONFIG_ID), db.getScheduleConfig(PREFS_ID),
     db.getScheduleConfig(SURPRISE_ID), db.getScheduleLogsOfDay(dayKey())]);
   return {
-    routines: config ? config.routines : DEFAULT_ROUTINES(),
+    routines: config ? withDefaultSubSteps(config.routines) : DEFAULT_ROUTINES(),
     prefs: { routineId: 'matin', mode: 'steps', reading: '0', ...(prefs || {}) },
     surprise: surprise && surprise.day === dayKey() ? surprise : null,
     logs,

@@ -1,16 +1,18 @@
 // Sections U à Z : habillage, repas en famille, hygiène, toilettes, motricité globale et fine.
 import * as db from '../db.js';
-import { h, btn, sleep, formatTime } from './util.js';
-import { speak } from '../speech.js';
+import { h, btn, sleep, formatTime, shuffle } from './util.js';
+import { speak, hasArabicVoice } from '../speech.js';
 import { playBeep, playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName, sisterName } from './aba.js';
-import { sequenceBoard, bigCard, praise, videoModel } from './widgets.js';
+import { sequenceBoard, bigCard, praise, videoModel, choiceBoard, modeTabs } from './widgets.js';
+import { draggable, hitTest } from './drag.js';
+import { levelOf } from './levels.js';
 import { sequenceExercise } from './ex-social.js';
 import { accidentStats, evaluate } from './progress.js';
 import { goalById } from './goals.js';
 import { visualTimer } from './timer.js';
 import { renderVisual } from './visuals.js';
-import { SEQUENCES } from './content.js';
+import { SEQUENCES, TOILET_STEPS } from './content.js';
 
 // ---------- V : « À table en famille (avec Papa, Maman et Ghita) » ----------
 export const mealTitle = () => `À table en famille (avec Papa, Maman et ${sisterName()})`;
@@ -299,11 +301,162 @@ function pinchGame() {
     ratingPanel('Z.3', { item: '5-perles', labels: { plus: '5 perles seule ✅' } }));
 }
 
+// ---------- X.2 : toilettes en 9 étapes, 3 jeux (v6.1) ----------
+// Niveau 1–150 : 4 étapes clés ; 151–500 : 6 étapes ; au-delà : les 9 étapes.
+const HANDS = { id: 'mains', emoji: '🧼', fr: 'Se laver les mains', dr: 'Ghsel ydik', ar: 'غسل يديك', vkey: 'toilet:mains' };
+const TOILET_LEVELS = [[150, ['essuyer', 'remonter', 'chasse', 'mains']], [500, ['baisser', 'asseoir', 'essuyer', 'remonter', 'chasse', 'mains']]];
+const BUBBLE_SECONDS = 20;
+
+function toiletSteps() {
+  const level = levelOf('X.2').currentLevel;
+  const stage = TOILET_LEVELS.find(([upTo]) => level <= upTo);
+  if (!stage) return TOILET_STEPS;
+  return stage[1].map((id) => (id === 'mains' ? HANDS : TOILET_STEPS.find((step) => step.id === id)));
+}
+const toiletVisual = (step, button = false) => renderVisual({ vkey: step.vkey, emoji: step.emoji, label: step.fr }, { button });
+const toiletLabel = (step, lang) => (lang === 'dr' ? step.dr : step.fr);
+const arabicVoice = (lang) => lang === 'dr' && hasArabicVoice();
+const sayToilet = (step, lang) => (arabicVoice(lang) && step.ar ? speak(step.ar, { lang: 'ar' }) : speak(step.fr));
+function shake(el) { el.classList.remove('shake-soft'); void el.offsetWidth; el.classList.add('shake-soft'); }
+const toiletCard = (step, lang) => h('button', { type: 'button', class: 'choice toilet-card' }, toiletVisual(step), h('span', { class: 'label' }, toiletLabel(step, lang)));
+
+// 🧩 Puzzle : remettre les étapes dans l'ordre (toucher la carte, ou la glisser vers la case numérotée).
+function toiletPuzzle(ctx) {
+  const root = h('div', { class: 'stack' });
+  const start = () => {
+    const steps = toiletSteps();
+    let next = 0;
+    let errors = 0;
+    const slots = steps.map((_, i) => h('div', { class: 'puzzle-slot' }, h('span', { class: 'slot-num' }, String(i + 1))));
+    const after = h('div', { class: 'stack' });
+    const place = (card, step, i) => {
+      if (i !== next) { errors += 1; shake(card); return false; }
+      slots[i].replaceChildren(toiletVisual(step), h('span', { class: 'label' }, toiletLabel(step, ctx.lang)));
+      slots[i].classList.add('filled');
+      card.remove();
+      next += 1;
+      sayToilet(step, ctx.lang);
+      if (next === steps.length) {
+        playClap();
+        recordTrial('X.2', errors ? 'prompt' : 'plus', { item: `puzzle-${steps.length}`, meta: { game: 'puzzle', errors } });
+        after.replaceChildren(praise(errors ? 'Bravo, tout est dans l’ordre !' : 'Parfait, du premier coup !'), btn('🔄 Rejouer', start, 'primary'));
+      }
+      return true;
+    };
+    let order = shuffle(steps.map((_, i) => i));
+    for (let k = 0; k < 5 && order.every((v, i) => v === i); k += 1) order = shuffle(order);
+    const tray = h('div', { class: 'puzzle-tray' }, order.map((i) => {
+      const step = steps[i];
+      const card = toiletCard(step, ctx.lang);
+      let moved = false;
+      card.onclick = () => { if (!moved) place(card, step, i); moved = false; };
+      draggable(card, {
+        onStart: () => { moved = false; },
+        onMove: ({ dx, dy }) => { if (Math.hypot(dx, dy) > 10) moved = true; },
+        onDrop: ({ x, y }) => {
+          if (!moved) return false;
+          const target = hitTest(x, y, slots);
+          if (!target) return false;
+          if (slots.indexOf(target) !== next) { errors += 1; shake(card); return false; }
+          return place(card, step, i);
+        },
+      });
+      return card;
+    }));
+    root.replaceChildren(h('p', { class: 'ask' }, 'Remets les étapes dans l’ordre', btn('🔊', () => speak('Remets les étapes dans l’ordre'), 'ghost tiny')),
+      h('div', { class: 'puzzle-slots', style: { '--cols': Math.min(steps.length, 3) } }, slots), tray, after);
+  };
+  start();
+  return root;
+}
+
+// 🤔 Quelle est l'étape suivante ? Distracteurs logiques : l'étape d'avant et celle d'après d'abord.
+function toiletNextStep(ctx) {
+  const root = h('div', { class: 'stack' });
+  const round = () => {
+    const steps = toiletSteps();
+    const n = Math.floor(Math.random() * (steps.length - 1));
+    const [current, answer] = [steps[n], steps[n + 1]];
+    const near = [steps[n - 1], steps[n + 2]].filter(Boolean);
+    const far = shuffle(steps.filter((s) => ![current, answer, ...near].includes(s)));
+    const distractors = [...near, ...far].slice(0, steps.length >= 6 ? 3 : 2);
+    const question = `Je viens de : ${current.fr.toLowerCase()}. Qu’est-ce que je fais ensuite ?`;
+    const darija = `كملت: ${current.ar}. شنو ندير من بعد؟`;
+    const ask = () => (arabicVoice(ctx.lang) ? speak(darija, { lang: 'ar' }) : speak(question));
+    const after = h('div', { class: 'row center' });
+    ask();
+    root.replaceChildren(
+      h('p', { class: 'ask' }, question, btn('🔊', ask, 'ghost tiny')),
+      ctx.lang === 'dr' ? h('p', { class: 'note', dir: 'rtl' }, darija) : null,
+      h('div', { class: 'big-card model-card' }, toiletVisual(current), h('span', { class: 'label' }, toiletLabel(current, ctx.lang))),
+      choiceBoard({ cols: 2, praise: 'Bravo !',
+        choices: [answer, ...distractors].map((s) => ({ correct: s === answer, label: toiletLabel(s, ctx.lang), render: () => toiletVisual(s) })),
+        onAnswer: () => after.replaceChildren(btn('➜ Question suivante', round, 'primary')) }),
+      after);
+  };
+  round();
+  return root;
+}
+
+// ✅ En vrai : accompagnement à la salle de bain, une grande carte à la fois, 20 s de bulles de savon.
+function toiletReal(ctx) {
+  const root = h('div', { class: 'stack' });
+  let index = 0;
+  let timer = 0;
+  if (ctx.onCleanup) ctx.onCleanup(() => clearInterval(timer));
+  const go = (i) => {
+    index = i;
+    show();
+    if (TOILET_STEPS[index]) sayToilet(TOILET_STEPS[index], ctx.lang); else speak('Bravo, tout est fait !');
+  };
+  const bubbles = (done) => {
+    let left = BUBBLE_SECONDS;
+    const count = h('strong', {}, String(left));
+    const fill = h('span', { class: 'bubble-fill', style: { animationDuration: `${BUBBLE_SECONDS}s` } });
+    timer = setInterval(() => {
+      if (!root.isConnected) { clearInterval(timer); return; }
+      left -= 1;
+      count.textContent = String(Math.max(0, left));
+      if (left > 0) return;
+      clearInterval(timer);
+      playBeep();
+      done();
+    }, 1000);
+    return h('div', { class: 'bubble-timer' }, h('p', {}, '🫧 Bulles de savon — ', count, ' secondes'), h('div', { class: 'bubble-bar' }, fill));
+  };
+  function show() {
+    clearInterval(timer);
+    if (index >= TOILET_STEPS.length) {
+      playClap();
+      root.replaceChildren(praise('Bravo, tout est fait !'),
+        ratingPanel('X.2', { item: 'en-vrai', meta: { mode: 'reel' }, labels: { plus: '✅ Seule', prompt: '👉 Avec rappel', minus: '❌ Non réussi' }, onRated: () => { index = 0; show(); } }));
+      return;
+    }
+    const step = TOILET_STEPS[index];
+    root.replaceChildren(
+      h('div', { class: 'order-slots' }, TOILET_STEPS.map((_, j) => h('span', { class: `order-slot${j < index ? ' on' : ''}` }, String(j + 1)))),
+      h('button', { type: 'button', class: 'big-card toilet-now', onclick: () => sayToilet(step, ctx.lang) }, toiletVisual(step, true),
+        h('span', { class: 'label' }, toiletLabel(step, ctx.lang)), ctx.lang === 'dr' ? h('small', { dir: 'rtl' }, step.ar) : null),
+      step.id === 'frotter' ? bubbles(() => go(index + 1)) : null,
+      btn('✅ C’est fait !', () => go(index + 1), 'primary wide'),
+      index > 0 ? btn('↩︎ Étape précédente', () => go(index - 1), 'ghost tiny') : null);
+  }
+  show();
+  return root;
+}
+
+function toiletGames(ctx = {}) {
+  const c = { lang: 'fr', ...ctx };
+  return h('div', { class: 'stack' },
+    h('p', { class: 'note' }, '📷 Mode parent : dans « En vrai », touchez le 📷 d’une étape pour mettre la photo de votre salle de bain.'),
+    modeTabs([['🧩 Puzzle', () => toiletPuzzle(c)], ['🤔 Étape suivante ?', () => toiletNextStep(c)], ['✅ En vrai', () => toiletReal(c)]]));
+}
+
 export const EXERCISES = {
   'U.1': sequenceExercise('U.1'), 'U.2': sequenceExercise('U.2'), 'U.3': sequenceExercise('U.3'),
   'V.1': mealSpoon, 'V.2': mealFork, 'V.3': mealGlass,
   'W.1': sequenceExercise('W.1'), 'W.2': sequenceExercise('W.2'), 'W.3': brushing,
-  'X.1': x1, 'X.2': sequenceExercise('X.2'), 'X.3': toiletPlan,
+  'X.1': x1, 'X.2': toiletGames, 'X.3': toiletPlan,
   'Y.1': sequenceExercise('Y.1', { intro: 'Parcours réel : cerceaux, tunnel, panier.' }), 'Y.2': passes, 'Y.3': flamingo,
   'Z.1': () => h('div', { class: 'stack' }, bigCard('✏️', 'Prise tripode : pouce, index, majeur', '', 'obj:prise-tripode'),
     h('p', { class: 'note' }, 'Vérifiez la prise pendant toute l’activité de graphisme.'), ratingPanel('Z.1', { item: 'seance', labels: { plus: 'Prise tenue toute l’activité ✅' } })),

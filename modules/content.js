@@ -202,6 +202,19 @@ export const SOUNDS = [
 export const CONSONANTS = ['M', 'P', 'S', 'L', 'R'];
 export const VOWELS = ['A', 'I', 'O', 'U'];
 
+// Toilettes (X.2) : la séquence complète, en français et en darija (lettres latines et arabes pour la voix du téléphone).
+export const TOILET_STEPS = [
+  ['baisser', '🩲', 'Baisser le pantalon', 'Hbbet s-serwal', 'هبط السروال'],
+  ['asseoir', '🚽', 'S’asseoir sur les toilettes', 'Gles f bit l ma', 'جلس فبيت الما'],
+  ['essuyer', '🧻', 'S’essuyer avec du papier', 'Msa7 b l papier', 'مسح بالورق'],
+  ['remonter', '👖', 'Remonter son pantalon', 'Tle3 s-serwal', 'طلع السروال'],
+  ['chasse', '💦', 'Tirer la chasse d’eau', 'Tiri l chasse', 'تيري الشاس'],
+  ['mouiller', '💧', 'Mouiller les mains', 'Fezzeg ydik', 'فزك يديك'],
+  ['savon', '🧴', 'Mettre le savon', 'Dir s-sabon', 'دير الصابون'],
+  ['frotter', '🧼', 'Frotter les mains avec le savon', '7okk ydik', 'حك يديك'],
+  ['rincer', '🚿', 'Rincer et essuyer les mains', 'Chellel w nchef ydik', 'شلل ونشف يديك'],
+].map(([id, emoji, fr, dr, ar]) => ({ id, emoji, fr, dr, ar, vkey: `toilet:${id}` }));
+
 // Séquences (analyse de tâche) : [emoji, étape]
 export const SEQUENCES = {
   'K.1': [['🥄', 'Prendre la cuillère'], ['🪆', 'Nourrir la poupée'], ['🛏️', 'La coucher avec sa couverture']],
@@ -213,7 +226,8 @@ export const SEQUENCES = {
   'W.1': [['💧', 'Mouiller'], ['🧼', 'Savonner'], ['🙌', 'Frotter'], ['🚿', 'Rincer'], ['🧻', 'Essuyer']],
   'W.2': [['🧽', 'Mouiller le gant'], ['😊', 'Passer sur le visage'], ['🧻', "S'essuyer"]],
   'W.3': [['🧴', 'Mettre le dentifrice'], ['🪥', 'Brosser'], ['🥛', 'Rincer']],
-  'X.2': [['🧻', "S'essuyer"], ['👖', 'Remonter le pantalon'], ['🚽', "Tirer la chasse d'eau"], ['🧼', 'Se laver les mains']],
+  // X.2 : 9 étapes [emoji, français, détails] ; détails.vkey = photo de la vraie salle de bain (visual_overrides « toilet:<id> »).
+  'X.2': TOILET_STEPS.map((step) => [step.emoji, step.fr, step]),
   'Y.1': [['⭕', 'Sauter dans les cerceaux'], ['🐛', 'Ramper sous le tunnel'], ['🏀', 'Lancer la balle dans le panier']],
 };
 

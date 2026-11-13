@@ -39,8 +39,9 @@ export function choiceBoard({ choices, cols = 2, onAnswer, praise = 'Bravo' }) {
 // Séquence d'étapes (analyse de tâche) cochées une à une par Abir. fade : masque les images (estompage).
 export function sequenceBoard(steps, { fade = false, onComplete, onStep } = {}) {
   let index = 0;
-  const cards = steps.map(([emoji, label], i) => h('button', { type: 'button', class: `step${i === 0 ? ' current' : ''}${fade ? ' faded-img' : ''}` },
-    h('span', { class: 'step-num' }, String(i + 1)), renderVisual({ emoji, label }), h('span', { class: 'label' }, label)));
+  // Une étape peut porter un 3e élément { vkey } : sa photo personnalisée (ex. « toilet:essuyer »).
+  const cards = steps.map(([emoji, label, extra], i) => h('button', { type: 'button', class: `step${i === 0 ? ' current' : ''}${fade ? ' faded-img' : ''}` },
+    h('span', { class: 'step-num' }, String(i + 1)), renderVisual({ emoji, label, vkey: extra && extra.vkey }), h('span', { class: 'label' }, label)));
   cards.forEach((card, i) => {
     card.onclick = () => {
       if (i !== index) return;

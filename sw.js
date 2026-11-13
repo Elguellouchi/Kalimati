@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v6-1';
+const CACHE = 'kalimati-v6-2';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
