@@ -4,7 +4,7 @@
 import { GOALS } from './modules/goals.js';
 
 const DB_NAME = 'kalimati';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 
 let dbPromise = null;
 
@@ -31,6 +31,14 @@ function upgrade(db, transaction, oldVersion) {
   // v4 : images téléchargées en ligne (pictogrammes ARASAAC, photos Wikipédia), gardées pour le mode hors ligne.
   if (oldVersion < 4 && !db.objectStoreNames.contains('online_cache')) {
     db.createObjectStore('online_cache', { keyPath: 'key' });
+  }
+  // v5 : ajoute les prochains niveaux ABLLS-R aux objectifs, sans toucher aux objectifs ni aux essais déjà là.
+  if (oldVersion >= 2 && oldVersion < 5) {
+    const goals = transaction.objectStore('pei_goals');
+    GOALS.forEach((goal) => {
+      const existing = goals.get(goal.id);
+      existing.onsuccess = () => { if (!existing.result) goals.put({ ...goal, status: 'todo', updatedAt: null }); };
+    });
   }
 }
 

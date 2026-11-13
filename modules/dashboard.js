@@ -21,14 +21,15 @@ function profileForm() {
       }, 'primary'), saved)));
 }
 
+const PHASE = new Map(GOALS.map((g) => [g.id, g.phase === 'next' ? 'prochains niveaux' : 'PEI']));
 const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
 
 async function exportCsv() {
   const trials = (await db.getAllTrials()).sort((a, b) => a.ts - b.ts);
-  const header = ['date', 'heure', 'objectif', 'resultat', 'guidance', 'item', 'intervenant', 'lieu', 'renforcateur', 'details'];
+  const header = ['date', 'heure', 'objectif', 'parcours', 'resultat', 'guidance', 'item', 'intervenant', 'lieu', 'renforcateur', 'details'];
   const rows = trials.map((t) => {
     const d = new Date(t.ts);
-    return [t.day, d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), t.goalId, t.result, t.prompt, t.item, t.intervenant, t.environment, t.reinforcer, JSON.stringify(t.meta || {})].map(csvCell).join(';');
+    return [t.day, d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), t.goalId, PHASE.get(t.goalId) || '', t.result, t.prompt, t.item, t.intervenant, t.environment, t.reinforcer, JSON.stringify(t.meta || {})].map(csvCell).join(';');
   });
   const blob = new Blob([`﻿${header.join(';')}\n${rows.join('\n')}`], { type: 'text/csv;charset=utf-8' });
   const link = h('a', { href: URL.createObjectURL(blob), download: `kalimati-essais-${dayKey()}.csv` });
@@ -36,29 +37,40 @@ async function exportCsv() {
   setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 }
 
+// Indicateurs d'un ensemble d'objectifs : atteints, en cours, niveau moyen (et essais du jour pour le PEI).
+function kpiBlock(title, goals, results, today = null) {
+  const done = goals.filter((g) => results.get(g.id).status === 'done').length;
+  const started = goals.filter((g) => results.get(g.id).status === 'progress').length;
+  const meanLevel = Math.round(goals.reduce((sum, g) => sum + levelOf(g.id).currentLevel, 0) / goals.length);
+  return h('section', { class: 'card-box kpi-block' }, h('h3', {}, title),
+    h('div', { class: 'kpis' },
+      h('div', { class: 'kpi' }, h('strong', {}, `${done}/${goals.length}`), h('span', {}, 'objectifs atteints')),
+      h('div', { class: 'kpi' }, h('strong', {}, String(started)), h('span', {}, 'en cours')),
+      today === null
+        ? h('div', { class: 'kpi' }, h('strong', {}, `${meanLevel}`), h('span', {}, 'niveau moyen / 1000'))
+        : h('div', { class: 'kpi' }, h('strong', {}, String(today)), h('span', {}, 'essais aujourd’hui'))),
+    h('div', { class: 'progress-bar big' }, h('span', { style: { width: `${percent(done, goals.length)}%` } })));
+}
+
 export function dashboardScreen(nav) {
   const body = h('div', { class: 'stack' }, h('p', { class: 'note' }, 'Calcul en cours…'));
   const self = () => dashboardScreen(nav);
   evaluateAll().then(async ({ all, results }) => {
-    const done = [...results.values()].filter((r) => r.status === 'done').length;
-    const started = [...results.values()].filter((r) => r.status === 'progress').length;
     const today = all.filter((t) => t.day === dayKey() && t.result !== 'log').length;
     await Promise.all(GOALS.map((g) => db.putGoal({ ...g, status: results.get(g.id).status, pct: results.get(g.id).pct, updatedAt: Date.now() })));
     const reinforcers = reinforcerStats(all).filter((r) => r.trials);
     const accidents = accidentStats(all.filter((t) => t.goalId === 'X.3'));
     body.replaceChildren(
-      h('div', { class: 'kpis' },
-        h('div', { class: 'kpi' }, h('strong', {}, `${done}/${GOALS.length}`), h('span', {}, 'objectifs atteints')),
-        h('div', { class: 'kpi' }, h('strong', {}, String(started)), h('span', {}, 'en cours')),
-        h('div', { class: 'kpi' }, h('strong', {}, String(today)), h('span', {}, 'essais aujourd’hui'))),
-      h('div', { class: 'progress-bar big' }, h('span', { style: { width: `${percent(done, GOALS.length)}%` } })),
+      kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
+      kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
       ...SECTIONS.map((s) => h('section', { class: 'card-box' },
         h('h3', {}, `${s.emoji} ${s.id}. ${s.name}`),
-        goalsOf(s.id).map((g) => {
+        goalsOf(s.id).map((g, i, list) => {
           const r = results.get(g.id);
-          return h('button', { type: 'button', class: 'dash-row', onclick: () => nav.openGoal(g.id, self) },
+          const divider = g.phase === 'next' && (i === 0 || list[i - 1].phase !== 'next') ? h('p', { class: 'phase-title small' }, '🚀 Prochains niveaux') : null;
+          return [divider, h('button', { type: 'button', class: 'dash-row', onclick: () => nav.openGoal(g.id, self) },
             h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title, h('small', {}, `${r.detail} · ${r.count} essai(s) · 🌟 niveau ${levelOf(g.id).currentLevel}`)),
-            statusChip(r), h('div', { class: 'progress-bar' }, h('span', { style: { width: `${r.pct}%` } })));
+            statusChip(r), h('div', { class: 'progress-bar' }, h('span', { style: { width: `${r.pct}%` } })))];
         }))),
       h('section', { class: 'card-box' }, h('h3', {}, '🌍 P.3 Lieu × intervenant (taux de réussite)'), matrixTable(all)),
       h('section', { class: 'card-box' }, h('h3', {}, '🚽 X.3 Accidents'),

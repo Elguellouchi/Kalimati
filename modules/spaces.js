@@ -18,10 +18,13 @@ import { EXERCISES as KP } from './ex-social.js';
 import { EXERCISES as QRT } from './ex-academic.js';
 import { EXERCISES as S } from './ex-writing.js';
 import { EXERCISES as UZ, mealTitle } from './ex-autonomy.js';
-import { ONLINE_EXERCISES } from './ex-online.js';
-import { levelHeader, onLevelChange } from './levels.js';
+import { ONLINE_EXERCISES as ONLINE_BASE } from './ex-online.js';
+import { NEXT_EXERCISES } from './ex-next.js';
+import { levelHeader, onLevelChange, levelOf } from './levels.js';
 
-export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ };
+// Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
+export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
+const ONLINE_EXERCISES = { ...ONLINE_BASE, ...NEXT_EXERCISES };
 export const missingExercises = () => GOALS.filter((g) => !REGISTRY[g.id]).map((g) => g.id);
 
 // Les routines sont ancrées dans la vraie vie d'Abir (sa famille, sa maison, sa classe).
@@ -88,9 +91,21 @@ export function createNavigator(app) {
   function sectionScreen(sectionId) {
     const section = SECTIONS.find((s) => s.id === sectionId);
     const list = h('div', { class: 'goal-list' });
-    evaluateAll().then(({ results }) => list.replaceChildren(...goalsOf(sectionId).map((g) => h('button', {
-      type: 'button', class: 'goal-row', onclick: () => go(() => exerciseScreen(g.id)),
-    }, h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title), statusChip(results.get(g.id))))));
+    const row = (g, results) => {
+      const result = results.get(g.id);
+      const level = levelOf(g.id).currentLevel;
+      const started = level > 1 || (result && result.count > 0);
+      return h('button', { type: 'button', class: 'goal-row', onclick: () => go(() => exerciseScreen(g.id)) },
+        h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title),
+        started ? h('span', { class: 'level-badge' }, `Niv. ${level}/1000`) : null, statusChip(result));
+    };
+    const part = (title, goals, results) => (goals.length ? [h('h3', { class: 'phase-title' }, title), ...goals.map((g) => row(g, results))] : []);
+    evaluateAll().then(({ results }) => {
+      const goals = goalsOf(sectionId);
+      list.replaceChildren(
+        ...part('🎯 PEI 3 mois (objectifs prioritaires)', goals.filter((g) => g.phase !== 'next'), results),
+        ...part('🚀 Prochains niveaux ABA (ABLLS-R complet)', goals.filter((g) => g.phase === 'next'), results));
+    });
     return h('div', { class: 'screen' }, header(`${section.emoji} ${section.id}. ${section.name}`), list);
   }
 

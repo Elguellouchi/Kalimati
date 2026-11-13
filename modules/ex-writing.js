@@ -50,6 +50,9 @@ export const SHAPES = {
   h: { label: '➖ Trait horizontal', strokes: [[[0.1, 0.5], [0.9, 0.5]]] },
   v: { label: '│ Trait vertical', strokes: [[[0.5, 0.1], [0.5, 0.9]]] },
   rond: { label: '⭕ Rond', strokes: [arc(0.5, 0.5, 0.38, 0.38, -90, -450, 40)] },
+  zigzag: { label: '⚡ Zigzag', strokes: [[[0.05, 0.7], [0.2, 0.3], [0.35, 0.7], [0.5, 0.3], [0.65, 0.7], [0.8, 0.3], [0.95, 0.7]]] },
+  creneaux: { label: '🏰 Créneaux', strokes: [[[0.05, 0.7], [0.05, 0.35], [0.25, 0.35], [0.25, 0.7], [0.45, 0.7], [0.45, 0.35], [0.65, 0.35], [0.65, 0.7], [0.85, 0.7], [0.85, 0.35], [0.95, 0.35]]] },
+  boucles: { label: '➰ Boucles', strokes: [Array.from({ length: 97 }, (_, i) => { const t = (i / 96) * 4 * 2 * Math.PI; return [0.1 + (0.8 * i) / 96 + 0.07 * Math.cos(t + Math.PI), 0.55 - 0.18 * Math.abs(Math.sin(t / 2)) + 0.05 * Math.sin(t)]; })] },
   demi: { label: '🌈 Pont (demi-cercle)', strokes: [arc(0.5, 0.65, 0.38, 0.38, 180, 360, 24)] },
   vague: { label: '🌊 Vagues', strokes: [Array.from({ length: 49 }, (_, i) => [0.06 + (0.88 * i) / 48, 0.5 + 0.2 * Math.sin((i / 48) * 4 * Math.PI)])] },
   spirale: { label: '🐌 Spirale', strokes: [Array.from({ length: 73 }, (_, i) => { const t = i / 72; const r = 0.05 + 0.36 * t; const a = t * 5 * Math.PI; return [0.5 + r * Math.cos(a), 0.5 + r * Math.sin(a)]; })] },
@@ -172,7 +175,7 @@ export function writingPad(spec, level, tolerance = TOLERANCE) {
 }
 
 // Écran d'écriture : choix du modèle, du niveau, puis vérification.
-function workshop({ goalId, options, plusFromLevel, tolerance = TOLERANCE }) {
+export function workshop({ goalId, options, plusFromLevel, tolerance = TOLERANCE }) {
   let option = options[0];
   let level = 1;
   const holder = h('div', { class: 'pad-holder' });
