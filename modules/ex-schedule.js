@@ -5,7 +5,7 @@
 // Tout reste dans le téléphone (IndexedDB : schedule_logs, schedule_config, visual_overrides).
 import * as db from '../db.js';
 import { h, btn, uid, dayKey } from './util.js';
-import { speak, sayCard, playBlob } from '../speech.js';
+import { speak, sayCard, playBlob, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, canRecord, startRecording } from '../media.js';
 import { recordTrial, firstName, sisterName } from './aba.js';
 import { renderVisual } from './visuals.js';
@@ -137,9 +137,27 @@ export function scheduleView(ctx) {
   const voiceLang = () => (ctx.lang() === 'dr' ? 'ar' : 'fr');
 
   // ----- Coche d'une étape : journal + essais ABA liés + renforcement -----
+  // Sur téléphone, le son et la voix ne partent que s'ils sont lancés pendant le toucher :
+  // on félicite et on annonce l'étape suivante tout de suite, puis on enregistre.
+  function cheer(next) {
+    const dr = ctx.lang() === 'dr';
+    const arabic = dr && hasArabicVoice();
+    if (!next) {
+      speak(arabic ? 'برافو، ساليتي كلشي' : `Bravo ${firstName()}, tout est fini !`, { lang: arabic ? 'ar' : 'fr' });
+      return;
+    }
+    const recording = dr ? next.audioDr : next.audioFr;
+    if (recording) { speak(arabic ? 'برافو' : 'Bravo !', { lang: arabic ? 'ar' : 'fr' }).then(() => playBlob(recording)); return; }
+    if (arabic && next.ar) speak(`برافو! دابا: ${next.ar}`, { lang: 'ar' });
+    else speak(`Bravo ! Maintenant : ${next.fr}`, { lang: 'fr' });
+  }
+
   async function check(step, { fromTimer = false } = {}) {
     const { routine, steps } = todaySteps(state);
-    if (doneIds(routine.id).has(step.id)) return;
+    const before = doneIds(routine.id);
+    if (before.has(step.id)) return;
+    playClap();
+    cheer(steps.find((s) => s.id !== step.id && !before.has(s.id)));
     const autonomy = nextAutonomy;
     nextAutonomy = 'seule';
     const result = autonomy === 'seule' ? 'plus' : 'prompt';
@@ -149,11 +167,8 @@ export function scheduleView(ctx) {
     const log = { id: uid('slog'), day: dayKey(), ts: Date.now(), routineId: routine.id, stepId: step.id, autonomy, goals, trials: trials.map((t) => t && t.id).filter(Boolean) };
     await db.addScheduleLog(log);
     state = { ...state, logs: [...state.logs, log] };
-    playClap();
     const done = doneIds(routine.id);
-    const next = steps.find((s) => !done.has(s.id));
-    if (next) setTimeout(() => sayStep(next, ctx.lang()), 900);
-    else await finishRoutine(routine, steps, done);
+    if (!steps.some((s) => !done.has(s.id))) await finishRoutine(routine, steps, done);
     rerender();
     const row = root.querySelector(`[data-step="${CSS.escape(step.id)}"]`);
     if (row) row.classList.add('just-done');
@@ -168,7 +183,6 @@ export function scheduleView(ctx) {
       await db.addScheduleLog(updated);
       state = { ...state, logs: [...state.logs.slice(0, -1), updated] };
     }
-    speak(ctx.lang() === 'dr' ? 'برافو، ساليتي كلشي' : `Bravo ${firstName()}, tout est fini !`, { lang: voiceLang() });
   }
 
   async function uncheck(step) {
@@ -266,7 +280,7 @@ export function scheduleView(ctx) {
     sayStep(step, ctx.lang());
     if (!step.sub || !step.sub.length) return;
     let close = () => {};
-    const board = sequenceBoard(step.sub, { onComplete: () => setTimeout(() => { close(); check(step); }, 700) });
+    const board = sequenceBoard(step.sub, { onComplete: () => { close(); check(step); } });
     close = openDialog(`${step.emoji} ${step.fr}`, h('p', { class: 'note' }, 'Touche chaque petite étape quand elle est faite.'), board.element);
   }
 

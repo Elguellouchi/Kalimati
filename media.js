@@ -132,11 +132,26 @@ export async function startListening({ onLevel, record = false } = {}) {
 }
 
 // Petits sons doux (jamais de buzzer) : notes courtes, volume faible, attaque et fin progressives.
+// Sur téléphone, le contexte audio naît « en pause » : on le réveille à chaque toucher (unlockSounds) et avant chaque note.
 let audioContext = null;
-function softNote(frequency, start, duration) {
+function soundContext() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
-  if (!AudioCtx) return;
+  if (!AudioCtx) return null;
   audioContext = audioContext || new AudioCtx();
+  if (audioContext.state !== 'running') audioContext.resume().catch(() => {});
+  return audioContext;
+}
+export function unlockSounds() {
+  if (audioContext && audioContext.state === 'running') return;
+  const context = soundContext();
+  if (!context) return;
+  const source = context.createBufferSource();
+  source.buffer = context.createBuffer(1, 1, 22050);
+  source.connect(context.destination);
+  source.start(0);
+}
+function softNote(frequency, start, duration) {
+  if (!soundContext()) return;
   const t = audioContext.currentTime + start;
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();

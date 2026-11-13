@@ -3,6 +3,7 @@ import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CA
 import * as db from './db.js';
 import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl } from './speech.js';
 import { openEditor } from './editor.js';
+import { unlockSounds } from './media.js';
 import { exportBackup, readBackup } from './backup.js';
 import { h } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName } from './modules/aba.js';
@@ -401,7 +402,7 @@ async function init() {
   state.cards = await loadCards();
   setupLock(); setupParentBar(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
-  ['touchend', 'click'].forEach((type) => document.addEventListener(type, unlockAudio));
+  ['touchend', 'click'].forEach((type) => { document.addEventListener(type, unlockAudio); document.addEventListener(type, unlockSounds); });
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.
   document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
