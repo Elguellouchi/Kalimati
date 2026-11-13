@@ -52,10 +52,18 @@ if ('speechSynthesis' in window) {
 // Voix du téléphone en priorité (marche sans internet), sinon n'importe quelle voix de la langue.
 function pickVoice(lang) {
   const all = voices();
-  const matches = (v) => (lang === 'ar' ? v.lang.startsWith('ar') : v.lang.replace('_', '-').startsWith('fr'));
-  const exact = lang === 'ar' ? 'ar-MA' : 'fr-FR';
+  const key = lang === 'ar' ? 'ar' : 'fr';
+  const matches = (v) => (key === 'ar' ? v.lang.startsWith('ar') : v.lang.replace('_', '-').startsWith('fr'));
+  const exact = key === 'ar' ? 'ar-MA' : 'fr-FR';
   const candidates = all.filter(matches);
-  return candidates.find((v) => v.lang.replace('_', '-') === exact && v.localService)
+  if (preferredVoices[key]) {
+    const chosen = candidates.find((v) => v.name === preferredVoices[key]);
+    if (chosen) return chosen;
+  }
+  const isNatural = (v) => /premium|enhanced|natural|siri|audrey|thomas|amélie|amelie|majed|maged|laila|tarik/i.test(v.name);
+  return candidates.find((v) => v.lang.replace('_', '-') === exact && isNatural(v))
+    || candidates.find((v) => isNatural(v))
+    || candidates.find((v) => v.lang.replace('_', '-') === exact && v.localService)
     || candidates.find((v) => v.localService)
     || candidates.find((v) => v.lang.replace('_', '-') === exact)
     || candidates[0] || null;
@@ -162,6 +170,17 @@ export const sayDefault = (card, lang) => sayCard({ ...card, audioFr: null, audi
 export async function sayCards(items, { onStep } = {}) {
   stopSpeaking();
   const token = queueToken;
+  const anyRecording = items.some((x) => recordingFor(x.card, x.lang) || defaultVoiceUrl(x.card, x.lang));
+  const sameLang = items.length > 1 && items.every((x) => x.lang === items[0].lang);
+  if (!anyRecording && sameLang && items[0].lang === 'fr') {
+    const natural = buildNaturalSentence(items, 'fr');
+    if (natural) {
+      if (onStep) onStep(0);
+      await speak(natural, { lang: 'fr' });
+      if (onStep && token === queueToken) onStep(-1);
+      return;
+    }
+  }
   for (let i = 0; i < items.length; i += 1) {
     if (token !== queueToken) return;
     if (onStep) onStep(i);
@@ -173,3 +192,88 @@ export async function sayCards(items, { onStep } = {}) {
 // Mêmes fonctions sous les noms de l'expression de besoin v3.
 export const speakCard = sayCard;
 export const speakSequence = (cards, lang, onHighlight) => sayCards(cards.map((card) => ({ card, lang })), { onStep: onHighlight });
+
+// ---------- v7 (Aegon) : Reconnaissance vocale (Web Speech API) + Sélecteur de meilleure voix naturelle ----------
+let preferredVoices = { fr: '', ar: '' };
+export function setPreferredVoice(lang, name) {
+  preferredVoices[lang === 'dr' ? 'ar' : lang] = name || '';
+  try { localStorage.setItem('kalimati_voices', JSON.stringify(preferredVoices)); } catch {}
+}
+try {
+  const saved = JSON.parse(localStorage.getItem('kalimati_voices') || '{}');
+  if (saved && typeof saved === 'object') preferredVoices = { ...preferredVoices, ...saved };
+} catch {}
+
+export function availableVoices(lang = 'fr') {
+  const target = lang === 'dr' ? 'ar' : lang;
+  return voices().filter((v) => (target === 'ar' ? v.lang.startsWith('ar') : v.lang.replace('_', '-').startsWith('fr')));
+}
+
+// Normalise un mot prononcé pour comparer avec la cible (sans accents ni ponctuation).
+const normSpeech = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, ' ').trim();
+
+export function canRecognizeSpeech() {
+  return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+}
+
+// Écoute et transcrit un mot ou une phrase prononcée par Abir (renvoie { heard, transcript, match, confidence }).
+export function recognizeSpeech({ expected = '', lang = 'fr', timeoutMs = 4500 } = {}) {
+  return new Promise((resolve) => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { resolve({ supported: false, heard: false, transcript: '', match: false }); return; }
+    const rec = new SR();
+    rec.lang = lang === 'dr' || lang === 'ar' ? 'ar-MA' : 'fr-FR';
+    rec.interimResults = true;
+    rec.maxAlternatives = 5;
+    let best = '';
+    let matched = false;
+    let done = false;
+    const target = normSpeech(expected);
+    const finish = (heard) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { rec.stop(); } catch {}
+      resolve({ supported: true, heard, transcript: best, match: matched });
+    };
+    const timer = setTimeout(() => finish(Boolean(best)), timeoutMs);
+    rec.onresult = (event) => {
+      for (let i = 0; i < event.results.length; i += 1) {
+        const res = event.results[i];
+        for (let j = 0; j < res.length; j += 1) {
+          const alt = res[j].transcript || '';
+          if (!best || alt.length > best.length) best = alt.trim();
+          const n = normSpeech(alt);
+          if (target && (n === target || n.includes(target) || target.includes(n) && n.length >= 2)) {
+            matched = true;
+            finish(true);
+            return;
+          }
+        }
+      }
+    };
+    rec.onerror = () => finish(Boolean(best));
+    rec.onend = () => finish(Boolean(best));
+    try { rec.start(); } catch { finish(false); }
+  });
+}
+
+// v7 (Aegon) : Assemblage grammatical naturel des phrases de la bande CAA (élision « Je veux » + verbe/nom, pronoms, etc.)
+export function buildNaturalSentence(items, lang = 'fr') {
+  if (!items || !items.length) return '';
+  if (lang === 'dr' || items.every((x) => x.lang === 'dr')) {
+    return items.map((x) => x.card.sayAr || x.card.ar || x.card.dr || x.card.fr).join(' ');
+  }
+  const words = items.map((x) => {
+    const c = x.card;
+    if (c.id === 'c-personnes-moi') return 'Je';
+    return (c.sayFr || c.fr || '').trim();
+  });
+  return words.join(' ')
+    .replace(/\bJe\s+Je veux\b/gi, 'Je veux')
+    .replace(/\b(Je veux)\s+(Manger|Boire|Jouer|Courir|Donner|Couper|Sauter|Laver|Dessiner|Ouvrir|Lire|Écrire|Regarder|Écouter|Dormir)\b/gi, (_, a, b) => `${a} ${b.toLowerCase()}`)
+    .replace(/\b(Je veux)\s+(Pain|Riz|Fromage|Jus|Lait|Chocolat|Gâteau|Biscuit)\b/gi, (_, a, b) => `${a} du ${b.toLowerCase()}`)
+    .replace(/\b(Je veux)\s+(Eau)\b/gi, "Je veux de l'eau")
+    .replace(/\b(Je veux)\s+(Pomme|Banane|Poupée|Tablette|Balançoire|Musique)\b/gi, (_, a, b) => `${a} la ${b.toLowerCase()}`)
+    .replace(/\b(Je veux)\s+(Ballon)\b/gi, 'Je veux le ballon');
+}

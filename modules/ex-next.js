@@ -2,13 +2,13 @@
 // Trois types de jeu : choisir (choiceGame), mettre dans l'ordre (orderGame), activité guidée notée par l'adulte (coachGame).
 // Les images viennent du catalogue (pictogrammes / photos en ligne, dessins hors ligne) : aucun appel réseau n'est obligatoire.
 import { h, btn } from './util.js';
-import { speak } from '../speech.js';
+import { speak, recognizeSpeech, canRecognizeSpeech } from '../speech.js';
 import { playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName, sisterName, people } from './aba.js';
 import { choiceBoard, sequenceBoard, tokenBoard, praise, bigCard } from './widgets.js';
 import { visualTimer, hourglass } from './timer.js';
 import { trialLoop, buildPuzzle } from './ex-visual.js';
-import { workshop, SHAPES } from './ex-writing.js';
+import { workshop, SHAPES, LOWER_LETTERS } from './ex-writing.js';
 import { levelOf, levelParams, nextTrialRandom, rPick, rSample, rShuffle, rInt } from './levels.js';
 import { CATALOG, GROUPS, conceptsForLevel, slug } from './catalog.js';
 import { conceptVisual, emojiSvg, prefetch } from './online-bank.js';
@@ -339,7 +339,15 @@ const e4 = coachGame('E.4', (rand) => {
   const w = rPick(rand, longWords());
   const pills = h('div', { class: 'syllables' }, emojiTile(w.emoji), w.syllables.map((s) => h('span', { class: 'pill' }, s)));
   const model = btn('🔊 Écouter', async () => { for (const s of w.syllables) await speak(s, { rate: 0.7 }); speak(w.fr); }, 'primary');
-  return { item: w.id, body: [pills, model], labels: { plus: 'Répété clairement ✅', prompt: 'Approximatif 👉' } };
+  const status = h('span', { class: 'note' });
+  const autoMic = canRecognizeSpeech() ? btn('🎙️ Parler (auto)', async (e) => {
+    e.target.disabled = true; status.textContent = 'J’écoute…';
+    const res = await recognizeSpeech({ expected: w.fr, lang: 'fr' });
+    e.target.disabled = false;
+    if (res.match) { playClap(); speak(`Bravo ! ${w.fr}`); status.textContent = `Entendu : « ${res.transcript} » ✅`; recordTrial('E.4', 'plus', { item: w.id, meta: { autoSpeech: res.transcript } }); }
+    else status.textContent = res.transcript ? `Entendu : « ${res.transcript} » (à valider par l’adulte)` : 'Pas bien entendu — réessaie ou notez ci-dessous.';
+  }, 'ghost') : null;
+  return { item: w.id, body: [pills, h('div', { class: 'row center' }, model, autoMic), status], labels: { plus: 'Répété clairement ✅', prompt: 'Approximatif 👉' } };
 });
 const LONG_PHRASES = () => CATALOG.filter((c) => ['fruits', 'repas', 'jouets'].includes(c.cat)).slice(0, 30).flatMap((c) => [
   { id: `veux-${c.id}`, words: ['Je', 'veux', 'manger', 'une', c.fr], emoji: c.emoji },
@@ -547,10 +555,27 @@ const r8 = choiceGame('R.8', (rand, p) => {
   return { ask: 'Quel nombre manque ?', item: String(seq[hole]), wrap: 'letters', top: h('div', { class: 'pattern-row number-line' }, seq.map((n, i) => h('span', { class: 'num' }, i === hole ? '❓' : String(n)))), choices: [seq[hole], ...others].map((x) => ({ correct: x === seq[hole], emoji: String(x) })) };
 });
 const shapeOptions = (ids) => ids.map((id) => ({ id, label: SHAPES[id].label, spec: () => ({ strokes: SHAPES[id].strokes }) }));
-const s4 = () => workshop({ goalId: 'S.4', options: shapeOptions(['zigzag', 'creneaux', 'boucles']), plusFromLevel: 2 });
+const lowerOptions = Object.keys(LOWER_LETTERS).map((ch) => ({
+  id: `min-${ch}`,
+  label: `🔤 Lettre minuscule « ${ch} »`,
+  spec: () => ({ word: ch, preserveCase: true }),
+}));
+const s4 = () => workshop({
+  goalId: 'S.4',
+  options: [
+    ...shapeOptions(['zigzag', 'creneaux', 'boucles']),
+    ...lowerOptions,
+    { id: 'prenom-min', label: `✏️ ${firstName().toLowerCase()} (minuscules)`, spec: () => ({ word: firstName().toLowerCase(), preserveCase: true }) },
+  ],
+  plusFromLevel: 2,
+});
 const s5 = () => {
-  const words = [sisterName().toUpperCase(), 'PAPA', 'MAMAN', ...CATALOG.filter((c) => /^[a-z]{4,6}$/.test(c.fr)).slice(0, 20).map((c) => c.fr.toUpperCase())];
-  return workshop({ goalId: 'S.5', options: words.map((w) => ({ id: slug(w), label: w, spec: () => ({ word: w }) })), plusFromLevel: 2 });
+  const baseWords = [firstName(), sisterName(), 'Papa', 'Maman', ...CATALOG.filter((c) => /^[a-z]{4,6}$/.test(c.fr)).slice(0, 20).map((c) => c.fr)];
+  const options = [
+    ...baseWords.map((w) => ({ id: `maj-${slug(w)}`, label: `${w.toUpperCase()} (MAJ)`, spec: () => ({ word: w.toUpperCase() }) })),
+    ...baseWords.slice(0, 12).map((w) => ({ id: `min-${slug(w)}`, label: `${w.toLowerCase()} (min)`, spec: () => ({ word: w.toLowerCase(), preserveCase: true }) })),
+  ];
+  return workshop({ goalId: 'S.5', options, plusFromLevel: 2 });
 };
 const t4 = coachGame('T.4', (rand, p) => {
   const maxLen = p.level <= 150 ? 4 : 6;

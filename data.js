@@ -78,6 +78,22 @@ const RAW = [
   ['lieux', 'Dehors', 'Berra', '🌳', 'noun', 'برا'], ['lieux', 'Maison', 'Dar', '🏠', 'noun', 'دار'],
   ['lieux', 'Voiture', 'Tomobil', '🚗', 'noun', 'طوموبيل'], ['lieux', 'Parc', 'Jarda', '🎠', 'noun', 'جردة'],
   ['lieux', 'École', 'Lmadrasa', '🏫', 'noun', 'المدرسة'],
+  // v7 (Aegon) : mots-outils, pronoms, prépositions, politesse et questions (enrichissement CAA inspiré de Crescendo)
+  ['base', "S'il te plaît", '3afak', '🙏', 'social', 'عافاك', 7],
+  ['base', 'Merci', 'Choukran', '💛', 'social', 'شكرا', 7],
+  ['base', "C'est quoi ?", 'Chnou hada ?', '❓', 'social', 'شنو هادا؟', 7],
+  ['base', 'Où est ?', 'Fin ?', '🔍', 'social', 'فين؟', 7],
+  ['base', 'Avec', 'M3a', '🤝', 'social', 'مع', 7],
+  ['actions', 'Lire', 'Nqra', '📖', 'verb', 'نقرا', 7],
+  ['actions', 'Écrire', 'Nkteb', '✏️', 'verb', 'نكتب', 7],
+  ['actions', 'Regarder', 'Nchouf', '👀', 'verb', 'نشوف', 7],
+  ['actions', 'Écouter', 'Nsme3', '👂', 'verb', 'نسمع', 7],
+  ['actions', 'Dormir', 'N3es', '😴', 'verb', 'نعس', 7],
+  ['decrire', 'Dans', 'F', '📥', 'adj', 'ف', 7],
+  ['decrire', 'Sur', 'Fouq', '⬆️', 'adj', 'فوق', 7],
+  ['decrire', 'Sous', 'Te7t', '⬇️', 'adj', 'تحت', 7],
+  ['decrire', 'Beaucoup', 'Bezzaf', '✨', 'adj', 'بزاف', 7],
+  ['decrire', 'Un peu', 'Chwiya', '🤏', 'adj', 'شوية', 7],
 ];
 
 function slug(text) {

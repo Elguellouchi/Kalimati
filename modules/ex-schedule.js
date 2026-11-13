@@ -9,7 +9,7 @@ import { speak, sayCard, playBlob, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, canRecord, startRecording } from '../media.js';
 import { recordTrial, firstName, sisterName } from './aba.js';
 import { renderVisual } from './visuals.js';
-import { sequenceBoard, praise } from './widgets.js';
+import { sequenceBoard, praise, bigCard } from './widgets.js';
 import { SEQUENCES } from './content.js';
 
 // ---------- Étapes et routines par défaut ----------
@@ -76,6 +76,17 @@ const ALERTS = [[300, 'Encore 5 minutes', 'باقي خمس دقايق'], [120, '
 const CONFIG_ID = 'routines';
 const PREFS_ID = 'prefs';
 const SURPRISE_ID = 'surprise';
+
+// v7 (Aegon) : Tableau « J'attends / Je me calme » (inspiré de Choiceworks Waiting & Coping Board)
+const COPING_CHOICES = [
+  ['🫁', 'Respirer doucement (3 fois)', 'Ntnffes b chwiya', 'نتنفس بشوية', 'breath'],
+  ['🎧', 'Mettre mon casque anti-bruit', 'Ndir l casque', 'ندير الكاسك', 'action'],
+  ['🧸', 'Serrer ma peluche / un câlin', 'N3enneq l mouna', 'نعنق المونة', 'action'],
+  ['🔢', 'Compter jusqu’à 10', 'N7seb 7ta l 3achra', 'نحسب حتى لعشرة', 'count'],
+  ['💧', 'Boire une gorgée d’eau', 'Nchreb chwiya d l ma', 'نشرب شوية د الما', 'action'],
+  ['🎵', 'Écouter une chanson douce', 'Nsme3 mousi9a', 'نسمع موسيقى', 'action'],
+];
+
 const READING = [['0', '🖼️ Image + texte'], ['1', '🌫️ Image estompée'], ['2', '🔤 Texte seul']];
 
 // ---------- Lecture / écriture ----------
@@ -202,16 +213,68 @@ export function scheduleView(ctx) {
   function childView() {
     const { routine, steps } = todaySteps(state);
     const done = doneIds(routine.id);
+    const mode = state.prefs.mode || 'steps';
     return h('div', { class: `sched-wrap read-${state.prefs.reading}` },
       routineTabs(routine),
       h('div', { class: 'sched-top' },
-        h('div', { class: 'seg' }, btn('📋 Pas à pas', () => setPrefs({ mode: 'steps' }), state.prefs.mode === 'steps' ? 'active' : ''),
-          btn('➡️ Maintenant / Ensuite', () => setPrefs({ mode: 'firstThen' }), state.prefs.mode === 'firstThen' ? 'active' : '')),
+        h('div', { class: 'seg' },
+          btn('📋 Pas à pas', () => setPrefs({ mode: 'steps' }), mode === 'steps' ? 'active' : ''),
+          btn('➡️ Maintenant / Ensuite', () => setPrefs({ mode: 'firstThen' }), mode === 'firstThen' ? 'active' : ''),
+          btn('⏳ J’attends / Calme', () => setPrefs({ mode: 'wait' }), mode === 'wait' ? 'active' : '')),
         h('div', { class: 'sched-stars', title: 'Étoiles gagnées aujourd’hui' }, `⭐ ${state.logs.length}`, h('small', {}, ` · ${done.size}/${steps.length}`))),
-      state.prefs.mode === 'firstThen' ? firstThenView(steps, done) : stepsView(steps, done),
+      mode === 'firstThen' ? firstThenView(steps, done) : (mode === 'wait' ? waitingBoardView() : stepsView(steps, done)),
       autonomyBar(),
       ctx.isParent() ? parentTools(routine) : null);
   }
+
+  // v7 (Aegon) : Tableau d'attente et d'auto-régulation (« J'attends X minutes · Pendant que j'attends, je peux… »)
+  function waitingBoardView() {
+    let waitMin = 2;
+    const stage = h('div', { class: 'stack' });
+    const activityBox = h('div', { class: 'wait-activity' });
+    const renderTimer = () => {
+      stopTimer();
+      const t = stepTimer({ minutes: waitMin, fr: 'J’attends calmement' });
+      stopTimer = t.stop;
+      stage.replaceChildren(
+        h('div', { class: 'row center' },
+          h('strong', {}, '⏳ J’attends :'),
+          ...[1, 2, 3, 5, 10].map((m) => btn(`${m} min`, () => { waitMin = m; renderTimer(); }, waitMin === m ? 'primary tiny' : 'ghost tiny'))),
+        t.element,
+        btn('🌟 J’ai bien attendu calme !', async () => {
+          playClap();
+          speak(ctx.lang() === 'dr' ? 'برافو، تسنيتي مزيان' : `Bravo ${firstName()}, tu as très bien attendu !`, { lang: voiceLang() });
+          await recordTrial('A.5', nextAutonomy === 'seule' ? 'plus' : 'prompt', { item: `attente-${waitMin}min`, meta: { source: 'waiting-board' } });
+          stage.append(praise('Attente réussie ! +1 ⭐'));
+        }, 'primary wide'));
+    };
+    const openCoping = ([emoji, fr, dr, ar, kind]) => {
+      speak(ctx.lang() === 'dr' ? ar : fr, { lang: voiceLang() });
+      if (kind === 'breath') {
+        activityBox.replaceChildren(h('div', { class: 'card-box breath-box' },
+          h('div', { class: 'breath-circle' }, '🫁'),
+          h('p', { class: 'ask' }, ctx.lang() === 'dr' ? 'طلع النفس… هبط النفس…' : 'J’inspire doucement… je souffle doucement…')));
+      } else if (kind === 'count') {
+        const nums = h('div', { class: 'order-slots' }, Array.from({ length: 10 }, (_, i) => {
+          const b = h('button', { type: 'button', class: 'order-slot', onclick: () => { b.classList.add('on'); speak(String(i + 1), { lang: voiceLang() }); } }, String(i + 1));
+          return b;
+        }));
+        activityBox.replaceChildren(h('div', { class: 'card-box stack center' }, h('p', { class: 'ask' }, 'Touche chaque chiffre en comptant calme :'), nums));
+      } else {
+        activityBox.replaceChildren(bigCard(emoji, ctx.lang() === 'dr' ? dr : fr));
+      }
+    };
+    renderTimer();
+    return h('div', { class: 'stack wait-board' },
+      stage,
+      h('section', { class: 'card-box' },
+        h('h3', {}, ctx.lang() === 'dr' ? '🧘 فاش كنتسنى، نقدر ندير :' : '🧘 Pendant que j’attends, je peux choisir :'),
+        h('div', { class: 'choices', style: { '--cols': 3 } }, COPING_CHOICES.map((c) => h('button', {
+          type: 'button', class: 'choice', onclick: () => openCoping(c),
+        }, h('span', { class: 'emoji' }, c[0]), h('span', { class: 'label' }, ctx.lang() === 'dr' ? c[2] : c[1]))))),
+      activityBox);
+  }
+
 
   const routineTabs = (current) => h('div', { class: 'sched-tabs' }, state.routines.map((r) => h('button', {
     type: 'button', class: `sched-tab${r.id === current.id ? ' on' : ''}`, onclick: () => setPrefs({ routineId: r.id }),

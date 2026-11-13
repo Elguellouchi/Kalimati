@@ -1,7 +1,7 @@
 // Sections F, G, H : demandes avec le PECS (phases 1-2, délai vocal), dénomination et intraverbal.
 import * as db from '../db.js';
 import { h, btn, shuffle, pick, sample, sleep } from './util.js';
-import { speak, sayCard, sayCards } from '../speech.js';
+import { speak, sayCard, sayCards, recognizeSpeech, canRecognizeSpeech } from '../speech.js';
 import { startListening, canRecord, playClap } from '../media.js';
 import { recordTrial, ratingPanel, profile } from './aba.js';
 import { bigCard, videoModel, praise, choiceBoard } from './widgets.js';
@@ -224,12 +224,16 @@ function completion(goalId, items) {
           if (stopMic || !canRecord()) return;
           try {
             stopMic = await startListening({ onLevel: (l) => { gauge.firstChild.style.width = `${Math.round(l * 100)}%`; } });
+            const srPromise = canRecognizeSpeech() ? recognizeSpeech({ expected: current.end, lang: 'fr', timeoutMs: 3800 }) : Promise.resolve({ match: false });
             setTimeout(async () => {
               if (!stopMic) return;
-              const result = await stopMic();
+              const [result, sr] = await Promise.all([stopMic(), srPromise]);
               stopMic = null;
               gauge.firstChild.style.width = '0%';
-              if (result.voiced) reveal(answer);
+              if (sr.match || result.voiced) {
+                reveal(answer);
+                if (sr.match) recordTrial(goalId, 'plus', { item: current.id, meta: { autoSpeech: sr.transcript } });
+              }
             }, 4000);
           } catch { window.alert('Le micro est refusé. Autorisez-le dans les réglages du téléphone.'); }
         }, 'primary');

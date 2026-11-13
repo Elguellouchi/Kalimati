@@ -384,6 +384,12 @@ async function loadCards() {
     const kept = new Set(cards.map((c) => c.id));
     await Promise.all((await db.getAllCards()).filter((c) => !kept.has(c.id)).map((c) => db.deleteCard(c.id)));
   }
+  if (!(await db.getSetting('v7migrated'))) {
+    const present = new Set(cards.map((c) => c.id));
+    const addedV7 = defaultCards().filter((c) => (c.newIn || 0) > 3 && !present.has(c.id)).map(stripNew);
+    if (addedV7.length) cards = [...cards, ...addedV7];
+    await db.setSetting('v7migrated', true);
+  }
   await db.setSetting('v2migrated', true);
   await db.setSetting('v3migrated', true);
   const placed = assignPositions(cards, state.cols);
