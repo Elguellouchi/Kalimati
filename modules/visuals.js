@@ -9,10 +9,68 @@ import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './arasaac.j
 const PHOTO_MAX_SIDE = 800;
 const photos = new Map(); // visualKey → URL de la photo
 
+// v9.1 : images libres rangées dans l'app (hors ligne). Ordre : photo du parent ou image ARASAAC enregistrée >
+// illustration > pictogramme Mulberry > émoji OpenMoji > émoji du téléphone. Le parent choisit le style.
+export const VISUAL_STYLES = [
+  { id: 'mulberry', label: '📸 Photos + pictos Mulberry' },
+  { id: 'openmoji', label: '😊 Émojis OpenMoji uniformes' },
+  { id: 'system', label: '📱 Émojis du téléphone' },
+];
+let visualStyle = 'mulberry';
+let libre = { mulberry: { words: {}, emoji: {} }, emoji: {} };
+let libreLoaded = false;
+
+async function loadJson(url) {
+  try {
+    const response = await fetch(url);
+    return response.ok ? await response.json() : null;
+  } catch { return null; }
+}
+
+async function loadLibre() {
+  if (libreLoaded) return;
+  const [mulberry, emoji] = await Promise.all([loadJson('./assets/mulberry/index.json'), loadJson('./assets/emoji/index.json')]);
+  libre = { mulberry: { words: {}, emoji: {}, ...(mulberry || {}) }, emoji: emoji || {} };
+  libreLoaded = Boolean(mulberry || emoji);
+}
+
 export async function loadVisuals() {
   photos.forEach((url) => URL.revokeObjectURL(url));
   photos.clear();
   (await db.getAllVisualOverrides()).forEach((o) => photos.set(o.key, URL.createObjectURL(o.blob)));
+  const saved = await db.getSetting('visualStyle').catch(() => null);
+  visualStyle = VISUAL_STYLES.some((s) => s.id === saved) ? saved : 'mulberry';
+  await loadLibre();
+}
+
+export const getVisualStyle = () => visualStyle;
+export async function setVisualStyle(style) {
+  if (!VISUAL_STYLES.some((s) => s.id === style)) return;
+  visualStyle = style;
+  await db.setSetting('visualStyle', style);
+  document.querySelectorAll('.visual').forEach(fill);
+}
+
+// Images libres possibles pour une case, dans l'ordre (chaque image absente passe à la suivante).
+function libreSources(box) {
+  if (visualStyle === 'system') return [];
+  const emoji = box.dataset.emoji || '';
+  const plain = emoji.replace(/️/g, '');
+  const sources = [];
+  if (visualStyle === 'mulberry') {
+    const file = libre.mulberry.words[box.dataset.word] || libre.mulberry.emoji[emoji] || libre.mulberry.emoji[plain];
+    if (file) sources.push({ src: `./assets/mulberry/${file}`, cls: 'visual-picto' });
+  }
+  const moji = libre.emoji[emoji] || libre.emoji[plain];
+  if (moji) sources.push({ src: `./assets/emoji/${moji}`, cls: 'visual-moji' });
+  return sources;
+}
+
+function libreImage(box, sources) {
+  const [first, ...rest] = sources;
+  const img = h('img', { src: first.src, alt: '', class: first.cls, draggable: 'false' });
+  img.onerror = () => img.replaceWith(rest.length ? libreImage(box, rest) : h('span', { class: 'emoji' }, box.dataset.emoji || '❔'));
+  return img;
 }
 
 export const slugKey = (text) => String(text).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
@@ -163,9 +221,10 @@ function fill(box) {
   if (url) content = h('img', { src: url, alt: '', class: 'visual-photo' });
   else {
     const svg = illustration(key);
-    content = svg
-      ? h('span', { class: 'visual-art', html: `<svg viewBox="0 0 200 200" role="img" aria-hidden="true">${svg}</svg>` })
-      : h('span', { class: 'emoji' }, box.dataset.emoji || '❔');
+    const sources = svg ? [] : libreSources(box);
+    if (svg) content = h('span', { class: 'visual-art', html: `<svg viewBox="0 0 200 200" role="img" aria-hidden="true">${svg}</svg>` });
+    else if (sources.length) content = libreImage(box, sources);
+    else content = h('span', { class: 'emoji' }, box.dataset.emoji || '❔');
   }
   box.classList.toggle('has-photo', Boolean(url));
   box.replaceChildren(content, ...keep);
@@ -174,7 +233,7 @@ function fill(box) {
 // item : { visualKey | vkey, emoji, label | fr }. Options : button (📷 visible en mode parent), cls.
 export function renderVisual(item, { button = true, cls = '' } = {}) {
   const key = keyFor(item);
-  const box = h('span', { class: `visual ${cls}`.trim(), dataset: { vkey: key, emoji: item.emoji || '' } });
+  const box = h('span', { class: `visual ${cls}`.trim(), dataset: { vkey: key, emoji: item.emoji || '', word: slugKey(item.label || item.fr || '') } });
   if (button) {
     const label = item.label || item.fr || '';
     box.append(h('span', { class: 'photo-btn', role: 'button', tabindex: '0', title: 'Mettre une photo', onclick: (e) => { e.stopPropagation(); e.preventDefault(); openPhotoPickerModal(key, label); } }, '📷'));
@@ -209,7 +268,7 @@ export function openPhotoPickerModal(visualKey, label, onSaved) {
   const error = h('p', { class: 'hint', role: 'alert' });
   const results = h('div', { class: 'ed-picto-grid' });
   const source = [...document.querySelectorAll('.visual')].find((box) => box.dataset.vkey === visualKey);
-  const preview = renderVisual({ vkey: visualKey, emoji: source ? source.dataset.emoji : '' }, { button: false, cls: 'picker-preview' });
+  const preview = renderVisual({ vkey: visualKey, emoji: source ? source.dataset.emoji : '', label: source ? source.dataset.word : '' }, { button: false, cls: 'picker-preview' });
   const save = async (blob, origin) => {
     await setVisual(visualKey, blob, { source: origin, label });
     if (onSaved) onSaved(blob);

@@ -18,6 +18,7 @@ import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
+import { uiIcon } from './modules/ui-icons.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -52,7 +53,7 @@ function cardVisual(card) {
   // Une photo partagée (éditeur, « Nos vraies photos », miroir magique) passe toujours en premier.
   const url = hasPhoto(key) ? null : photoUrl(card);
   if (url) return h('img', { src: url, alt: '' });
-  return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔' }, { button: false });
+  return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔', label: card.fr }, { button: false });
 }
 
 function cardElement(card, { small = false, lang = state.lang } = {}) {
@@ -344,6 +345,7 @@ async function checkReminder() {
 // ---------- Mode parent (appui long de 3 secondes sur le cadenas) ----------
 function setupLock() {
   const lock = $('#lock');
+  lock.innerHTML = `<span class="lock-off">${uiIcon('lock', 26)}</span><span class="lock-on">${uiIcon('unlock', 26)}</span>`;
   let timer = null;
   let justUnlocked = false;
   const cancel = () => { clearTimeout(timer); timer = null; lock.classList.remove('holding'); };

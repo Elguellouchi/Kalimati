@@ -2,6 +2,7 @@
 // Tout est calculé et généré dans le téléphone : indicateurs, profil pragmatique, matrice des sons, écoute, CSV, bilan à imprimer.
 import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
+import { iconLabel } from './ui-icons.js';
 import { playBlob } from '../speech.js';
 import { firstName, INTERVENANTS, ENVIRONMENTS } from './aba.js';
 import { PHONEMES, FUNCTIONS } from './ex-ortho.js';
@@ -95,7 +96,7 @@ function audioList(logs) {
   const recorded = logs.filter((l) => l.recordingId).sort((a, b) => b.ts - a.ts).slice(0, MAX_AUDIO);
   if (!recorded.length) return h('p', { class: 'note' }, 'Aucune voix enregistrée. Cochez « Enregistrer sa voix » dans l’atelier Articulation.');
   return h('div', { class: 'audio-list' }, recorded.map((log) => {
-    const play = btn('▶ Écouter', async () => {
+    const play = btn(iconLabel('play', 'Écouter'), async () => {
       const rec = await db.getRecording(log.recordingId);
       if (rec && rec.blob) playBlob(rec.blob); else play.textContent = 'Introuvable';
     }, 'ghost tiny');
@@ -163,8 +164,8 @@ export function orthoReportScreen(nav) {
       h('section', { class: 'card-box' }, h('h3', {}, '🤝 Profil pragmatique'), pragmaticProfile(logs)),
       h('section', { class: 'card-box' }, h('h3', {}, '🔤 Matrice des sons'), phonemeMatrix(logs)),
       h('section', { class: 'card-box' }, h('h3', {}, '🎧 Dernières voix enregistrées'), audioList(logs)),
-      h('div', { class: 'row wrap' }, btn('📤 Exporter en CSV', () => exportCsv(logs), 'ghost'),
-        btn('🖨️ Générer Bilan Orthophonique (PDF / Impression)', () => printReport(logs), 'primary')),
+      h('div', { class: 'row wrap' }, btn(iconLabel('download', 'Exporter en CSV'), () => exportCsv(logs), 'ghost'),
+        btn(iconLabel('printer', 'Générer Bilan Orthophonique (PDF / Impression)'), () => printReport(logs), 'primary')),
       h('p', { class: 'note' }, 'Le CSV et le bilan sont créés dans le téléphone. Ils contiennent des données de santé : partagez-les seulement avec les soignants.'));
   }).catch((error) => body.replaceChildren(h('p', { class: 'note' }, `Dossier indisponible : ${error.message}`)));
   return h('div', { class: 'screen' },

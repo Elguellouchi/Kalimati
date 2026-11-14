@@ -1,6 +1,8 @@
 // 📊 Progrès PEI : tableau de bord ABLLS-R des 71 objectifs (protégé par le cadenas parent).
 import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
+import { iconLabel } from './ui-icons.js';
+import { visualStyleBox, aboutBox } from './about.js';
 import { availableVoices, setPreferredVoice, speak } from '../speech.js';
 import { profile, saveProfile } from './aba.js';
 import { SECTIONS, GOALS, goalsOf } from './goals.js';
@@ -145,9 +147,11 @@ export function dashboardScreen(nav) {
         h('p', {}, accidents.weeks ? `Semaine 1 : ${accidents.baseline.toFixed(1)}/jour · cette semaine : ${accidents.current.toFixed(1)}/jour · baisse ${Math.round(accidents.reduction)} %` : 'Pas encore de journal.')),
       h('section', { class: 'card-box' }, h('h3', {}, '🎁 A.2 Renforçateurs'),
         reinforcers.length ? reinforcers.map((r) => h('div', { class: `eff-row${r.effective ? ' ok' : ''}` }, h('span', {}, `${r.emoji} ${r.fr}`), h('span', {}, `${Math.round(r.rate * 100)} % · ${r.trials} essais`))) : h('p', { class: 'note' }, 'Choisissez un renforçateur en A.2 pendant les séances.')),
-      h('div', { class: 'row' }, btn('📤 Exporter les essais (CSV pour la psychologue)', exportCsv, 'ghost')),
+      h('div', { class: 'row' }, btn(iconLabel('download', 'Exporter les essais (CSV pour la psychologue)'), exportCsv, 'ghost')),
       voiceSettingsBox(),
-      profileForm());
+      visualStyleBox(),
+      profileForm(),
+      aboutBox());
   });
   return h('div', { class: 'screen' }, h('h2', {}, '📊 Progrès PEI'), body);
 }

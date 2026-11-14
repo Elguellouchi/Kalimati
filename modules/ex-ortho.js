@@ -6,6 +6,7 @@
 // La cotation est faite par l'adulte. Le micro ne sert qu'à enregistrer et à repérer le début de la voix, sans rien envoyer.
 import * as db from '../db.js';
 import { h, btn, uid, dayKey, shuffle, pick } from './util.js';
+import { iconLabel } from './ui-icons.js';
 import { speak, stopSpeaking, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, startListening, canRecord } from '../media.js';
 import { clinic, firstName, sisterName } from './aba.js';
@@ -140,13 +141,13 @@ function dttcWorkshop(ctx) {
       draw();
     };
     const recordToggle = canRecord() ? h('label', { class: 'check' }, h('input', { type: 'checkbox', checked: s.record, onchange: (e) => { s.record = e.target.checked; } }),
-      ' 🎙️ Enregistrer sa voix (reste dans le téléphone)') : null;
+      ...iconLabel('mic', ' Enregistrer sa voix (reste dans le téléphone)')) : null;
     root.replaceChildren(pickers(),
       h('div', { class: 'big-card dttc-card' }, h('span', { class: 'dttc-phoneme' }, target.phoneme), h('span', { class: 'emoji dttc-emoji' }, target.emoji),
         s.step === 4 ? null : h('span', { class: 'label dttc-word' }, word), target.lang === 'dr' && s.step !== 4 ? h('small', { dir: 'rtl' }, target.ar) : null),
       cue, delayBar,
       h('div', { class: 'row center' }, btn(s.step === 4 ? '🖼️ C’est quoi ?' : '▶ Modèle', model, 'primary'), btn('⏭ Autre mot', () => { s.index += 1; draw(); }, 'ghost')),
-      h('div', { class: 'latency' }, h('span', { class: 'latency-label' }, '⏱️ Latence : ', latencyText), h('div', { class: 'latency-bar' }, bar)),
+      h('div', { class: 'latency' }, h('span', { class: 'latency-label' }, ...iconLabel('timer', ' Latence : '), latencyText), h('div', { class: 'latency-bar' }, bar)),
       recordToggle,
       h('div', { class: 'row rating-row' }, RATINGS.map(([id, text, cls]) => btn(text, () => rate(id), cls))));
   }

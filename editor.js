@@ -4,6 +4,7 @@ import { preparePhoto, prepareVideo, startRecording, canRecord } from './media.j
 import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './modules/arasaac.js';
 import { escapeHtml } from './modules/util.js';
 import { sayDefault, stopSpeaking } from './speech.js';
+import { suggestDarija } from './modules/darija-lexicon.js';
 
 const dialog = document.getElementById('editor');
 
@@ -39,6 +40,7 @@ function template(draft) {
       <label>Petit texte sous le mot (ex. « Ma sœur »)<input id="ed-sub" maxlength="30" value="${escapeHtml(draft.sub)}"></label>
       <label>Mot en darija (lettres latines)<input id="ed-dr" maxlength="40" value="${escapeHtml(draft.dr)}"></label>
       <label>Mot en darija (lettres arabes, pour la voix arabe)<input id="ed-ar" dir="rtl" maxlength="40" value="${escapeHtml(draft.ar)}"></label>
+      <p class="hint-muted" id="ed-lexicon"></p>
       <label>Emoji (si pas d'image)<input id="ed-emoji" maxlength="8" value="${escapeHtml(draft.emoji)}"></label>
       <div class="ed-row">
         <label>Catégorie<select id="ed-cat">${options}</select></label>
@@ -181,6 +183,20 @@ function setupArasaac(draft) {
   };
 }
 
+// Darija proposée par le lexique ouvert, seulement dans les cases vides : le parent vérifie et corrige.
+function setupLexicon() {
+  $('#ed-fr').addEventListener('change', async () => {
+    const found = await suggestDarija($('#ed-fr').value);
+    if (!found) return;
+    const dr = $('#ed-dr');
+    const ar = $('#ed-ar');
+    const filled = [];
+    if (!dr.value.trim() && found.lat) { dr.value = found.lat; filled.push('lettres latines'); }
+    if (!ar.value.trim() && found.ar) { ar.value = found.ar; filled.push('lettres arabes'); }
+    if (filled.length) $('#ed-lexicon').textContent = `Darija proposée (${filled.join(' et ')}) par un lexique ouvert : vérifiez et corrigez si besoin.`;
+  });
+}
+
 export function openEditor(card, { defaultCat, onSave, onDelete }) {
   const blank = { id: `u-${Date.now()}`, cat: defaultCat, fr: '', sub: '', dr: '', ar: '', emoji: '', gram: 'noun', visualKey: null, sayFr: '', sayAr: '', photo: null, video: null, audioFr: null, audioDr: null, order: Date.now(), gridRow: null, gridCol: null, hidden: false };
   const draft = card ? { sub: '', ...card, isNew: false } : { ...blank, isNew: true };
@@ -189,6 +205,7 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
   renderPhoto(draft);
   ['fr', 'dr'].forEach((l) => renderVoice(draft, l, state));
   setupArasaac(draft);
+  setupLexicon();
 
   const close = async () => {
     if (state.stop) {

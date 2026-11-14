@@ -2,6 +2,7 @@
 // Conçu pour les parents et la psychologue (Hosna Mehri) dans l'espace adulte, 100 % hors ligne.
 import * as db from '../db.js';
 import { h, btn, uid, dayKey, addDays, percent } from './util.js';
+import { iconLabel } from './ui-icons.js';
 import { clinic, INTERVENANTS, ENVIRONMENTS } from './aba.js';
 
 export const SETTING_EVENTS = [
@@ -292,15 +293,15 @@ export function abcScreen(nav) {
     return wrap;
   };
 
-  const chronoBtn = btn('⏱️ Démarrer chrono', () => {
+  const chronoBtn = btn(iconLabel('timer', 'Démarrer chrono'), () => {
     if (state.timerStart) {
       state.durationSec = Math.round((Date.now() - state.timerStart) / 1000);
       durInput.value = String(Math.max(1, Math.round(state.durationSec / 60)));
       stopChrono();
-      chronoBtn.textContent = '⏱️ Relancer chrono';
+      chronoBtn.replaceChildren(...iconLabel('timer', 'Relancer chrono'));
     } else {
       state.timerStart = Date.now();
-      chronoBtn.textContent = '⏹️ Arrêter chrono';
+      chronoBtn.replaceChildren(...iconLabel('square', 'Arrêter chrono'));
       state.timerTick = setInterval(() => {
         const s = Math.round((Date.now() - state.timerStart) / 1000);
         const mm = String(Math.floor(s / 60)).padStart(2, '0');
@@ -337,7 +338,7 @@ export function abcScreen(nav) {
           + (l.consequences?.length ? ` · C : ${l.consequences.map((x) => labelOf(CONSEQUENCES, x)).join(', ')}` : '')
           + (l.replacement && l.replacement !== 'none' ? ` · Remplacement : ${labelOf(REPLACEMENTS, l.replacement)}` : '')
           + (l.note ? ` · « ${l.note} »` : '')),
-        h('div', { class: 'row' }, btn('🗑️ Supprimer', async () => { await db.deleteAbcLog(l.id); refreshAnalysis(); }, 'ghost tiny')));
+        h('div', { class: 'row' }, btn(iconLabel('trash-2', 'Supprimer'), async () => { await db.deleteAbcLog(l.id); refreshAnalysis(); }, 'ghost tiny')));
     });
 
     analysisBox.replaceChildren(
@@ -358,7 +359,7 @@ export function abcScreen(nav) {
       h('section', { class: 'card-box' },
         h('div', { class: 'row between' },
           h('h3', {}, `📋 Historique (${filtered.length})`),
-          btn('📤 Exporter CSV (Hosna)', exportAbcCsv, 'ghost')),
+          btn(iconLabel('download', 'Exporter CSV (Hosna)'), exportAbcCsv, 'ghost')),
         filterBar,
         filtered.length ? h('div', { class: 'stack' }, historyRows) : h('p', { class: 'note' }, 'Aucune entrée pour ce filtre.')));
   }
@@ -366,7 +367,7 @@ export function abcScreen(nav) {
   renderFnChips();
   refreshAnalysis();
 
-  const saveBtn = btn('💾 Enregistrer l’observation ABC', async () => {
+  const saveBtn = btn(iconLabel('check-circle-2', 'Enregistrer l’observation ABC'), async () => {
     if (state.timerStart) stopChrono();
     const minVal = parseFloat(durInput.value || '0') || 0;
     const durSec = state.durationSec > 0 ? state.durationSec : Math.round(minVal * 60);
@@ -391,7 +392,7 @@ export function abcScreen(nav) {
     formStatus.textContent = 'Observation ABC enregistrée ✅';
     state.durationSec = 0;
     chronoLabel.textContent = '00:00';
-    chronoBtn.textContent = '⏱️ Démarrer chrono';
+    chronoBtn.replaceChildren(...iconLabel('timer', 'Démarrer chrono'));
     durInput.value = '0';
     noteInput.value = '';
     state.fnManual = false;

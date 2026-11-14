@@ -71,7 +71,22 @@
   "c-lieux-maison": "Maison",
   "c-lieux-voiture": "Voiture",
   "c-lieux-parc": "Parc",
-  "c-lieux-ecole": "École"
+  "c-lieux-ecole": "École",
+  "c-base-s-il-te-plait": "S'il te plaît",
+  "c-base-merci": "Merci",
+  "c-base-c-est-quoi-": "C'est quoi ?",
+  "c-base-ou-est-": "Où est ?",
+  "c-base-avec": "Avec",
+  "c-actions-lire": "Lire",
+  "c-actions-ecrire": "Écrire",
+  "c-actions-regarder": "Regarder",
+  "c-actions-ecouter": "Écouter",
+  "c-actions-dormir": "Dormir",
+  "c-decrire-dans": "Dans",
+  "c-decrire-sur": "Sur",
+  "c-decrire-sous": "Sous",
+  "c-decrire-beaucoup": "Beaucoup",
+  "c-decrire-un-peu": "Un peu"
  },
  "dr": {
   "c-base-je-veux": "بغيت",
@@ -145,6 +160,21 @@
   "c-lieux-maison": "دار",
   "c-lieux-voiture": "طوموبيل",
   "c-lieux-parc": "جردة",
-  "c-lieux-ecole": "المدرسة"
+  "c-lieux-ecole": "المدرسة",
+  "c-base-s-il-te-plait": "عافاك",
+  "c-base-merci": "شكرا",
+  "c-base-c-est-quoi-": "شنو هادا؟",
+  "c-base-ou-est-": "فين؟",
+  "c-base-avec": "مع",
+  "c-actions-lire": "نقرا",
+  "c-actions-ecrire": "نكتب",
+  "c-actions-regarder": "نشوف",
+  "c-actions-ecouter": "نسمع",
+  "c-actions-dormir": "نعس",
+  "c-decrire-dans": "ف",
+  "c-decrire-sur": "فوق",
+  "c-decrire-sous": "تحت",
+  "c-decrire-beaucoup": "بزاف",
+  "c-decrire-un-peu": "شوية"
  }
 }

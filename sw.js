@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v9-0';
+const CACHE = 'kalimati-v9-1';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -12,7 +12,22 @@ const FILES = [
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js',
+  './modules/ui-icons.js', './modules/about.js', './modules/darija-lexicon.js',
+  './assets/manifest.json', './assets/mulberry/index.json', './assets/emoji/index.json', './assets/darija-lexicon.json',
+  './assets/fonts/AtkinsonHyperlegibleNext-Regular.woff2', './assets/fonts/AtkinsonHyperlegibleNext-Bold.woff2',
 ];
+
+// v9.1 : pictogrammes Mulberry et émojis OpenMoji (liste dans assets/manifest.json), mis en cache sans bloquer l'installation.
+async function assetFiles() {
+  try {
+    const response = await fetch('./assets/manifest.json', { cache: 'no-cache' });
+    if (!response.ok) return [];
+    const list = await response.json();
+    return [...(list.mulberry || []), ...(list.emoji || [])].map((file) => `./assets/${file}`);
+  } catch {
+    return [];
+  }
+}
 
 // Voix par défaut des cartes (voix/index.json) : mises en cache aussi, pour parler sans internet.
 async function voiceFiles() {
@@ -32,6 +47,7 @@ self.addEventListener('install', (event) => {
     await cache.addAll(FILES);
     // Une voix manquante ne doit pas empêcher l'installation.
     await Promise.all((await voiceFiles()).map((file) => cache.add(file).catch(() => {})));
+    await Promise.all((await assetFiles()).map((file) => cache.add(file).catch(() => {})));
     await self.skipWaiting();
   })());
 });

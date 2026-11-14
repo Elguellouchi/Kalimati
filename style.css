@@ -1,3 +1,7 @@
+/* v9.1 : police Atkinson Hyperlegible Next (SIL OFL 1.1), rangée dans l'app : b/d, p/q, I/l/1 bien distincts. */
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("assets/fonts/AtkinsonHyperlegibleNext-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("assets/fonts/AtkinsonHyperlegibleNext-Bold.woff2") format("woff2"); font-weight: 600 900; font-style: normal; font-display: swap; }
+
 /* Kalimati v3 — charte sensorielle : formes rondes, pastels apaisants, aucun clignotement ni mouvement brusque. */
 :root {
   --bg: #F7F5F0;
@@ -21,7 +25,7 @@
 html, body { margin: 0; height: 100%; }
 body {
   background: var(--bg); color: var(--text);
-  font-family: Nunito, "Comic Neue", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Atkinson Hyperlegible Next", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   display: flex; flex-direction: column;
   padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   user-select: none; -webkit-user-select: none; overscroll-behavior: none;
@@ -54,7 +58,9 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
 .lock.holding::after { content: ""; position: absolute; inset: 0; background: rgb(31 111 92 / .35); animation: fill 3s linear forwards; transform-origin: bottom; }
 @keyframes fill { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 body.parent .lock { background: var(--brand); color: #fff; }
-body.parent .lock::before { content: "🔓"; position: absolute; inset: 0; display: grid; place-items: center; background: var(--brand); }
+.lock .lock-on, body.parent .lock .lock-off { display: none; }
+body.parent .lock .lock-on { display: inline; }
+.lock .ui-icon { display: block; margin: auto; }
 
 .reminder {
   margin: 0 var(--gap) var(--gap); padding: 10px 14px; border-radius: var(--radius); background: #FFF3D6; color: #4A3426;
@@ -817,3 +823,12 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .ortho-print th, .ortho-print td { border: 1px solid #777; padding: 4pt 6pt; text-align: left; }
   .ortho-print .print-note { margin-top: 14pt; font-style: italic; color: #333; }
 }
+
+/* ---------- v9.1 : images libres (Mulberry, OpenMoji) et icônes Lucide ---------- */
+.visual > img.visual-picto, .visual > img.visual-moji { object-fit: contain; border-radius: 14%; }
+.visual > img.visual-picto { background: #fff; padding: 4%; }
+.card > .visual > img.visual-picto, .card > .visual > img.visual-moji { object-fit: contain; padding: 6%; }
+.ui-icon-wrap { display: inline-flex; vertical-align: -3px; margin-right: 6px; }
+.ui-icon { flex: none; }
+.about .credits { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.about .credits a { color: var(--brand); }
