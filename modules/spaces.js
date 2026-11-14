@@ -22,6 +22,7 @@ import { ONLINE_EXERCISES as ONLINE_BASE } from './ex-online.js';
 import { NEXT_EXERCISES } from './ex-next.js';
 import { levelHeader, onLevelChange, levelOf } from './levels.js';
 import { scheduleView } from './ex-schedule.js';
+import { storiesView } from './stories.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -131,6 +132,8 @@ export function createNavigator(app) {
             h('span', { class: 'emoji' }, emoji), h('span', {}, label))))))));
   }
 
+  const storiesScreen = () => h('div', { class: 'screen' }, header('📖 Mes histoires'),
+    storiesView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) }));
   const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), photoHint(), emotionStudio(context()));
   const galleryScreen = () => h('div', { class: 'screen' }, header('📸 Personnaliser avec nos vraies photos'),
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));
@@ -143,6 +146,7 @@ export function createNavigator(app) {
       h('div', { class: 'family-table' }, family.map(([vkey, label]) => h('div', { class: 'family-seat' }, renderVisual({ vkey, label }), h('span', {}, label)))),
       h('div', { class: 'section-grid' },
         h('button', { type: 'button', class: 'section-tile big', onclick: () => go(studioScreen) }, h('span', { class: 'emoji' }, '😊'), h('span', {}, 'Studio des émotions')),
+        h('button', { type: 'button', class: 'section-tile big', onclick: () => go(storiesScreen) }, h('span', { class: 'emoji' }, '📖'), h('span', {}, 'Mes histoires')),
         h('button', { type: 'button', class: 'section-tile big', onclick: () => go(galleryScreen) }, h('span', { class: 'emoji' }, '📸'), h('span', {}, 'Nos vraies photos'), app.state.parent ? null : h('small', {}, '🔒 adultes'))));
   }
 

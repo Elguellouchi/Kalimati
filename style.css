@@ -713,3 +713,37 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .breath-box { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 20px; background: var(--soft); }
 .breath-circle { width: 110px; height: 110px; border-radius: 50%; background: #4FC3B8; color: #fff; font-size: 46px; display: grid; place-items: center; animation: calm-breath 6s ease-in-out infinite; box-shadow: 0 0 0 12px rgba(79, 195, 184, 0.2); }
 @keyframes calm-breath { 0%, 100% { transform: scale(0.82); } 50% { transform: scale(1.18); } }
+
+/* v7.1 : le meilleur des applis de CAA (Je montre, mots proposés, toucher adapté), histoires sociales, coin calme */
+.calm-btn { flex: none; width: 70px; border: 4px solid #81C784; border-radius: var(--radius); background: var(--surface); display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 26px; line-height: 1; }
+.calm-btn span { font-size: 11px; font-weight: 700; margin-top: 4px; }
+.suggest-row { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding: 4px 6px; border-radius: 14px; background: #FFF8E1; border: 2px dashed #FFE082; }
+.suggest-row[hidden] { display: none; }
+.suggest-label { font-weight: 800; color: #8A5A00; white-space: nowrap; }
+.model-toggle { align-self: flex-end; }
+.model-toggle.on { border-color: #FF9800; color: #E65100; }
+.model-line { display: flex; gap: 6px; align-items: center; overflow-x: auto; padding: 6px; border-radius: 14px; background: #FFF3E0; border: 2px solid #FFB74D; min-height: 60px; }
+.talk.modeling .grid .card, .talk.modeling .core .card { outline: 2px dashed #FFB74D; outline-offset: -4px; }
+.card.modeled { box-shadow: 0 0 0 5px #FFB74D; transform: scale(1.04); transition: transform .3s ease, box-shadow .3s ease; }
+.touch-box summary { cursor: pointer; font-weight: 700; }
+.stories { display: flex; flex-direction: column; gap: 12px; }
+.story-page { width: 100%; gap: 10px; }
+.story-page .visual { --vs: 180px; width: 180px; height: 180px; }
+.story-page .label { font-size: 22px; font-weight: 700; text-align: center; line-height: 1.35; }
+.big-arrow { font-size: 22px; min-width: 64px; }
+.calm-overlay { position: fixed; inset: 0; z-index: 40; background: rgb(207 235 210 / .97); overflow: auto; padding: 16px; }
+.calm-panel { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.calm-head { justify-content: space-between; align-items: center; }
+.calm-block { background: var(--surface); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.calm-block h3 { margin: 0; align-self: flex-start; }
+.calm-circle { width: 120px; height: 120px; border-radius: 50%; background: #B3E5FC; display: grid; place-items: center; font-size: 44px; transition: transform 4s ease-in-out, background 4s ease-in-out; cursor: pointer; }
+.calm-circle.in { transform: scale(1.6); background: #C8E6C9; }
+.calm-text { font-size: 20px; font-weight: 700; color: var(--brand); margin: 0; min-height: 1.4em; }
+.calm-stars { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; width: 100%; }
+.calm-star { height: 56px; border-radius: 16px; border: 3px solid #FFE082; background: #FFFDE7; font-size: 20px; font-weight: 800; color: #8A5A00; }
+.calm-star.on { background: #FFD54F; }
+/* Sur téléphone, le bouton 🌈 flotte au-dessus de la barre du bas pour laisser toute la place à la phrase. */
+@media (max-width: 600px) {
+  .calm-btn { position: fixed; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; z-index: 25; box-shadow: 0 4px 14px rgb(0 0 0 / .18); font-size: 24px; }
+  .calm-btn span { display: none; }
+}

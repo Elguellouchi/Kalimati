@@ -13,6 +13,8 @@ import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
 import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
+import { openCalm } from './modules/calm.js';
+import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -22,7 +24,7 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1 };
+const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -76,14 +78,24 @@ function playCardVideo(card) {
   document.body.append(overlay);
 }
 
-function onCardTap(card, element) {
+// pressMs : durée d'appui (option « toucher adapté »). Mode « Je montre » : l'adulte montre les mots sans remplir la phrase d'Abir.
+function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
   if (state.parent) { editCard(card); return; }
+  if (!touchAllowed(pressMs)) return;
   element.classList.remove('pressed');
   void element.offsetWidth;
   element.classList.add('pressed');
   stopSpeaking();
   sayCard(card, state.lang);
+  if (state.modeling) {
+    state.model = [...state.model, { card, lang: state.lang }].slice(-MAX_STRIP);
+    element.classList.add('modeled');
+    setTimeout(() => element.classList.remove('modeled'), 1200);
+    renderModel();
+    return;
+  }
   if (card.video) playCardVideo(card);
+  learnTap(state.strip.length ? state.strip[state.strip.length - 1].card.id : null, card);
   if (state.strip.length < MAX_STRIP) state.strip = [...state.strip, { card, lang: state.lang }];
   renderStrip();
 }
@@ -98,6 +110,30 @@ function renderStrip() {
   $('#strip-cards').replaceChildren(...items);
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = state.lang === 'dr' ? 'DR' : 'FR';
+  renderSuggestions();
+}
+
+// Mots proposés après le dernier mot de la phrase (appris sur les phrases d'Abir).
+function renderSuggestions() {
+  const row = document.getElementById('suggest-row');
+  if (!row) return;
+  const next = state.modeling ? [] : suggestionsFor(state.strip, state.cards);
+  row.replaceChildren(...(next.length ? [h('span', { class: 'suggest-label' }, '💡'), ...next.map((card) => {
+    const el = cardElement(card, { small: true });
+    const press = trackPress(el);
+    el.onclick = () => onCardTap(card, el, press());
+    return el;
+  })] : []));
+  row.hidden = !next.length;
+}
+
+// Ligne « Je montre » : les mots montrés par l'adulte, à réécouter.
+function renderModel() {
+  const line = document.getElementById('model-line');
+  if (!line) return;
+  line.replaceChildren(h('span', { class: 'suggest-label' }, '🧑‍🏫 Je montre :'),
+    ...state.model.map((item) => cardElement(item.card, { small: true, lang: item.lang })),
+    state.model.length ? h('button', { type: 'button', class: 'strip-btn play', 'aria-label': 'Redire', onclick: () => sayCards(state.model) }, '▶') : null);
 }
 
 function setupStrip() {
@@ -114,7 +150,8 @@ const visibleFor = (card) => state.parent || !card.hidden;
 function renderTalk() {
   const core = h('nav', { class: 'core', 'aria-label': 'Mots essentiels' }, sortedCards(CORE_CAT).filter(visibleFor).map((card) => {
     const el = cardElement(card, { small: true });
-    el.onclick = () => onCardTap(card, el);
+    const press = trackPress(el);
+    el.onclick = () => onCardTap(card, el, press());
     return el;
   }));
   const tabs = h('nav', { class: 'tabs', 'aria-label': 'Catégories' }, CATEGORIES.filter((c) => c.id !== CORE_CAT).map((category) => {
@@ -129,7 +166,8 @@ function renderTalk() {
     el.style.gridRow = String(card.gridRow);
     el.style.gridColumn = String(card.gridCol);
     if (card.hidden && !state.parent) el.style.visibility = 'hidden';
-    el.onclick = () => onCardTap(card, el);
+    const press = trackPress(el);
+    el.onclick = () => onCardTap(card, el, press());
     grid.append(el);
   }
   if (state.parent) {
@@ -143,7 +181,15 @@ function renderTalk() {
     ? h('button', { type: 'button', class: 'btn primary wide photo-cta', onclick: () => { state.space = 'emotions'; renderSpaces(); nav.openGallery(); } },
       state.cat === 'emotions' ? `📸 Personnaliser les émotions avec les vraies photos d’${firstName()}, de sa sœur, de Papa et Maman` : '📸 Mettre les vraies photos de la famille')
     : null;
-  return h('div', { class: 'talk' }, core, tabs, personalise, grid, state.parent ? legend() : null);
+  const modelToggle = state.parent ? null : h('button', { type: 'button', class: `btn ghost tiny model-toggle${state.modeling ? ' on' : ''}`,
+    onclick: () => { state.modeling = !state.modeling; state.model = []; renderView(); renderSuggestions(); } },
+  state.modeling ? '✋ Arrêter « Je montre »' : '🧑‍🏫 Je montre (adulte)');
+  const modelLine = state.modeling ? h('div', { class: 'model-line', id: 'model-line' }) : null;
+  const suggest = h('div', { class: 'suggest-row', id: 'suggest-row', hidden: true });
+  const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}` }, suggest, modelToggle, modelLine, core, tabs, personalise, grid,
+    state.parent ? touchSettingsBox() : null, state.parent ? legend() : null);
+  queueMicrotask(() => { renderSuggestions(); renderModel(); });
+  return view;
 }
 
 const legend = () => h('div', { class: 'legend' }, Object.values(GRAMMAR).map((g) => h('span', {}, h('i', { style: { background: g.color } }), g.label)));
@@ -400,6 +446,8 @@ async function loadCards() {
 async function init() {
   nav.attach($('#view'));
   state.lang = (await db.getSetting('lang')) || 'fr';
+  await loadAacPlus();
+  $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
   await loadVisuals();
