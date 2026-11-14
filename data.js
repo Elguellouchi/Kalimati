@@ -43,6 +43,13 @@ const RAW = [
   ['manger', 'Biscuit', 'Biskwi', '🍪', 'noun', 'بيسكوي'], ['manger', 'Œuf', 'Bida', '🥚', 'noun', 'بيضة'],
   ['boire', 'Eau', 'Lma', '💧', 'noun', 'الما'], ['boire', 'Lait', 'Hlib', '🍼', 'noun', 'حليب'],
   ['boire', 'Jus', '3assir', '🧃', 'noun', 'عصير'],
+  // v9.2 : demandés par le papa d'Abir (darija à vérifier). Les vraies photos se mettent avec 📷 en mode parent.
+  ['manger', 'Chips', 'Chips', '🥔', 'noun', 'شيبس', 9, { sub: 'Pringles barbecue' }],
+  ['manger', 'Fromage', 'Frmaj', '🧀', 'noun', 'فرماج', 9, { sub: 'Kiri' }],
+  ['manger', 'Pancake', 'Pancake', '🥞', 'noun', 'بانكيك', 9],
+  ['manger', 'Mcdo', 'Makdo', '🍔', 'noun', 'ماكدو', 9, { sub: 'Happy Meal' }],
+  ['boire', 'Coca-cola', 'Koka', '🥤', 'noun', 'كوكا', 9],
+  ['jouer', 'Trampoline', 'Trampoline', '🤸', 'noun', 'ترامبولين', 9],
   ['jouer', 'Ballon', 'Kora', '⚽', 'noun', 'كورة'], ['jouer', 'Tablette', 'Tablette', '📱', 'noun', 'طابليط'],
   ['jouer', 'Dessin animé', 'Rassoum', '📺', 'noun', 'رسوم'], ['jouer', 'Poupée', 'Mouna', '🪆', 'noun', 'مونة'],
   ['jouer', 'Musique', 'Mousi9a', '🎵', 'noun', 'موسيقى'], ['jouer', 'Balançoire', 'Jelloula', '🛝', 'noun', 'جلولة'],

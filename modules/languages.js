@@ -46,6 +46,12 @@ Biscuit|بسكويت|Cookie|Galleta|Keks|Biscotto|Bolacha|Koekje|Bisküvi|饼干
 Eau|ماء|Water|Agua|Wasser|Acqua|Água|Water|Su|水
 Lait|حليب|Milk|Leche|Milch|Latte|Leite|Melk|Süt|牛奶
 Jus|عصير|Juice|Zumo|Saft|Succo|Sumo|Sap|Meyve suyu|果汁
+Chips|شيبس|Crisps|Patatas fritas|Chips|Patatine|Batatas fritas|Chips|Cips|薯片
+Fromage|جبن|Cheese|Queso|Käse|Formaggio|Queijo|Kaas|Peynir|奶酪
+Pancake|فطيرة|Pancake|Tortita|Pfannkuchen|Pancake|Panqueca|Pannenkoek|Pankek|松饼
+Mcdo|ماكدونالدز|McDonald's|McDonald's|McDonald's|McDonald's|McDonald's|McDonald's|McDonald's|麦当劳
+Coca-cola|كوكا كولا|Coca-Cola|Coca-Cola|Coca-Cola|Coca-Cola|Coca-Cola|Coca-Cola|Coca-Cola|可口可乐
+Trampoline|ترامبولين|Trampoline|Cama elástica|Trampolin|Trampolino|Trampolim|Trampoline|Trambolin|蹦床
 Ballon|كرة|Ball|Pelota|Ball|Palla|Bola|Bal|Top|球
 Tablette|جهاز لوحي|Tablet|Tableta|Tablet|Tablet|Tablet|Tablet|Tablet|平板
 Dessin animé|رسوم متحركة|Cartoon|Dibujos animados|Zeichentrick|Cartone animato|Desenho animado|Tekenfilm|Çizgi film|动画片

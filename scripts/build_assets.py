@@ -52,7 +52,8 @@ WORDS = {
     'Couper': 'cut_,_to', 'Sauter': 'jump_,_to', 'Laver': 'wash_hands_,_to', 'Dessiner': 'draw_,_to', 'Ouvrir': 'open_,_to',
     'Toilettes': 'toilet', 'Dormir': 'sleep_female_,_to', 'Câlin': 'hug_,_to', 'Bain': 'bath', 'Changer': 'change_clothes_,_to',
     'Petit': 'little', 'Chaud': 'hot', 'Dehors': 'go_outside_,_to', 'Maison': 'house', 'Voiture': 'car', 'École': 'school',
-    "C'est quoi ?": 'what', 'Où est ?': 'where', 'Lire': 'read_book_,_to', 'Écrire': 'write_,_to', 'Regarder': 'look_,_to',
+    'Chips': 'crisps', 'Fromage': 'cheese', 'Pancake': 'pancakes', 'Mcdo': 'hamburger_carton', 'Coca-cola': 'drink_cold',
+    'Trampoline': 'trampoline', "C'est quoi ?": 'what', 'Où est ?': 'where', 'Lire': 'read_book_,_to', 'Écrire': 'write_,_to', 'Regarder': 'look_,_to',
     'Dans': 'in', 'Sur': 'on', 'Sous': 'under_1',
     # Catalogue des exercices : aliments
     'fraise': 'strawberry', 'raisin': 'grapes', 'poire': 'pear', 'pastèque': 'watermelon', 'melon': 'melon',

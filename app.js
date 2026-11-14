@@ -478,6 +478,13 @@ async function loadCards() {
     if (addedV7.length) cards = [...cards, ...addedV7];
     await db.setSetting('v7migrated', true);
   }
+  // v9.2 : nouvelles cartes de départ (chips, fromage, pancake, mcdo, coca-cola, trampoline), ajoutées une seule fois.
+  if (!(await db.getSetting('v92migrated'))) {
+    const present = new Set(cards.map((c) => c.id));
+    const added = defaultCards().filter((c) => (c.newIn || 0) >= 9 && !present.has(c.id)).map(stripNew);
+    if (added.length) cards = [...cards, ...added];
+    await db.setSetting('v92migrated', true);
+  }
   await db.setSetting('v2migrated', true);
   await db.setSetting('v3migrated', true);
   const placed = assignPositions(cards, state.cols);

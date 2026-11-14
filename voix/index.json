@@ -86,7 +86,13 @@
   "c-decrire-sur": "Sur",
   "c-decrire-sous": "Sous",
   "c-decrire-beaucoup": "Beaucoup",
-  "c-decrire-un-peu": "Un peu"
+  "c-decrire-un-peu": "Un peu",
+  "c-manger-chips": "Chips",
+  "c-manger-fromage": "Fromage",
+  "c-manger-pancake": "Pancake",
+  "c-manger-mcdo": "Mcdo",
+  "c-boire-coca-cola": "Coca-cola",
+  "c-jouer-trampoline": "Trampoline"
  },
  "dr": {
   "c-base-je-veux": "بغيت",
@@ -175,6 +181,12 @@
   "c-decrire-sur": "فوق",
   "c-decrire-sous": "تحت",
   "c-decrire-beaucoup": "بزاف",
-  "c-decrire-un-peu": "شوية"
+  "c-decrire-un-peu": "شوية",
+  "c-manger-chips": "شيبس",
+  "c-manger-fromage": "فرماج",
+  "c-manger-pancake": "بانكيك",
+  "c-manger-mcdo": "ماكدو",
+  "c-boire-coca-cola": "كوكا",
+  "c-jouer-trampoline": "ترامبولين"
  }
 }
