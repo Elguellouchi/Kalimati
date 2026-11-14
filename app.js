@@ -14,6 +14,7 @@ import { dashboardScreen } from './modules/dashboard.js';
 import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
+import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
@@ -139,8 +140,20 @@ function renderModel() {
     state.model.length ? h('button', { type: 'button', class: 'strip-btn play', 'aria-label': 'Redire', onclick: () => sayCards(state.model) }, '▶') : null);
 }
 
+// Mesure discrète pour le dossier orthophonique : longueur de chaque phrase dite dans Parler (une même phrase redite tout de suite ne compte qu'une fois).
+const SAME_UTTERANCE_MS = 10000;
+let lastUtterance = { text: '', at: 0 };
+function noteUtterance() {
+  if (!state.strip.length) return;
+  const text = state.strip.map((item) => label(item.card, item.lang)).join(' ');
+  const now = Date.now();
+  if (text === lastUtterance.text && now - lastUtterance.at < SAME_UTTERANCE_MS) return;
+  lastUtterance = { text, at: now };
+  logOrtho({ protocol: 'aac_mlu', mlu: state.strip.length, target: text, spontaneous: !state.modeling }).catch(() => {});
+}
+
 function setupStrip() {
-  $('#btn-play').onclick = () => sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
+  $('#btn-play').onclick = () => { noteUtterance(); sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } }); };
   $('#btn-back').onclick = () => { state.strip = state.strip.slice(0, -1); renderStrip(); };
   $('#btn-clear').onclick = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
   $('#btn-lang').onclick = openLangPicker;

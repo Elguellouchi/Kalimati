@@ -4,7 +4,7 @@
 import { GOALS } from './modules/goals.js';
 
 const DB_NAME = 'kalimati';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 
 let dbPromise = null;
 
@@ -52,6 +52,11 @@ function upgrade(db, transaction, oldVersion) {
   if (oldVersion < 7 && !db.objectStoreNames.contains('abc_logs')) {
     const abc = db.createObjectStore('abc_logs', { keyPath: 'id' });
     ['day', 'behavior', 'fn', 'place'].forEach((index) => abc.createIndex(index, index));
+  }
+  // v8 : journal orthophonique (DTTC, MLU, pragmatique, phonologie, longueur des phrases en CAA). Rien d'autre n'est touché.
+  if (oldVersion < 8 && !db.objectStoreNames.contains('ortho_logs')) {
+    const ortho = db.createObjectStore('ortho_logs', { keyPath: 'id' });
+    ['day', 'protocol', 'fn', 'phoneme'].forEach((index) => ortho.createIndex(index, index));
   }
 }
 
@@ -145,3 +150,14 @@ export const getAbcLogsOfDay = (day) => run('abc_logs', 'readonly', (s) => s.ind
 export function putAbcLogs(logs) {
   return run('abc_logs', 'readwrite', (s) => { logs.forEach((l) => s.put(l)); return null; });
 }
+
+// Journal orthophonique : { id, ts, day, protocol ('dttc'|'mlu'|'pragmatic'|'phono'|'aac_mlu'), target, phoneme, step (1..4),
+// result ('exact'|'approx'|'prompt'|'fail'), latencyMs, mlu, fn ('mand'|'tact'|'refusal'|'question'|'repair'), spontaneous, recordingId, intervenant, place }
+export const addOrthoLog = (log) => run('ortho_logs', 'readwrite', (s) => s.put(log));
+export const deleteOrthoLog = (id) => run('ortho_logs', 'readwrite', (s) => s.delete(id));
+export const getAllOrthoLogs = () => run('ortho_logs', 'readonly', (s) => s.getAll());
+export const getOrthoLogsOfDay = (day) => run('ortho_logs', 'readonly', (s) => s.index('day').getAll(day));
+export function putOrthoLogs(logs) {
+  return run('ortho_logs', 'readwrite', (s) => { logs.forEach((l) => s.put(l)); return null; });
+}
+export const getRecording = (id) => run('recordings', 'readonly', (s) => s.get(id));

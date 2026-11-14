@@ -23,6 +23,7 @@ import { NEXT_EXERCISES } from './ex-next.js';
 import { levelHeader, onLevelChange, levelOf } from './levels.js';
 import { scheduleView } from './ex-schedule.js';
 import { storiesView } from './stories.js';
+import { orthoScreen } from './ex-ortho.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -115,6 +116,8 @@ export function createNavigator(app) {
     return h('div', { class: 'screen' }, header(''),
       h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, `🎮 Les jeux d'${firstName()}`), h('p', { class: 'note' }, 'Pour l’adulte : choisissez l’intervenant et le lieu, puis un jeu.'))),
       clinicBar(),
+      h('button', { type: 'button', class: 'section-tile big ortho-tile', onclick: () => go(orthoHome) }, h('span', { class: 'emoji' }, '🗣️'), h('span', {}, 'Atelier Orthophonie'),
+        h('small', {}, 'Articulation, phrases, situations, sons')),
       h('div', { class: 'section-grid' }, SECTIONS.map((s) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => sectionScreen(s.id)) },
         h('span', { class: 'emoji' }, s.emoji), h('strong', {}, s.id), h('span', {}, s.name)))));
   }
@@ -134,6 +137,7 @@ export function createNavigator(app) {
 
   const storiesScreen = () => h('div', { class: 'screen' }, header('📖 Mes histoires'),
     storiesView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) }));
+  const orthoHome = () => h('div', { class: 'screen' }, header('🗣️ Atelier Orthophonie'), clinicBar(), orthoScreen(context()));
   const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), photoHint(), emotionStudio(context()));
   const galleryScreen = () => h('div', { class: 'screen' }, header('📸 Personnaliser avec nos vraies photos'),
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));

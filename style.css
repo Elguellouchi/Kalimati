@@ -772,3 +772,48 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .scatter-table tbody th { text-align: left; font-weight: 600; white-space: nowrap; padding-right: 8px; }
 .scatter-cell.empty { color: #999; }
 .scatter-dot { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 12px; }
+
+/* v9.0 : atelier orthophonie et dossier orthophonique */
+.row.wrap { flex-wrap: wrap; }
+.ortho-tile { width: 100%; border: 3px solid #4FC3B8; }
+.ortho-tile small { font-size: 13px; color: var(--muted); }
+.dttc-pickers .pill-btn { font-size: 14px; padding: 8px 12px; }
+.dttc-card { position: relative; width: 100%; border-color: #4FC3B8; }
+.dttc-phoneme { position: absolute; top: 8px; left: 12px; font-size: 18px; font-weight: 800; color: var(--brand); background: var(--soft); border-radius: 999px; padding: 2px 10px; }
+.dttc-emoji { font-size: 84px; line-height: 1.1; }
+.dttc-word { font-size: 34px; font-weight: 800; letter-spacing: 1px; }
+.dttc-cue { text-align: center; font-size: 20px; font-weight: 800; color: var(--brand); margin: 0; min-height: 1.4em; }
+.dttc-delay[hidden] { display: none; }
+.latency { display: flex; flex-direction: column; gap: 4px; }
+.latency-label { font-size: 15px; color: var(--muted); }
+.latency-label strong { color: var(--text); font-size: 18px; font-variant-numeric: tabular-nums; }
+.latency-bar { height: 14px; border-radius: 999px; background: var(--soft); overflow: hidden; }
+.latency-bar span { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #81C784, #FFD54F, #E57373); transition: width .1s linear; }
+.ortho .rating-row { flex-wrap: wrap; }
+.ortho .rating-row .btn { flex: 1 1 45%; min-height: 52px; }
+.chip-fn { align-self: flex-start; margin: 0; font-weight: 800; color: var(--brand); background: var(--soft); border-radius: 999px; padding: 4px 12px; }
+.ortho-kpis { grid-template-columns: repeat(2, 1fr); }
+.ortho-kpis .kpi strong { font-size: 20px; }
+.fn-bars { display: flex; flex-direction: column; gap: 8px; }
+.fn-row { display: grid; grid-template-columns: 1fr; gap: 2px; }
+.fn-name { font-weight: 700; }
+.fn-value { font-size: 12px; color: var(--muted); }
+.phoneme-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.phoneme-cell { display: flex; flex-direction: column; align-items: center; text-align: center; border-radius: 14px; padding: 8px 4px; border: 3px solid var(--line); background: var(--bg); font-size: 13px; }
+.phoneme-cell strong { font-size: 22px; }
+.phoneme-cell small { font-size: 11px; color: var(--muted); }
+.phoneme-cell.ok { border-color: #43A047; background: #EEF8EF; }
+.phoneme-cell.mid { border-color: #FFB300; background: #FFF8E1; }
+.phoneme-cell.low { border-color: #E57373; background: #FDECEA; }
+.phoneme-cell .phoneme-status { font-weight: 700; color: var(--text); }
+.audio-list { display: flex; flex-direction: column; gap: 6px; }
+.audio-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--bg); border-radius: 12px; padding: 6px 10px; font-size: 14px; }
+@media (min-width: 700px) { .ortho-kpis { grid-template-columns: repeat(4, 1fr); } .phoneme-grid { grid-template-columns: repeat(5, 1fr); } }
+@media print {
+  .ortho-print { font-family: system-ui, sans-serif; font-size: 12pt; }
+  .ortho-print h1 { font-size: 18pt; border-bottom: 2px solid #000; padding-bottom: 4pt; }
+  .ortho-print h2 { font-size: 13pt; margin: 14pt 0 4pt; }
+  .ortho-print table { width: 100%; border-collapse: collapse; }
+  .ortho-print th, .ortho-print td { border: 1px solid #777; padding: 4pt 6pt; text-align: left; }
+  .ortho-print .print-note { margin-top: 14pt; font-style: italic; color: #333; }
+}
