@@ -8,6 +8,7 @@ import { reinforcerStats, accidentStats } from './progress.js';
 import { evaluateAll, statusChip } from './spaces.js';
 import { matrixTable } from './ex-social.js';
 import { levelOf } from './levels.js';
+import { abcSummaryCard, abcScreen } from './ex-abc.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur'], ['city', 'Ville']];
@@ -121,9 +122,11 @@ export function dashboardScreen(nav) {
     await Promise.all(GOALS.map((g) => db.putGoal({ ...g, status: results.get(g.id).status, pct: results.get(g.id).pct, updatedAt: Date.now() })));
     const reinforcers = reinforcerStats(all).filter((r) => r.trials);
     const accidents = accidentStats(all.filter((t) => t.goalId === 'X.3'));
+    const abcLogs = await db.getAllAbcLogs();
     body.replaceChildren(
       kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
       kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
+      abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self)),
       weeklyTrendChart(all),
       ...SECTIONS.map((s) => h('section', { class: 'card-box' },
         h('h3', {}, `${s.emoji} ${s.id}. ${s.name}`),

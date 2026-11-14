@@ -4,7 +4,7 @@
 import { GOALS } from './modules/goals.js';
 
 const DB_NAME = 'kalimati';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 let dbPromise = null;
 
@@ -47,6 +47,11 @@ function upgrade(db, transaction, oldVersion) {
       ['day', 'routineId', 'stepId', 'autonomy'].forEach((index) => logs.createIndex(index, index));
     }
     if (!db.objectStoreNames.contains('schedule_config')) db.createObjectStore('schedule_config', { keyPath: 'id' });
+  }
+  // v7 : journal scientifique des comportements à problème (méthode ABA / FBA : ABC + SEAT + Scatterplot).
+  if (oldVersion < 7 && !db.objectStoreNames.contains('abc_logs')) {
+    const abc = db.createObjectStore('abc_logs', { keyPath: 'id' });
+    ['day', 'behavior', 'fn', 'place'].forEach((index) => abc.createIndex(index, index));
   }
 }
 
@@ -131,3 +136,12 @@ export const getAllScheduleLogs = () => run('schedule_logs', 'readonly', (s) => 
 export const getScheduleConfig = (id) => run('schedule_config', 'readonly', (s) => s.get(id));
 export const putScheduleConfig = (record) => run('schedule_config', 'readwrite', (s) => s.put(record));
 export const deleteScheduleConfig = (id) => run('schedule_config', 'readwrite', (s) => s.delete(id));
+
+// Journal scientifique ABC / FBA : { id, ts, day, place, intervenant, setting, antecedents, behavior, intensity, durationSec, consequences, fn, replacement, note }
+export const addAbcLog = (log) => run('abc_logs', 'readwrite', (s) => s.put(log));
+export const deleteAbcLog = (id) => run('abc_logs', 'readwrite', (s) => s.delete(id));
+export const getAllAbcLogs = () => run('abc_logs', 'readonly', (s) => s.getAll());
+export const getAbcLogsOfDay = (day) => run('abc_logs', 'readonly', (s) => s.index('day').getAll(day));
+export function putAbcLogs(logs) {
+  return run('abc_logs', 'readwrite', (s) => { logs.forEach((l) => s.put(l)); return null; });
+}

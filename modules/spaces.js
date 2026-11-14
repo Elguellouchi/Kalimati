@@ -157,6 +157,8 @@ export function createNavigator(app) {
     openEmotions() { history.length = 0; go(emotionsHome); },
     openGallery() { history.length = 0; history.push(emotionsHome); go(galleryScreen); },
     openGoal(goalId, home) { history.length = 0; if (home) history.push(home); go(() => exerciseScreen(goalId)); },
+    openScreen(screenFn, home) { history.length = 0; if (home) history.push(home); go(screenFn); },
+    back,
     leave: runCleanups,
   };
 }

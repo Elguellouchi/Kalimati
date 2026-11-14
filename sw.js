@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v7-2';
+const CACHE = 'kalimati-v8-0';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -11,7 +11,7 @@ const FILES = [
   './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js',
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
-  './modules/ex-autonomy.js',
+  './modules/ex-autonomy.js', './modules/ex-abc.js',
 ];
 
 // Voix par défaut des cartes (voix/index.json) : mises en cache aussi, pour parler sans internet.

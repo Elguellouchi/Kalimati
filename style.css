@@ -757,3 +757,18 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .lang-choice.active { border-color: var(--brand); background: var(--soft); }
 .parent-bar .seg { max-width: 100%; }
 .parent-bar .seg button { padding: 6px 8px; font-size: 13px; }
+
+/* v8.0 : Journal scientifique ABC / FBA (Espace adulte) */
+.chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.abc-chip { border: 2px solid var(--line); border-radius: 999px; background: var(--surface); padding: 6px 12px; font-size: 14px; font-weight: 600; color: var(--text); cursor: pointer; transition: all .15s ease; }
+.abc-chip.on { border-color: var(--brand); background: var(--soft); color: var(--brand); font-weight: 700; }
+.abc-summary { border-left: 5px solid #E65100; }
+.abc-history-row { padding: 10px 0; border-bottom: 1px solid var(--line); }
+.abc-history-row:last-child { border-bottom: 0; }
+.seat-row { display: flex; flex-direction: column; gap: 4px; }
+.scatter-wrap { overflow-x: auto; }
+.scatter-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: center; }
+.scatter-table th, .scatter-table td { border: 1px solid var(--line); padding: 6px 4px; }
+.scatter-table tbody th { text-align: left; font-weight: 600; white-space: nowrap; padding-right: 8px; }
+.scatter-cell.empty { color: #999; }
+.scatter-dot { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 50%; color: #fff; font-weight: 800; font-size: 12px; }
