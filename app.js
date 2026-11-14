@@ -14,6 +14,7 @@ import { dashboardScreen } from './modules/dashboard.js';
 import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
+import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 
@@ -30,7 +31,9 @@ const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
 
 // ---------- Cartes ----------
-const label = (card, lang = state.lang) => (lang === 'dr' ? (card.dr || card.fr) : card.fr);
+const label = (card, lang = state.lang) => cardWord(card, lang);
+// Voix du téléphone pour un texte de menu : la langue choisie (darija en lettres latines : voix française).
+const menuVoice = () => (isExtraLang(state.lang) ? state.lang : 'fr');
 
 function photoUrl(card) {
   const cached = photoUrls.get(card.id);
@@ -109,7 +112,7 @@ function renderStrip() {
   });
   $('#strip-cards').replaceChildren(...items);
   $('#strip').classList.toggle('empty', state.strip.length === 0);
-  $('#btn-lang').textContent = state.lang === 'dr' ? 'DR' : 'FR';
+  $('#btn-lang').textContent = langInfo(state.lang).short;
   renderSuggestions();
 }
 
@@ -140,7 +143,7 @@ function setupStrip() {
   $('#btn-play').onclick = () => sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
   $('#btn-back').onclick = () => { state.strip = state.strip.slice(0, -1); renderStrip(); };
   $('#btn-clear').onclick = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
-  $('#btn-lang').onclick = async () => { state.lang = state.lang === 'dr' ? 'fr' : 'dr'; await db.setSetting('lang', state.lang); renderAll(); };
+  $('#btn-lang').onclick = openLangPicker;
 }
 
 // ---------- Espace Parler ----------
@@ -156,7 +159,7 @@ function renderTalk() {
   }));
   const tabs = h('nav', { class: 'tabs', 'aria-label': 'Catégories' }, CATEGORIES.filter((c) => c.id !== CORE_CAT).map((category) => {
     const tab = h('button', { type: 'button', class: `tab${category.id === state.cat ? ' active' : ''}`, onclick: () => { state.cat = category.id; renderView(); } },
-      state.lang === 'dr' ? category.dr : category.fr);
+      categoryName(category, state.lang));
     tab.style.setProperty('--cat', category.color);
     return tab;
   }));
@@ -238,7 +241,7 @@ const SPACES = [
 function renderSpaces() {
   $('#spaces').replaceChildren(...SPACES.map(([id, emoji, text]) => h('button', {
     type: 'button', class: `space-btn${state.space === id ? ' active' : ''}`, onclick: () => openSpace(id),
-  }, h('span', { class: 'emoji' }, emoji), h('span', {}, text), id === 'progress' && !state.parent ? h('span', { class: 'mini-lock' }, '🔒') : null)));
+  }, h('span', { class: 'emoji' }, emoji), h('span', {}, ui(id, state.lang) || text), id === 'progress' && !state.parent ? h('span', { class: 'mini-lock' }, '🔒') : null)));
 }
 
 function openSpace(id) {
@@ -249,21 +252,22 @@ function openSpace(id) {
 
 // ---------- Écran d'accueil : grandes tuiles colorées, une par espace ----------
 const HOME_TILES = [
-  ['talk', '🗣️', 'Je parle', 'Mes cartes et ma voix', 'tile-talk'],
-  ['session', '🎮', 'Je joue', 'Les jeux pour apprendre', 'tile-play'],
-  ['routines', '📅', 'Ma journée', 'Ma routine du matin et du soir', 'tile-day'],
-  ['emotions', '😊', 'Mes émotions', 'Content, triste, fâché…', 'tile-feel'],
+  ['talk', '🗣️', 'tTalk', 'sTalk', 'tile-talk'],
+  ['session', '🎮', 'tPlay', 'sPlay', 'tile-play'],
+  ['routines', '📅', 'tDay', 'sDay', 'tile-day'],
+  ['emotions', '😊', 'tFeel', 'sFeel', 'tile-feel'],
 ];
 
 function homeScreen() {
-  const hello = `Bonjour ${firstName()} !`;
+  const hello = `${ui('hello', state.lang)} ${firstName()} !`;
   return h('div', { class: 'screen home' },
-    h('button', { type: 'button', class: 'home-hello', onclick: () => speak(hello) },
+    h('button', { type: 'button', class: 'home-hello', onclick: () => speak(hello, { lang: menuVoice() }) },
       h('span', { class: 'home-nour' }, nour({ pose: 'wave', size: 96 })),
-      h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, 'Qu’est-ce qu’on fait aujourd’hui ?'))),
-    h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, title, sub, cls]) => h('button', {
-      type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(title); openSpace(id); },
-    }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, title), h('small', {}, sub)))),
+      h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, ui('ask', state.lang)))),
+    h('button', { type: 'button', class: 'home-lang', onclick: openLangPicker }, `${langInfo(state.lang).flag} ${langInfo(state.lang).name} · 🌍 ${LANGS.length} langues`),
+    h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, titleKey, subKey, cls]) => h('button', {
+      type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(ui(titleKey, state.lang), { lang: menuVoice() }); openSpace(id); },
+    }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang))))),
     h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès (adultes)' : '🔒 Progrès (adultes)'));
 }
 
@@ -348,9 +352,32 @@ async function collectSettings() {
   return Object.fromEntries(entries.filter(([, value]) => value !== undefined));
 }
 
+// ---------- Choix de la langue (11 langues) ----------
+async function setLang(code) {
+  state.lang = langInfo(code).code;
+  await db.setSetting('lang', state.lang);
+  renderAll();
+}
+
+function openLangPicker() {
+  const dialog = h('dialog', { class: 'lang-dialog' });
+  const close = () => { if (dialog.open) dialog.close(); dialog.remove(); };
+  dialog.append(h('div', { class: 'stack pad' }, h('h3', {}, '🌍 Langue / اللغة / Language'),
+    h('div', { class: 'lang-grid' }, LANGS.map((l) => h('button', {
+      type: 'button', class: `lang-choice${l.code === state.lang ? ' active' : ''}`, lang: l.tts, dir: l.rtl ? 'rtl' : 'auto',
+      onclick: () => { close(); setLang(l.code); speak(ui('hello', l.code), { lang: isExtraLang(l.code) ? l.code : 'fr' }); },
+    }, h('span', { class: 'emoji' }, l.flag), h('span', {}, l.name)))),
+    h('p', { class: 'note' }, 'Français et darija : vos voix enregistrées. Autres langues : la voix du téléphone dit les mots traduits.'),
+    h('button', { type: 'button', class: 'btn ghost', onclick: close }, 'Fermer')));
+  document.body.append(dialog);
+  dialog.showModal();
+}
+
 function setupParentBar() {
+  const langSeg = document.querySelector('[data-lang-choice]')?.parentElement;
+  if (langSeg) langSeg.replaceChildren(...LANGS.map((l) => h('button', { type: 'button', dataset: { langChoice: l.code }, title: l.name }, `${l.flag} ${l.short}`)));
   document.querySelectorAll('[data-lang-choice]').forEach((button) => {
-    button.onclick = async () => { state.lang = button.dataset.langChoice; await db.setSetting('lang', state.lang); renderAll(); };
+    button.onclick = () => setLang(button.dataset.langChoice);
   });
   $('#cols').onchange = async (e) => {
     state.cols = Number(e.target.value);
@@ -445,7 +472,7 @@ async function loadCards() {
 
 async function init() {
   nav.attach($('#view'));
-  state.lang = (await db.getSetting('lang')) || 'fr';
+  state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   await loadAacPlus();
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;

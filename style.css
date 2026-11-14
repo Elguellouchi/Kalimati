@@ -747,3 +747,13 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .calm-btn { position: fixed; right: 12px; bottom: calc(96px + env(safe-area-inset-bottom, 0px)); width: 58px; height: 58px; border-radius: 50%; z-index: 25; box-shadow: 0 4px 14px rgb(0 0 0 / .18); font-size: 24px; }
   .calm-btn span { display: none; }
 }
+
+/* v7.2 : 11 langues */
+.home-lang { align-self: center; border: 2px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; font-size: 15px; font-weight: 700; color: var(--brand); }
+.lang-dialog .pad { padding: 16px; }
+.lang-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+.lang-choice { display: flex; align-items: center; gap: 8px; border: 3px solid var(--line); border-radius: 16px; background: var(--surface); padding: 10px 12px; font-size: 17px; font-weight: 700; color: var(--text); }
+.lang-choice .emoji { font-size: 26px; }
+.lang-choice.active { border-color: var(--brand); background: var(--soft); }
+.parent-bar .seg { max-width: 100%; }
+.parent-bar .seg button { padding: 6px 8px; font-size: 13px; }

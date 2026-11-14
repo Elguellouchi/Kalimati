@@ -1,6 +1,8 @@
 // Fait parler une carte : voix enregistrée par le parent d'abord, puis voix du téléphone.
 // Voix lente (0,85), darija lue avec une voix arabe si la graphie arabe existe, phrases mélangeant FR et darija.
 
+import { langInfo, isExtraLang, cardWord, hasWord } from './modules/languages.js';
+
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
 // Jamais sur iPhone / iPad : Safari n'accepte la voix que si elle part directement du toucher.
@@ -52,9 +54,10 @@ if ('speechSynthesis' in window) {
 // Voix du téléphone en priorité (marche sans internet), sinon n'importe quelle voix de la langue.
 function pickVoice(lang) {
   const all = voices();
-  const key = lang === 'ar' ? 'ar' : 'fr';
-  const matches = (v) => (key === 'ar' ? v.lang.startsWith('ar') : v.lang.replace('_', '-').startsWith('fr'));
-  const exact = key === 'ar' ? 'ar-MA' : 'fr-FR';
+  // v7.2 : 11 langues. 'ar' = toute voix arabe (darija et arabe), les autres par leur code (en, es, zh…).
+  const key = lang || 'fr';
+  const matches = (v) => v.lang.replace('_', '-').toLowerCase().startsWith(key);
+  const exact = key === 'ar' ? 'ar-MA' : langInfo(key).tts;
   const candidates = all.filter(matches);
   if (preferredVoices[key]) {
     const chosen = candidates.find((v) => v.name === preferredVoices[key]);
@@ -94,7 +97,7 @@ export function speak(text, { lang = 'fr', rate = RATE } = {}) {
     const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = pickVoice(lang);
-    utterance.lang = voice ? voice.lang.replace('_', '-') : (lang === 'ar' ? 'ar-MA' : 'fr-FR');
+    utterance.lang = voice ? voice.lang.replace('_', '-') : (lang === 'ar' ? 'ar-MA' : langInfo(lang).tts);
     if (voice) utterance.voice = voice;
     utterance.rate = rate;
     utterance.volume = 1;
@@ -156,6 +159,8 @@ function sayWithPhoneVoice(card, lang) {
 // Ordre : 1) voix enregistrée par le parent ; 2) voix par défaut livrée avec l'app ; 3) voix du téléphone.
 // sayFr / sayAr : phrase à dire quand elle diffère du mot affiché (ex. « Ghita, ma sœur »).
 export async function sayCard(card, lang) {
+  // Langues ajoutées (v7.2) : le mot traduit, dit par la voix du téléphone ; un mot sans traduction est dit en français.
+  if (isExtraLang(lang)) return speak(cardWord(card, lang), { lang: hasWord(card, lang) ? lang : 'fr' });
   const recording = recordingFor(card, lang);
   if (recording) return playBlob(recording);
   const url = defaultVoiceUrl(card, lang);
