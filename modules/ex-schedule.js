@@ -76,10 +76,27 @@ const SURPRISES = [
   ['🎉', 'Une fête', 'L 7efla', 'الحفلة', 60], ['📞', 'Appel vidéo', 'N3ayto f telephone', 'نعيطو فالتيليفون', 10],
 ];
 
+// Catalogue de remplacement rapide d'une étape (ex. remplacer « Promenade au bord de la mer » s'il pleut ou si ce n'est pas prévu).
+const STEP_REPLACEMENTS = [
+  ['🌳', 'Sortie au parc / jardin', 'Nemchiw l jarda', 'نمشيو للجردة', 45],
+  ['🧩', 'Jeu calme / Puzzle à la maison', 'Nl3eb puzzle f dar', 'نلعب البوزل فالدار', 30],
+  ['🎨', 'Dessin, peinture et coloriage', 'Nrsem w nlewwen', 'نرسم ونلون', 30],
+  ['👩‍🍳', 'Faire un gâteau / pâtisserie en famille', 'Nsawbo l 7elwa', 'نصاوبو الحلوى', 45],
+  ['🧕', 'Visite chez les grands-parents / famille', 'Nzouro l3a2ila', 'نزورو العائلة', 60],
+  ['🛒', 'Courses au supermarché (Marjane)', 'Ntqdaw f Marjane', 'نتقداو فمرجان', 45],
+  ['🎬', 'Regarder un dessin animé / cinéma', 'Ntferrej f رسوم', 'نتفرج فالرسوم', 45],
+  ['🤸‍♀️', 'Sauter au trampoline / bouger', 'Nnegguez f trampoline', 'ننكز فالترامبولين', 25],
+  ['🚿', 'Prendre une bonne douche tiède', 'Ndouwech b ma dafi', 'ندوش بما دافي', 15],
+  ['💅', 'Couper ses ongles et prendre soin de soi', 'Nqette3 dfari', 'نقطع ضفاري', 10],
+  ['🚗', 'Promenade en voiture', 'Ntsaraw f tomobil', 'نتساراو فالطوموبيل', 30],
+  ['📖', 'Lire un livre calme sur le canapé', 'Nqra ktab f salon', 'نقرا كتاب فالصالون', 20],
+];
+
 const ALERTS = [[300, 'Encore 5 minutes', 'باقي خمس دقايق'], [120, 'Encore 2 minutes', 'باقي جوج دقايق'], [60, 'Encore 1 minute', 'باقي دقيقة']];
 const CONFIG_ID = 'routines';
 const PREFS_ID = 'prefs';
 const SURPRISE_ID = 'surprise';
+const OVERRIDES_ID = 'day_overrides';
 
 // v7 (Aegon) : Tableau « J'attends / Je me calme » (inspiré de Choiceworks Waiting & Coping Board)
 const COPING_CHOICES = [
@@ -100,12 +117,18 @@ function withDefaultSubSteps(routines) {
   return routines.map((r) => ({ ...r, steps: r.steps.map((s) => (defaults.get(s.id) ? { ...s, sub: defaults.get(s.id) } : s)) }));
 }
 async function loadState() {
-  const [config, prefs, surprise, logs] = await Promise.all([db.getScheduleConfig(CONFIG_ID), db.getScheduleConfig(PREFS_ID),
-    db.getScheduleConfig(SURPRISE_ID), db.getScheduleLogsOfDay(dayKey())]);
+  const [config, prefs, surprise, overrides, logs] = await Promise.all([
+    db.getScheduleConfig(CONFIG_ID),
+    db.getScheduleConfig(PREFS_ID),
+    db.getScheduleConfig(SURPRISE_ID),
+    db.getScheduleConfig(OVERRIDES_ID),
+    db.getScheduleLogsOfDay(dayKey()),
+  ]);
   return {
     routines: config ? withDefaultSubSteps(config.routines) : DEFAULT_ROUTINES(),
     prefs: { routineId: 'matin', mode: 'steps', reading: '0', ...(prefs || {}) },
     surprise: surprise && surprise.day === dayKey() ? surprise : null,
+    overrides: overrides && overrides.day === dayKey() ? (overrides.map || {}) : {},
     logs,
   };
 }
@@ -122,7 +145,10 @@ const stepLabel = (step, lang) => (lang === 'dr'
 // Étapes visibles aujourd'hui : routine du parent (sans les masquées) + l'imprévu du jour, inséré là où il a été annoncé.
 function todaySteps(state) {
   const routine = state.routines.find((r) => r.id === state.prefs.routineId) || state.routines[0];
-  const steps = routine.steps.filter((s) => !s.hidden);
+  const ov = (state.overrides && state.overrides[routine.id]) || {};
+  const steps = routine.steps
+    .filter((s) => !s.hidden && !(ov[s.id] && ov[s.id].skipToday))
+    .map((s) => (ov[s.id] && ov[s.id].step ? { ...s, ...ov[s.id].step, id: s.id, replacedToday: true, origFr: s.fr } : s));
   const extra = state.surprise && state.surprise.routineId === routine.id ? state.surprise : null;
   if (!extra) return { routine, steps };
   const at = Math.min(extra.at, steps.length);
@@ -287,10 +313,14 @@ export function scheduleView(ctx) {
   function stepRow(step, log, isCurrent) {
     const isDone = Boolean(log);
     const toggle = () => { if (!isDone) check(step); else if (ctx.isParent()) uncheck(step); };
-    return h('div', { class: `sched-row${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}${step.surprise ? ' surprise' : ''}`, dataset: { step: step.id } },
+    return h('div', { class: `sched-row${isDone ? ' done' : ''}${isCurrent ? ' current' : ''}${step.surprise || step.replacedToday ? ' surprise' : ''}`, dataset: { step: step.id } },
       h('button', { type: 'button', class: 'sched-step', onclick: () => openStep(step) }, stepVisual(step), stepLabel(step, ctx.lang()),
         step.surprise ? h('span', { class: 'chip-surprise' }, '🔀 Changement') : null,
+        step.replacedToday ? h('span', { class: 'chip-surprise' }, `🔄 Au lieu de : ${step.origFr}`) : null,
         step.sub ? h('span', { class: 'sub-hint' }, '👆 petites étapes') : null),
+      ctx.isParent() && !step.surprise ? h('div', { class: 'row step-parent-actions' },
+        btn('🔄 Remplacer', () => replaceStepDialog(step), 'ghost tiny'),
+        btn('🙈 Pas aujourd’hui', () => skipStepToday(step), 'ghost tiny')) : null,
       isDone && ctx.isParent() ? h('span', { class: 'sched-auto' }, log.autonomy === 'seule' ? '✅ seule' : '👉 rappel') : null,
       h('button', { type: 'button', class: 'sched-check', 'aria-label': isDone ? 'Fait' : 'Cocher', onclick: toggle }, isDone ? '✔' : ''));
   }
@@ -364,16 +394,94 @@ export function scheduleView(ctx) {
     return bar;
   }
 
+  async function saveDayOverride(routineId, stepId, patch) {
+    const currentRoutineOv = { ...((state.overrides && state.overrides[routineId]) || {}), [stepId]: patch };
+    const map = { ...(state.overrides || {}), [routineId]: currentRoutineOv };
+    await db.putScheduleConfig({ id: OVERRIDES_ID, day: dayKey(), map });
+    state = { ...state, overrides: map };
+    rerender();
+  }
+
+  async function clearDayOverrides(routineId) {
+    const map = { ...(state.overrides || {}) };
+    delete map[routineId];
+    await db.putScheduleConfig({ id: OVERRIDES_ID, day: dayKey(), map });
+    state = { ...state, overrides: map };
+    rerender();
+  }
+
+  async function skipStepToday(step) {
+    const { routine } = todaySteps(state);
+    await saveDayOverride(routine.id, step.id, { skipToday: true });
+  }
+
+  function replaceStepDialog(step, onPermanent = null) {
+    const { routine } = todaySteps(state);
+    let close = () => {};
+    let scope = onPermanent ? 'perm' : 'today';
+    const customEmoji = h('input', { value: step.emoji || '⭐', maxlength: 6, style: { width: '64px' } });
+    const customFr = h('input', { value: step.fr || '', placeholder: 'Activité en français (ex. Jeux de société)' });
+    const customDr = h('input', { value: step.dr || '', placeholder: 'En darija (ex. Nl3eb f dar)' });
+    const customAr = h('input', { value: step.ar || '', placeholder: 'بالدارجة', dir: 'rtl' });
+    const customMin = h('input', { type: 'number', value: String(step.minutes || 30), min: 1, max: 300, style: { width: '80px' } });
+
+    const applyReplacement = async (emoji, fr, dr, ar, minutes) => {
+      if (onPermanent || scope === 'perm') {
+        const updatedSteps = routine.steps.map((s) => (s.id === step.id ? { ...s, emoji, fr, dr, ar, minutes, sub: null } : s));
+        const routines = state.routines.map((r) => (r.id === routine.id ? { ...r, steps: updatedSteps } : r));
+        state = { ...state, routines };
+        await saveRoutines(routines);
+        if (state.overrides?.[routine.id]?.[step.id]) {
+          const map = { ...state.overrides, [routine.id]: { ...state.overrides[routine.id] } };
+          delete map[routine.id][step.id];
+          await db.putScheduleConfig({ id: OVERRIDES_ID, day: dayKey(), map });
+          state = { ...state, overrides: map };
+        }
+      } else {
+        await saveDayOverride(routine.id, step.id, { step: { emoji, fr, dr, ar, minutes, sub: null } });
+        await recordTrial('A.6', 'plus', { item: `remplacement:${step.fr}->${fr}`, meta: { source: 'replace-step', routine: routine.id } });
+      }
+      close();
+      rerender();
+      speak(ctx.lang() === 'dr' && ar ? `اليوم غانديرو: ${ar}` : `Aujourd’hui, on remplace par : ${fr}`, { lang: voiceLang() });
+    };
+
+    const scopeBar = onPermanent ? null : h('div', { class: 'seg' },
+      btn('📅 Juste pour aujourd’hui', () => { scope = 'today'; scopeBar.children[0].classList.add('active'); scopeBar.children[1].classList.remove('active'); }, 'active'),
+      btn('📌 Toujours dans cette routine', () => { scope = 'perm'; scopeBar.children[1].classList.add('active'); scopeBar.children[0].classList.remove('active'); }, ''));
+
+    close = openDialog(`🔄 Remplacer « ${step.fr} »`,
+      h('p', { class: 'note' }, 'Si une activité n’est pas possible (ex. météo, imprévu), remplacez-la à l’avance pour éviter toute frustration à l’enfant.'),
+      scopeBar,
+      h('h4', {}, '1. Choisir une activité prête en 1 clic :'),
+      h('div', { class: 'choices', style: { '--cols': 2 } }, STEP_REPLACEMENTS.map(([emoji, fr, dr, ar, minutes]) =>
+        h('button', { type: 'button', class: 'choice', onclick: () => applyReplacement(emoji, fr, dr, ar, minutes) },
+          h('span', { class: 'emoji' }, emoji), h('span', { class: 'label' }, ctx.lang() === 'dr' ? dr : fr)))),
+      h('h4', {}, '2. Ou écrire votre propre activité :'),
+      h('div', { class: 'ed-grid' },
+        h('label', { class: 'ed-field' }, h('span', {}, 'Émoji'), customEmoji),
+        h('label', { class: 'ed-field' }, h('span', {}, 'Français'), customFr),
+        h('label', { class: 'ed-field' }, h('span', {}, 'Darija (latin)'), customDr),
+        h('label', { class: 'ed-field' }, h('span', {}, 'Darija (arabe)'), customAr),
+        h('label', { class: 'ed-field' }, h('span', {}, 'Durée (min)'), customMin)),
+      btn('✅ Valider cette activité personnalisée', () => {
+        if (!customFr.value.trim()) return;
+        applyReplacement(customEmoji.value.trim() || '⭐', customFr.value.trim(), customDr.value.trim(), customAr.value.trim(), Math.max(1, Number(customMin.value) || 20));
+      }, 'primary'));
+  }
+
   function parentTools(routine) {
     const reading = h('select', { 'aria-label': 'Je sais déjà lire', onchange: (e) => setPrefs({ reading: e.target.value }) },
       READING.map(([v, label]) => h('option', { value: v, selected: v === state.prefs.reading }, label)));
-    return h('section', { class: 'card-box sched-parent' }, h('h3', {}, '🔓 Pour l’adulte'),
+    const hasOv = state.overrides && state.overrides[routine.id] && Object.keys(state.overrides[routine.id]).length > 0;
+    return h('section', { class: 'card-box sched-parent' }, h('h3', {}, '🔓 Pour l’adulte (adaptation sans frustration)'),
+      h('p', { class: 'note' }, '💡 Astuce : sur chaque ligne ci-dessus, touchez « 🔄 Remplacer » (ex. remplacer la plage par le parc ou un jeu à la maison) ou « 🙈 Pas aujourd’hui » avant de montrer le planning à l’enfant.'),
       h('div', { class: 'row' },
-        btn('🔀 Changement / Surprise', () => surpriseDialog(routine), 'ghost'),
-        btn('✏️ Modifier les routines', () => { view = 'editor'; rerender(); }, 'ghost'),
+        btn('🔀 Ajouter un imprévu / Surprise', () => surpriseDialog(routine), 'ghost'),
+        btn('✏️ Modifier toute la routine', () => { view = 'editor'; rerender(); }, 'ghost'),
+        hasOv ? btn('↺ Rétablir les étapes d’aujourd’hui', () => clearDayOverrides(routine.id), 'ghost') : null,
         btn('🖨️ Imprimer le tableau MATIN / SOIR', printSheet, 'ghost')),
-      h('label', { class: 'check' }, '📖 Je sais déjà lire : ', reading),
-      h('p', { class: 'note' }, 'Chaque coche est notée dans les objectifs liés (W.4 routine complète, U.4, V.4, X.2, W.3, A.3 en mode Maintenant / Ensuite, A.6 pour un changement). Touchez une coche ✔ pour l’annuler.'));
+      h('label', { class: 'check' }, '📖 Je sais déjà lire : ', reading));
   }
 
   function surpriseDialog(routine) {
@@ -455,7 +563,9 @@ export function scheduleView(ctx) {
       h('input', { value: step[key] ?? '', ...attrs, onchange: (e) => patch(i, { [key]: attrs.type === 'number' ? Math.max(1, Number(e.target.value) || 1) : e.target.value }) }));
     return h('div', { class: `ed-step${step.hidden ? ' is-hidden' : ''}` },
       h('div', { class: 'ed-step-head' }, h('span', { class: 'ed-num' }, String(i + 1)), stepVisual(step),
-        h('div', { class: 'row' }, btn('↑', () => move(i, -1), 'ghost tiny'), btn('↓', () => move(i, 1), 'ghost tiny'),
+        h('div', { class: 'row' },
+          btn('🔄 Remplacer par…', () => replaceStepDialog(step, true), 'ghost tiny'),
+          btn('↑', () => move(i, -1), 'ghost tiny'), btn('↓', () => move(i, 1), 'ghost tiny'),
           btn(step.hidden ? '🙈 Masquée' : '👁 Visible', () => patch(i, { hidden: !step.hidden }), 'ghost tiny'), btn('🗑', () => remove(i), 'ghost tiny'))),
       h('div', { class: 'ed-grid' }, field('emoji', 'Image', { maxlength: 8 }), field('fr', 'Français'), field('dr', 'Darija (lettres latines)'),
         field('ar', 'Darija (lettres arabes)', { dir: 'rtl' }), field('minutes', 'Durée (min)', { type: 'number', min: 1, max: 600 })),
