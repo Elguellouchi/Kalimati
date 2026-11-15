@@ -1,3 +1,4 @@
+import { hygieneHubScreen } from './ex-hygiene.js';
 // Prochains niveaux ABLLS-R (62 objectifs, A.4 → Z.4) : un jeu par objectif, même moteur et même notation que le PEI.
 // Trois types de jeu : choisir (choiceGame), mettre dans l'ordre (orderGame), activité guidée notée par l'adulte (coachGame).
 // Les images viennent du catalogue (pictogrammes / photos en ligne, dessins hors ligne) : aucun appel réseau n'est obligatoire.
@@ -620,7 +621,7 @@ const v4 = () => {
   return h('div', { class: 'stack' }, h('p', { class: 'ask' }, 'On met la table : assiette, verre, cuillère, fourchette'), table, out, ratingPanel('V.4', { item: 'table', labels: { plus: 'Table mise seule ✅' } }));
 };
 const W4 = { Matin: [['⏰', 'Se lever'], ['🚽', 'Toilettes'], ['🧼', 'Se laver'], ['👕', 'S’habiller'], ['🥣', 'Petit-déjeuner'], ['🪥', 'Brosser les dents']], Soir: [['🛁', 'Bain'], ['👚', 'Pyjama'], ['🪥', 'Brosser les dents'], ['📖', 'Histoire'], ['😴', 'Dormir']] };
-const w4 = coachGame('W.4', (rand) => { const name = rPick(rand, Object.keys(W4)); return { item: name, ask: `La routine du ${name.toLowerCase()}`, body: [sequenceBoard(W4[name]).element], labels: { plus: 'Toute la routine, seule ✅' } }; });
+const w4 = (ctx) => hygieneHubScreen(ctx);
 const x4 = () => {
   const status = h('p', { class: 'note' }, 'Touchez à chaque fois qu’elle va seule aux toilettes, sans qu’on le lui rappelle.');
   return h('div', { class: 'stack' }, bigCard('🚽', 'Toute seule, sans rappel'), status,

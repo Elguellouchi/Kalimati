@@ -21,7 +21,9 @@ const WUDU = [['🙌', 'Se laver les mains'], ['👄', 'Se rincer la bouche'], [
 const TOILET = SEQUENCES['X.2']; // les 9 étapes détaillées (photos « toilet:<id> »)
 const TEETH = SEQUENCES['W.3'];
 const DRESS = SEQUENCES['U.1'];
-const HAIR = [['🪮', 'Prendre la brosse'], ['💇‍♀️', 'Brosser doucement'], ['🎀', 'Mettre l’élastique'], ['🪞', 'Se regarder dans le miroir']];
+const HAIR = [['🪮', 'Prendre ma brosse douce et mes élastiques'], ['💦', 'Mettre un peu d’eau ou de spray démêlant'], ['💇‍♀️', 'Tenir la mèche et brosser le bas des cheveux'], ['🙆‍♀️', 'Brosser doucement du haut vers le bas'], ['🎀', 'Mettre mon élastique ou ma barrette'], ['🪞', 'Me regarder dans le miroir et ranger la brosse']];
+const SHOWER = [['🧺', 'Préparer ma serviette et mes habits propres'], ['👕', 'Enlever mes vêtements sales'], ['🌡️', 'Vérifier que l’eau est tiède avec la main'], ['🚿', 'Mouiller tout mon corps'], ['🧴', 'Mettre le savon sur le gant'], ['💪', 'Laver le cou, les bras et le ventre'], ['🦵', 'Laver les jambes et les pieds'], ['💦', 'Rincer toute la mousse'], ['🚰', 'Fermer le robinet'], ['🧖‍♀️', 'Bien me sécher avec ma serviette']];
+const NAILS = [['🛁', 'S’installer au calme après le bain'], ['✂️', 'Prendre le coupe-ongles et la lime'], ['🖐️', 'Couper les 5 ongles de la première main (1 à 5)'], ['✋', 'Couper les 5 ongles de l’autre main (6 à 10)'], ['🦶', 'Couper les ongles des pieds si besoin'], ['✨', 'Passer la lime douce'], ['🗑️', 'Jeter les petits bouts et laver mes mains']];
 const BED = [['🛏️', 'Tirer la couverture'], ['🧸', 'Poser le coussin'], ['🙌', 'Lisser avec les mains']];
 const BAG = [['📓', 'Mettre le cahier'], ['🖍️', 'Mettre la trousse'], ['🥪', 'Mettre le goûter'], ['🎒', 'Fermer le cartable']];
 
@@ -43,6 +45,7 @@ export const DEFAULT_ROUTINES = () => [
   { id: 'soir', title: 'Soir', emoji: '🌙', steps: [
     homework('s-devoirs'),
     S('s-jouer', 'Jouer / Ranger sa chambre', 'Nl3eb w nrettab bit', 'نلعب ونرتب بيتي', '🧸', 30),
+    S('s-douche', 'Prendre sa douche', 'Ndouwech', 'ندوش', '🚿', 15, { goalId: 'W.4', sub: SHOWER }),
     S('s-diner', 'Dîner', 'Nt3echa', 'نتعشى', '🍽️', 20, { goalId: 'V.4' }),
     S('s-dents', 'Se brosser les dents / Aller aux toilettes', 'Nghsel snani w nemchi l bit l ma', 'نغسل سناني ونمشي لبيت الما', '🪥', 5, { goalId: 'W.3', sub: [...TEETH, ...TOILET] }),
     prayer('s-priere'), story('s-histoire'),
@@ -61,6 +64,7 @@ export const DEFAULT_ROUTINES = () => [
     S('w-mer', 'Promenade au bord de la mer', 'Ntsara 7da l b7er', 'نتسارا حدا البحر', '🌊', 60),
     S('w-ghita', `Jouer avec ${sisterName()}`, 'Nl3eb m3a khti', 'نلعب مع ختي', '👧', 30),
     S('w-dejeuner', 'Déjeuner en famille', 'Ntghedda', 'نتغدى', '🍲', 30, { goalId: 'V.4' }),
+    S('w-ongles', 'Couper ses ongles et soins', 'Nqette3 dfari', 'نقطع ضفاري', '💅', 10, { goalId: 'W.4', sub: NAILS }),
     S('w-calme', 'Temps calme', 'Nrta7', 'نرتاح', '🛋️', 30), story('w-histoire'),
   ] },
 ];

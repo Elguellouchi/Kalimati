@@ -24,6 +24,7 @@ import { levelHeader, onLevelChange, levelOf } from './levels.js';
 import { scheduleView } from './ex-schedule.js';
 import { storiesView } from './stories.js';
 import { orthoScreen } from './ex-ortho.js';
+import { hygieneHubScreen } from './ex-hygiene.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -35,7 +36,8 @@ export const routines = () => [
   { title: '⏳ Temps et transitions', items: [['A.1', '⏳', 'Mon sablier visuel (Time Timer)'], ['A.3', '➡️', 'D’abord / Ensuite'], ['A.2', '🎁', 'Ce qui me fait plaisir']] },
   { title: '🏫 Classe', items: [['M.2', '👧', 'Regroupement 5 min'], ['N.1', '🎒', 'Arrivée en classe'], ['N.2', '✋', 'Je lève la main'], ['N.3', '🖍️', 'Changer d’activité']] },
   { title: `🍽️ ${mealTitle()}`, items: [['V.1', '🥄', 'Je mange à la cuillère'], ['V.2', '🍴', 'Je pique à la fourchette'], ['V.3', '🥛', 'Je bois au verre']] },
-  { title: '🏠 Maison', items: [['U.1', '👕', 'Je m’habille'], ['U.2', '🧥', 'Je ferme mon vêtement'], ['U.3', '👟', 'Mes chaussures'], ['W.1', '🧼', 'Je me lave les mains'], ['W.2', '😊', 'Je me lave le visage'], ['W.3', '🪥', 'Je me brosse les dents']] },
+  { title: '🏠 Maison & Habillage', items: [['U.1', '👕', 'Je m’habille'], ['U.2', '🧥', 'Je ferme mon vêtement'], ['U.3', '👟', 'Mes chaussures'], ['U.4', '🌦️', 'Habits selon la météo']] },
+  { title: '🫧 Hygiène & Soins du corps (10 routines)', items: [['W.4', '🫧', 'Toutes mes routines hygiène (Douche, Ongles, Shampoing…)'], ['W.1', '🧼', 'Je me lave les mains (7 étapes)'], ['W.2', '😊', 'Je me lave le visage (6 étapes)'], ['W.3', '🪥', 'Je me brosse les dents (8 étapes)']] },
   { title: '🚽 Toilettes', items: [['X.3', '⏰', 'Rappel et journal'], ['X.2', '🧻', 'Après les toilettes'], ['X.1', '🌟', 'Mes demandes']] },
   { title: '✂️ Ateliers', items: [['Z.2', '✂️', `Atelier découpage d'${firstName()}`], ['Z.3', '📿', 'J’enfile des perles']] },
 ];
@@ -118,6 +120,8 @@ export function createNavigator(app) {
       clinicBar(),
       h('button', { type: 'button', class: 'section-tile big ortho-tile', onclick: () => go(orthoHome) }, h('span', { class: 'emoji' }, '🗣️'), h('span', {}, 'Atelier Orthophonie'),
         h('small', {}, 'Articulation, phrases, situations, sons')),
+      h('button', { type: 'button', class: 'section-tile big', onclick: () => go(() => hygieneHome()) }, h('span', { class: 'emoji' }, '🫧'), h('span', {}, 'Pôle Hygiène & Soins (10 routines)'),
+        h('small', {}, 'Douche, ongles, shampoing, dents, mains, visage, nez, coiffure, wudu')),
       h('div', { class: 'section-grid' }, SECTIONS.map((s) => h('button', { type: 'button', class: 'section-tile', onclick: () => go(() => sectionScreen(s.id)) },
         h('span', { class: 'emoji' }, s.emoji), h('strong', {}, s.id), h('span', {}, s.name)))));
   }
@@ -138,6 +142,7 @@ export function createNavigator(app) {
   const storiesScreen = () => h('div', { class: 'screen' }, header('📖 Mes histoires'),
     storiesView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) }));
   const orthoHome = () => h('div', { class: 'screen' }, header('🗣️ Atelier Orthophonie'), clinicBar(), orthoScreen(context()));
+  const hygieneHome = (initialId = null) => h('div', { class: 'screen' }, header('🫧 Hygiène & Soins du corps', 'Douche, shampoing, ongles, dents, mains, visage, nez, coiffure, ablutions'), clinicBar(), photoHint(), hygieneHubScreen(context(), initialId));
   const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), photoHint(), emotionStudio(context()));
   const galleryScreen = () => h('div', { class: 'screen' }, header('📸 Personnaliser avec nos vraies photos'),
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));

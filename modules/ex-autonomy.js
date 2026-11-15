@@ -13,6 +13,7 @@ import { goalById } from './goals.js';
 import { visualTimer } from './timer.js';
 import { renderVisual } from './visuals.js';
 import { SEQUENCES, TOILET_STEPS } from './content.js';
+import { hygieneRoutineView } from './ex-hygiene.js';
 
 // ---------- V : « À table en famille (avec Papa, Maman et Ghita) » ----------
 export const mealTitle = () => `À table en famille (avec Papa, Maman et ${sisterName()})`;
@@ -131,14 +132,12 @@ function brushing(ctx) {
     speak('Bravo, les dents sont propres !');
   };
   ctx.onCleanup(() => { token += 1; });
-  const seq = sequenceBoard(SEQUENCES['W.3']);
-  return h('div', { class: 'stack' },
-    h('h3', {}, '🪥 Je me brosse les dents'),
+  const timerGame = () => h('div', { class: 'stack' },
     h('div', { class: 'brush-row' }, videoModel('brossage', '🪥', { canEdit: ctx.parent }), mouth), clock,
     h('p', { class: 'note' }, `En mode parent, filmez ${firstName()} ou ${sisterName()} qui se brosse les dents : la vidéo sert de modèle.`),
-    h('div', { class: 'row center' }, select, btn('▶ Je me brosse les dents', run, 'primary'), btn('⏹', () => { token += 1; }, 'ghost')),
-    seq.element,
-    ratingPanel('W.3', { item: 'brossage', onRated: () => seq.reset() }));
+    h('div', { class: 'row center' }, select, btn('▶ Lancer le minuteur 4 coins', run, 'primary'), btn('⏹', () => { token += 1; }, 'ghost')),
+    ratingPanel('W.3', { item: 'brossage' }));
+  return hygieneRoutineView('dents', ctx, { label: '⏱️ Minuteur 4 coins', render: timerGame });
 }
 
 // ---------- X : toilettes ----------
@@ -455,7 +454,7 @@ function toiletGames(ctx = {}) {
 export const EXERCISES = {
   'U.1': sequenceExercise('U.1'), 'U.2': sequenceExercise('U.2'), 'U.3': sequenceExercise('U.3'),
   'V.1': mealSpoon, 'V.2': mealFork, 'V.3': mealGlass,
-  'W.1': sequenceExercise('W.1'), 'W.2': sequenceExercise('W.2'), 'W.3': brushing,
+  'W.1': (ctx) => hygieneRoutineView('mains', ctx), 'W.2': (ctx) => hygieneRoutineView('visage', ctx), 'W.3': brushing,
   'X.1': x1, 'X.2': toiletGames, 'X.3': toiletPlan,
   'Y.1': sequenceExercise('Y.1', { intro: 'Parcours réel : cerceaux, tunnel, panier.' }), 'Y.2': passes, 'Y.3': flamingo,
   'Z.1': () => h('div', { class: 'stack' }, bigCard('✏️', 'Prise tripode : pouce, index, majeur', '', 'obj:prise-tripode'),
