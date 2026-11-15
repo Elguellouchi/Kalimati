@@ -832,3 +832,15 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .ui-icon { flex: none; }
 .about .credits { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
 .about .credits a { color: var(--brand); }
+
+/* ---------- v9.5 : coin calme sans limite et plus ludique ---------- */
+.calm-star { font-size: 26px; transition: transform .3s ease, background .3s ease; }
+.calm-star.on { transform: scale(1.06); font-size: 20px; }
+.calm-field { position: relative; width: 100%; height: 260px; overflow: hidden; border-radius: var(--radius); background: linear-gradient(#E3F2FD, #E8F5E9); }
+.calm-bubble { position: absolute; bottom: -90px; border: 2px solid rgb(255 255 255 / .9); border-radius: 50%; background: radial-gradient(circle at 30% 30%, #fff, rgb(179 229 252 / .75)); font-size: 26px; display: grid; place-items: center; animation: calm-float linear forwards; transition: transform .25s ease, opacity .25s ease; }
+.calm-bubble.pop { transform: scale(1.5); opacity: 0; }
+@keyframes calm-float { from { transform: translateY(0); } to { transform: translateY(-380px); } }
+@media (prefers-reduced-motion: reduce) {
+  .calm-bubble { animation: none; bottom: auto; top: 30%; }
+  .calm-circle { transition: none; }
+}
