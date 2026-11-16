@@ -12,6 +12,7 @@ import { matrixTable } from './ex-social.js';
 import { levelOf } from './levels.js';
 import { abcSummaryCard, abcScreen } from './ex-abc.js';
 import { orthoSummaryCard, orthoReportScreen } from './ortho-report.js';
+import { getAtecHistory, atecSummaryCard, atecScreen } from './atec.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur'], ['city', 'Ville']];
@@ -127,11 +128,13 @@ export function dashboardScreen(nav) {
     const accidents = accidentStats(all.filter((t) => t.goalId === 'X.3'));
     const abcLogs = await db.getAllAbcLogs();
     const orthoLogs = await db.getAllOrthoLogs();
+    const atecHistory = await getAtecHistory();
     body.replaceChildren(
       kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
       kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
       abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self)),
       orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self)),
+      atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self)),
       weeklyTrendChart(all),
       ...SECTIONS.map((s) => h('section', { class: 'card-box' },
         h('h3', {}, `${s.emoji} ${s.id}. ${s.name}`),

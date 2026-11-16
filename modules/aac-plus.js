@@ -10,7 +10,7 @@ const SAVE_DELAY_MS = 800;
 const BIGRAM_WEIGHT = 10;
 
 let history = { uni: {}, bi: {} };
-let touch = { repeatMs: 0, holdMs: 0 };
+let touch = { repeatMs: 0, holdMs: 0, scanMs: 0 };
 let saveTimer = 0;
 let lastTapAt = 0;
 
@@ -70,6 +70,8 @@ export function touchAllowed(pressMs) {
 
 const REPEAT_CHOICES = [[0, 'Non'], [600, '0,6 s'], [1200, '1,2 s']];
 const HOLD_CHOICES = [[0, 'Toucher simple'], [300, 'Appui 0,3 s'], [600, 'Appui 0,6 s']];
+const SCAN_CHOICES = [[0, 'Désactivé'], [1500, 'Rapide (1,5 s)'], [2500, 'Confort (2,5 s)'], [3500, 'Lent (3,5 s)']];
+export const scanSpeed = () => Number(touch.scanMs) || 0;
 
 export function touchSettingsBox() {
   const select = (key, choices) => h('select', {
@@ -78,6 +80,7 @@ export function touchSettingsBox() {
   return h('details', { class: 'card-box touch-box' }, h('summary', {}, '✋ Toucher adapté et mots proposés'),
     h('label', { class: 'check' }, 'Ignorer les touches répétées : ', select('repeatMs', REPEAT_CHOICES)),
     h('label', { class: 'check' }, 'Pour choisir un mot : ', select('holdMs', HOLD_CHOICES)),
+    h('label', { class: 'check' }, '♿ Balayage visuel (Switch Scanning) : ', select('scanMs', SCAN_CHOICES)),
     h('p', { class: 'note' }, 'Les mots proposés sous la phrase viennent des phrases d’Abir. Ils restent dans le téléphone.'),
     h('button', { type: 'button', class: 'btn ghost tiny', onclick: async (e) => { await resetSuggestions(); e.target.textContent = 'Mots proposés remis à zéro ✔'; } }, 'Remettre les mots proposés à zéro'));
 }

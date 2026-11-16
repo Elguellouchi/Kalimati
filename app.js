@@ -5,7 +5,7 @@ import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices,
 import { openEditor } from './editor.js';
 import { unlockSounds } from './media.js';
 import { exportBackup, readBackup } from './backup.js';
-import { h } from './modules/util.js';
+import { h, btn } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName } from './modules/aba.js';
 import { nour } from './modules/nour.js';
 import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/grid-layout.js';
@@ -16,7 +16,7 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
-import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox } from './modules/aac-plus.js';
+import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 
@@ -164,7 +164,39 @@ function setupStrip() {
 const sortedCards = (cat) => state.cards.filter((c) => c.cat === cat).sort((a, b) => (a.gridRow - b.gridRow) || (a.gridCol - b.gridCol) || (a.order - b.order));
 const visibleFor = (card) => state.parent || !card.hidden;
 
+
+// Apport PictoTEA : impression / export PDF du tableau CAA personnalisé (avec vraies photos / pictos)
+function printAacBoard() {
+  const active = state.cards.filter((c) => !c.hidden);
+  const cols = CATEGORIES.map((cat) => {
+    const items = active.filter((c) => c.cat === cat.id);
+    if (!items.length) return null;
+    return h('div', { class: 'aac-print-cat' },
+      h('h3', { style: { color: cat.color } }, `${cat.emoji} ${cat.name}`),
+      h('div', { class: 'aac-print-grid' }, items.map((c) => {
+        const gram = GRAMMAR[c.gram] || GRAMMAR.noun;
+        return h('div', { class: 'aac-print-card', style: { borderColor: gram.color } },
+          cardVisual(c),
+          h('strong', {}, label(c, 'fr')),
+          c.dr ? h('small', {}, c.dr) : null);
+      })));
+  }).filter(Boolean);
+  const area = h('div', { class: 'print-area' },
+    h('div', { class: 'print-sheet aac-print-sheet' },
+      h('h1', {}, `Tableau de communication CAA · ${firstName()}`),
+      h('p', { class: 'note' }, 'Support papier / plastifié pour la maison, le cartable et la classe.'),
+      ...cols));
+  document.body.append(area);
+  const cleanup = () => { area.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 300);
+}
+
+let scanTimer = 0;
+function stopScan() { if (scanTimer) { clearInterval(scanTimer); scanTimer = 0; } }
+
 function renderTalk() {
+  stopScan();
   const core = h('nav', { class: 'core', 'aria-label': 'Mots essentiels' }, sortedCards(CORE_CAT).filter(visibleFor).map((card) => {
     const el = cardElement(card, { small: true });
     const press = trackPress(el);
@@ -204,7 +236,31 @@ function renderTalk() {
   const modelLine = state.modeling ? h('div', { class: 'model-line', id: 'model-line' }) : null;
   const suggest = h('div', { class: 'suggest-row', id: 'suggest-row', hidden: true });
   const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}` }, suggest, modelToggle, modelLine, core, tabs, personalise, grid,
+    state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? touchSettingsBox() : null, state.parent ? legend() : null);
+  const ms = scanSpeed();
+  if (!state.parent && ms > 0) {
+    const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');
+    if (targets.length) {
+      let idx = 0;
+      targets[0].classList.add('scan-active');
+      scanTimer = setInterval(() => {
+        if (!grid.isConnected) { stopScan(); return; }
+        targets[idx].classList.remove('scan-active');
+        idx = (idx + 1) % targets.length;
+        targets[idx].classList.add('scan-active');
+      }, ms);
+      view.addEventListener('click', (e) => {
+        if (e.target.closest('.model-toggle') || e.target.closest('.cat')) return;
+        const activeEl = targets[idx];
+        if (activeEl && e.target.closest('.card') !== activeEl) {
+          e.preventDefault();
+          e.stopPropagation();
+          activeEl.click();
+        }
+      }, { capture: true });
+    }
+  }
   queueMicrotask(() => { renderSuggestions(); renderModel(); });
   return view;
 }
@@ -259,6 +315,7 @@ function renderSpaces() {
 }
 
 function openSpace(id) {
+  stopScan();
   state.space = id;
   renderSpaces();
   renderView();

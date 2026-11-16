@@ -631,9 +631,43 @@ const x4 = () => {
 const y4 = coachGame('Y.4', () => ({ item: 'parcours-5', body: [sequenceBoard([['🦩', 'Cloche-pied'], ['⭕', 'Sauter dans les cerceaux'], ['🤸', 'Rouler'], ['🪵', 'Marcher en équilibre'], ['🏀', 'Lancer dans le panier']]).element], labels: { plus: 'Parcours complet seule ✅' } }));
 const z4 = () => workshop({ goalId: 'Z.4', options: shapeOptions(['vague', 'rond', 'boucles']), plusFromLevel: 3, tolerance: 13 });
 
+
+// B.15 (inspiré de MITA) : Synthèse mentale multi-critères (combiner simultanément forme + couleur + taille + orientation)
+const b15 = choiceGame('B.15', (rand, p) => {
+  const shapes = [['●', 'rond'], ['▲', 'triangle'], ['■', 'carré'], ['★', 'étoile']];
+  const colors = [['#E53935', 'rouge'], ['#1E88E5', 'bleu'], ['#43A047', 'vert'], ['#FB8C00', 'orange']];
+  const sizes = [[1, 'grand'], [0.55, 'petit']];
+  const flips = [[0, 'droit'], [180, 'à l’envers']];
+  const useFlip = p.level > 250;
+  const s0 = rPick(rand, shapes);
+  const c0 = rPick(rand, colors);
+  const z0 = rPick(rand, sizes);
+  const f0 = useFlip ? rPick(rand, flips) : flips[0];
+
+  const renderCombo = ([glyph], [col], [scale], [deg]) => {
+    const el = h('span', { class: 'visual concept-visual' });
+    const fz = Math.round(92 * scale);
+    el.innerHTML = `<svg viewBox="0 0 200 200"><rect width="200" height="200" rx="28" fill="#F8FAF9"/><g transform="translate(100,100) rotate(${deg})"><text x="0" y="6" font-size="${fz}" fill="${col}" text-anchor="middle" dominant-baseline="middle">${glyph}</text></g></svg>`;
+    return el;
+  };
+
+  const target = { s: s0, c: c0, z: z0, f: f0, ok: true };
+  // Distracteurs proches : un seul attribut diffère pour obliger l'enfant à croiser tous les critères !
+  const d1 = { s: rPick(rand, shapes.filter((x) => x !== s0)), c: c0, z: z0, f: f0, ok: false };
+  const d2 = { s: s0, c: rPick(rand, colors.filter((x) => x !== c0)), z: z0, f: f0, ok: false };
+  const d3 = { s: s0, c: c0, z: sizes.find((x) => x !== z0), f: useFlip ? flips.find((x) => x !== f0) : f0, ok: false };
+
+  const ask = `Montre le ${z0[1]} ${s0[1]} ${c0[1]}${useFlip && f0[0] ? ' à l’envers' : ''}`;
+  return {
+    ask,
+    item: `${z0[1]}-${s0[1]}-${c0[1]}-${f0[1]}`,
+    choices: rShuffle(rand, [target, d1, d2, d3]).map((o) => ({ correct: o.ok, render: () => renderCombo(o.s, o.c, o.z, o.f) })),
+  };
+});
+
 export const NEXT_EXERCISES = {
   'A.4': a4, 'A.5': a5, 'A.6': a6, 'A.7': a7,
-  'B.7': b7, 'B.8': b8, 'B.9': b9, 'B.10': b10, 'B.11': b11, 'B.12': b12, 'B.13': b13, 'B.14': b14,
+  'B.7': b7, 'B.8': b8, 'B.9': b9, 'B.10': b10, 'B.11': b11, 'B.12': b12, 'B.13': b13, 'B.14': b14, 'B.15': b15,
   'C.5': c5, 'C.6': c6, 'C.7': c7, 'C.8': c8, 'C.9': c9, 'C.10': c10,
   'D.4': d4, 'D.5': d5, 'D.6': d6, 'E.4': e4, 'E.5': e5, 'E.6': e6,
   'F.4': f4, 'F.5': f5, 'F.6': f6, 'F.7': f7,

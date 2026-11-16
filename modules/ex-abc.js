@@ -216,6 +216,41 @@ function abcTrendSvg(logs) {
   });
 }
 
+
+const TSARA_CARDS = [
+  { id: 'transition', title: '🔀 Crise lors d’un changement / transition',
+    now: 'Arrêter les consignes verbales longues. Montrer visuellement « D’abord / Ensuite » ou « Maintenant / Ensuite ».',
+    avoid: 'Insister, crier ou répéter la consigne 10 fois pendant la montée émotionnelle.',
+    prevent: 'Utiliser le sablier visuel 2 min avant la fin et le bouton « 🔄 Remplacer » du planning.' },
+  { id: 'sensory', title: '🔊 Surcharge sensorielle (bruit, foule, lumière)',
+    now: 'Proposer le casque anti-bruit, baisser la lumière, proposer l’espace calme 🌈 (respiration + 5 étoiles).',
+    avoid: 'Forcer le contact physique ou punir une stéréotypie d’auto-régulation.',
+    prevent: 'Anticiper avec l’histoire « Quand il y a un gros bruit » et repérer les pics sur le Scatterplot.' },
+  { id: 'hygiene', title: '💅 Refus des soins (ongles, douche, dents)',
+    now: 'Valider l’inconfort (« Je vois que c’est difficile »), faire une pause de 30 s, reprendre 1 seule étape.',
+    avoid: 'Immobiliser de force sauf danger immédiat (renforce la phobie sensorielle).',
+    prevent: 'Couper les ongles après le bain avec le compteur « 1 ongle = 1 ⭐ » et eau tiède testée à la main.' },
+  { id: 'wait', title: '⏳ Impatience / crise d’attente',
+    now: 'Ouvrir « ⏳ J’attends / Calme » avec un sablier court (1 ou 2 min) et une activité d’attente choisie.',
+    avoid: 'Dire « Attends » sans repère temporel visible.',
+    prevent: 'Enseigner la carte CAA « Attends » et renforcer chaque attente réussie.' },
+  { id: 'sib', title: '🛡️ Auto-agression ou mise en danger',
+    now: 'Protéger physiquement sans parler ni gronder (coussin, écarter les objets durs), rester calme et présent.',
+    avoid: 'Donner immédiatement l’objet ou arrêter définitivement la demande si la fonction est Tangible/Échappement.',
+    prevent: 'Analyser les facteurs contextuels (douleur, fatigue, faim) dans le journal ABC et enseigner « Aide-moi ».' },
+];
+
+function tsaraReflexBox() {
+  return h('details', { class: 'card-box tsara-box' },
+    h('summary', {}, '🛟 Fiches réflexes : Que faire à chaud ? (méthode TSARA)'),
+    h('p', { class: 'note' }, 'Repères rapides validés pour les parents et l’AVS face aux situations sensibles :'),
+    h('div', { class: 'stack' }, TSARA_CARDS.map((c) => h('div', { class: 'tsara-card' },
+      h('strong', {}, c.title),
+      h('p', { class: 'note' }, h('b', {}, '1. À chaud : '), c.now),
+      h('p', { class: 'note' }, h('b', {}, '2. À éviter : '), c.avoid),
+      h('p', { class: 'note' }, h('b', {}, '3. Prévention : '), c.prevent)))));
+}
+
 export function abcScreen(nav) {
   const state = {
     setting: new Set(),
@@ -403,6 +438,7 @@ export function abcScreen(nav) {
     h('div', { class: 'nav-btns' }, btn('← Retour aux Progrès', () => { stopChrono(); nav.back(); }, 'back-btn')),
     h('h2', {}, '📝 Suivi scientifique ABC (FBA)'),
     h('p', { class: 'note' }, 'Saisie rapide en 4 étapes selon le protocole ABA d’évaluation fonctionnelle (Antécédent · Comportement · Conséquence · Fonction SEAT).'),
+    tsaraReflexBox(),
     h('section', { class: 'card-box stack' },
       h('h3', {}, '1. Contexte & Facteurs déclenchants (Setting Events)'),
       h('div', { class: 'row' },

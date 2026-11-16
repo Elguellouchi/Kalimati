@@ -141,6 +141,7 @@ const NEXT = [
   ['B.12', 'Compléter une matrice forme × couleur', '80 % sur 3 séances consécutives', S3(0.8, 5)],
   ['B.13', 'Associer un objet à son ombre', '80 % sur 3 séances consécutives', S3(0.8, 5)],
   ['B.14', 'Puzzle de 9 à 12 pièces sans aide', '3 essais consécutifs', { type: 'consecutive', n: 3 }],
+  ['B.15', 'Synthèse mentale multi-critères (MITA : forme, couleur, taille, sens)', '80 % sur 3 séances consécutives', S3(0.8, 5)],
   ['C.5', 'Désigner par attributs (taille, couleur)', '80 % sur 3 séances consécutives', S3(0.8, 5)],
   ['C.6', 'Comprendre sur, sous, dans, devant, derrière', '8/10 sur 3 séances consécutives', S3(0.8)],
   ['C.7', 'Comprendre la négation (« celui qui n’est pas… »)', '80 % sur 3 séances consécutives', S3(0.8, 5)],

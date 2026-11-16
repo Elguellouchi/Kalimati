@@ -6,7 +6,7 @@ import { h, btn, uid } from './util.js';
 import { speak, playBlob, stopSpeaking } from '../speech.js';
 import { playClap, canRecord, startRecording } from '../media.js';
 import { renderVisual } from './visuals.js';
-import { firstName } from './aba.js';
+import { firstName, sisterName } from './aba.js';
 
 const STORIES_KEY = 'stories';
 const P = (emoji, text, dr = '') => ({ emoji, text, dr, audio: null });
@@ -41,11 +41,28 @@ export const DEFAULT_STORIES = () => [
     P('🤝', 'Je peux dire « Aide-moi » ou « J’ai peur ».', 'Ngoul 3awnni.'),
     P('🙂', 'Le bruit s’arrête. Je suis en sécurité.', 'Sda3 sala. Ana mzyana.'),
   ] },
+  { id: 'ecole_inclusion', emoji: '🏫', title: 'À l’école avec mes camarades (Inclusion)', pages: [
+    P('👧', 'À l’école, chaque enfant apprend à sa façon. Moi, j’utilise parfois des images pour parler.', 'F l medrasa, kanhder b tsawer.'),
+    P('🎧', 'Quand la classe est trop bruyante, je peux mettre mon casque pour protéger mes oreilles.', 'Ila kan sda3, kandir l casque.'),
+    P('📅', 'Mon planning visuel m’aide à savoir ce qu’on fait maintenant et ensuite.', 'Planning kay3awenni n3ref chnou jay.'),
+    P('🤝', 'Mes camarades peuvent me montrer les jeux et attendre ma réponse calmement.', 'S7abi kaytsennawni b chwiya.'),
+    P('🌟', 'Ensemble, on est une belle équipe dans la classe !', 'Mجموعين حنا فريق زوين!'),
+  ] },
+  { id: 'fratrie_jeu', emoji: '👭', title: 'Jouer avec ma sœur (Fratrie)', pages: [
+    P('👭', 'Ma sœur et moi, on aime passer de bons moments ensemble.', 'Ana w khti kanl3bou b زوج.'),
+    P('⏳', 'Chacune son tour : d’abord toi, ensuite moi, avec le sablier.', 'Marra nti, marra ana.'),
+    P('🗣️', 'Si je veux un jouet ou une pause, je le demande avec ma carte ou mes mots.', 'Ila bghit chi 7aja, kanطلبها b l karta.'),
+    P('🫂', 'On se respecte et on reste calmes même quand on n’est pas d’accord.', 'Kan7tarmo b3diyatna.'),
+  ] },
 ];
 
 async function loadStories() {
   const saved = await db.getSetting(STORIES_KEY);
-  return Array.isArray(saved) && saved.length ? saved : DEFAULT_STORIES();
+  const defaults = DEFAULT_STORIES();
+  if (!Array.isArray(saved) || !saved.length) return defaults;
+  const ids = new Set(saved.map((s) => s.id));
+  const missing = defaults.filter((d) => !ids.has(d.id));
+  return missing.length ? [...saved, ...missing] : saved;
 }
 const saveStories = (stories) => db.setSetting(STORIES_KEY, stories);
 const pageVisual = (story, i, page, button = true) => renderVisual({ vkey: `story:${story.id}:${i}`, emoji: page.emoji, label: page.text }, { button });
