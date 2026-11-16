@@ -30,7 +30,7 @@ function d1(ctx) {
     cells.forEach((c) => c.classList.remove('lit'));
   };
   const video = h('video', { class: 'mirror', autoplay: true, playsinline: true, muted: true });
-  const camBox = h('div', { class: 'mirror-box' }, h('p', { class: 'note' }, 'Le miroir montre Abir à elle-même. Rien n’est enregistré.'));
+  const camBox = h('div', { class: 'mirror-box' }, h('p', { class: 'note' }, 'Le miroir montre l’enfant à lui-même. Rien n’est enregistré.'));
   let stream = null;
   const startCam = async () => {
     try {

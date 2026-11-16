@@ -81,6 +81,6 @@ export function touchSettingsBox() {
     h('label', { class: 'check' }, 'Ignorer les touches répétées : ', select('repeatMs', REPEAT_CHOICES)),
     h('label', { class: 'check' }, 'Pour choisir un mot : ', select('holdMs', HOLD_CHOICES)),
     h('label', { class: 'check' }, '♿ Balayage visuel (Switch Scanning) : ', select('scanMs', SCAN_CHOICES)),
-    h('p', { class: 'note' }, 'Les mots proposés sous la phrase viennent des phrases d’Abir. Ils restent dans le téléphone.'),
+    h('p', { class: 'note' }, 'Les mots proposés sous la phrase viennent des phrases de l’enfant. Ils restent dans le téléphone.'),
     h('button', { type: 'button', class: 'btn ghost tiny', onclick: async (e) => { await resetSuggestions(); e.target.textContent = 'Mots proposés remis à zéro ✔'; } }, 'Remettre les mots proposés à zéro'));
 }

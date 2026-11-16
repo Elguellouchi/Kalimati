@@ -221,15 +221,23 @@ const normSpeech = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u03
 // ce que dit l'enfant part sur internet le temps d'être compris. Kalimati ne garde que le mot reconnu.
 export const SPEECH_CLOUD_NOTE = '🌐 Bon à savoir : la reconnaissance automatique passe par Google (Chrome). La voix part sur internet le temps d’être comprise. Sans internet, l’adulte note lui-même.';
 
+// v9.8 : éteinte par défaut. Le parent l'allume dans « Progrès » (réglage « speechCloudAllowed »).
+// Tant qu'elle est éteinte, aucun bouton ne l'utilise et aucun son ne part vers Google.
+export const SPEECH_SETTING_KEY = 'speechCloudAllowed';
+let cloudSpeechAllowed = false;
+export function setCloudSpeechAllowed(value) { cloudSpeechAllowed = value === true; }
+export const isCloudSpeechAllowed = () => cloudSpeechAllowed;
+export const browserCanRecognizeSpeech = () => Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+
 export function canRecognizeSpeech() {
-  return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
+  return cloudSpeechAllowed && browserCanRecognizeSpeech();
 }
 
 // Écoute et transcrit un mot ou une phrase prononcée par Abir (renvoie { heard, transcript, match, confidence }).
 export function recognizeSpeech({ expected = '', lang = 'fr', timeoutMs = 4500 } = {}) {
   return new Promise((resolve) => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SR) { resolve({ supported: false, heard: false, transcript: '', match: false }); return; }
+    if (!SR || !cloudSpeechAllowed) { resolve({ supported: false, heard: false, transcript: '', match: false }); return; }
     const rec = new SR();
     rec.lang = lang === 'dr' || lang === 'ar' ? 'ar-MA' : 'fr-FR';
     rec.interimResults = true;

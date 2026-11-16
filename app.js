@@ -1,8 +1,8 @@
-// Kalimati v9.7 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI) + Console Super-Admin Bêta. Audit du 16/11 : corrections « null », phrase sur téléphone, messages de confidentialité honnêtes.
+// Kalimati v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
-import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl } from './speech.js';
+import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY } from './speech.js';
 import { openEditor } from './editor.js';
 import { unlockSounds } from './media.js';
 import { exportBackup, readBackup } from './backup.js';
@@ -29,7 +29,7 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
@@ -504,7 +504,8 @@ function setupParentBar() {
     });
   }
   $('#export').onclick = async () => {
-    await exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides() });
+    await exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides(),
+      abcLogs: await db.getAllAbcLogs(), orthoLogs: await db.getAllOrthoLogs() });
     await db.setSetting('lastBackupAt', Date.now());
     showBackupAge();
   };
@@ -514,14 +515,19 @@ function setupParentBar() {
     if (!file) return;
     try {
       const backup = await readBackup(file);
-      const extra = backup.trials.length ? ` et ${backup.trials.length} essais notés` : '';
+      const parts = [backup.trials.length && `${backup.trials.length} essais notés`, backup.abcLogs.length && `${backup.abcLogs.length} notes du journal des comportements`,
+        backup.orthoLogs.length && `${backup.orthoLogs.length} notes d’orthophonie`].filter(Boolean);
+      const extra = parts.length ? ` et ${parts.join(', ')}` : '';
       if (!window.confirm(`Remplacer les cartes actuelles par ${backup.cards.length} cartes${extra} de la sauvegarde ?`)) return;
       const cards = assignPositions(backup.cards, state.cols);
       await db.clearCards();
       await db.putCards(cards);
       if (backup.trials.length) await db.putTrials(backup.trials);
       if (backup.visuals.length) await db.putVisualOverrides(backup.visuals);
+      if (backup.abcLogs.length) await db.putAbcLogs(backup.abcLogs);
+      if (backup.orthoLogs.length) await db.putOrthoLogs(backup.orthoLogs);
       for (const key of EXPORTED_SETTINGS) if (backup.settings[key] !== undefined) await db.setSetting(key, backup.settings[key]);
+      setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
       await loadContext();
       await loadVisuals();
       await loadLevels();
@@ -605,6 +611,7 @@ async function init() {
   await loadContext();
   await loadVisuals();
   await loadDefaultVoices();
+  setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
   await loadLevels();
   state.cards = await loadCards();
   setupLock(); setupParentBar(); setupStrip(); setupToilet();
@@ -616,11 +623,11 @@ async function init() {
   // Détection automatique de ?invite=KALI-XXX, ?team=KALI-XXX ou ?admin=1
   const params = new URLSearchParams(window.location.search);
   if (params.get('admin') === '1') {
+    // v9.8 : ?admin=1 n'ouvre plus le mode parent. Il montre seulement la demande de clé maître (ou sa création).
     window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
-    state.parent = true;
     state.space = 'progress';
-    renderAll();
-    nav.openScreen(() => superAdminScreen(nav), () => dashboardScreen(nav));
+    renderSpaces();
+    nav.openScreen(() => superAdminScreen(nav));
   } else {
     await checkUrlInvite({
       onConfigured: async () => {

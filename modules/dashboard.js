@@ -2,9 +2,9 @@
 import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
 import { iconLabel } from './ui-icons.js';
-import { visualStyleBox, aboutBox } from './about.js';
+import { visualStyleBox, aboutBox, speechCloudBox } from './about.js';
 import { availableVoices, setPreferredVoice, speak } from '../speech.js';
-import { profile, saveProfile } from './aba.js';
+import { profile, saveProfile, firstName } from './aba.js';
 import { SECTIONS, GOALS, goalsOf } from './goals.js';
 import { reinforcerStats, accidentStats } from './progress.js';
 import { evaluateAll, statusChip } from './spaces.js';
@@ -13,10 +13,10 @@ import { levelOf } from './levels.js';
 import { abcSummaryCard, abcScreen } from './ex-abc.js';
 import { orthoSummaryCard, orthoReportScreen } from './ortho-report.js';
 import { getAtecHistory, atecSummaryCard, atecScreen } from './atec.js';
-import { parentBetaSettingsBox, adminSummaryCard, superAdminScreen } from './admin-beta.js';
+import { parentBetaSettingsBox } from './admin-beta.js';
 
 function profileForm() {
-  const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur'], ['city', 'Ville']];
+  const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
   const inputs = Object.fromEntries(fields.map(([key]) => [key, h('input', { value: profile[key] || '', maxlength: 30 })]));
   const saved = h('span', { class: 'note' });
   return h('details', { class: 'card-box' },
@@ -90,7 +90,7 @@ function voiceSettingsBox() {
   const frVoices = availableVoices('fr');
   const arVoices = availableVoices('ar');
   const makeSelect = (lang, list) => {
-    const sel = h('select', { onchange: (e) => { setPreferredVoice(lang, e.target.value); speak(lang === 'ar' ? 'سلام عبير' : 'Bonjour Abir', { lang }); } },
+    const sel = h('select', { onchange: (e) => { setPreferredVoice(lang, e.target.value); speak(lang === 'ar' ? 'سلام' : `Bonjour ${firstName()}`, { lang }); } },
       h('option', { value: '' }, '🌟 Automatique (meilleure voix naturelle)'),
       ...list.map((v) => h('option', { value: v.name }, `${v.name} (${v.lang})`)));
     return sel;
@@ -132,7 +132,6 @@ export function dashboardScreen(nav) {
       kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
       kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
       parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) }),
-      adminSummaryCard(() => nav.openScreen(() => superAdminScreen(nav), self)),
       abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self)),
       orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self)),
       atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self)),
@@ -153,6 +152,7 @@ export function dashboardScreen(nav) {
         reinforcers.length ? reinforcers.map((r) => h('div', { class: `eff-row${r.effective ? ' ok' : ''}` }, h('span', {}, `${r.emoji} ${r.fr}`), h('span', {}, `${Math.round(r.rate * 100)} % · ${r.trials} essais`))) : h('p', { class: 'note' }, 'Choisissez un renforçateur en A.2 pendant les séances.')),
       h('div', { class: 'row' }, btn(iconLabel('download', 'Exporter les essais (CSV pour la psychologue)'), exportCsv, 'ghost')),
       voiceSettingsBox(),
+      speechCloudBox(),
       visualStyleBox(),
       profileForm(),
       aboutBox());

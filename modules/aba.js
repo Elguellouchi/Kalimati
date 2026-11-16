@@ -2,10 +2,10 @@
 // Machine à états de la cotation : idle → (👉) choix de la guidance → idle. Chaque essai est daté et rangé par jour.
 import * as db from '../db.js';
 import { h, btn, uid, dayKey, weekKey, percent } from './util.js';
-import { PROFIL } from './profil.js';
+import { PROFIL, LEGACY_PROFIL, NEUTRAL } from './profil.js';
 
 export const INTERVENANTS = [
-  { id: 'psy', label: PROFIL.psy ? `👩‍⚕️ ${PROFIL.psy} (Psychologue)` : '👩‍⚕️ Psychologue' },
+  { id: 'psy', get label() { return profile.psy ? `👩‍⚕️ ${profile.psy} (Psychologue)` : '👩‍⚕️ Psychologue / Thérapeute'; } },
   { id: 'parents', label: '👨‍👧 Papa / Maman' },
   { id: 'teacher', label: '👩‍🏫 Enseignant(e)' },
 ];
@@ -23,30 +23,42 @@ export const PROMPTS = [
 export const clinic = { intervenant: 'parents', environment: 'home', reinforcer: null };
 
 // Profil de l'enfant : pré-rempli depuis profil.js, modifiable dans Progrès ➜ Profil.
-export const profile = { name: PROFIL.name, age: PROFIL.age, father: PROFIL.father, mother: PROFIL.mother, sister: PROFIL.sister, city: PROFIL.city };
-export const childName = () => (profile.name || 'Abir').toUpperCase();
-export const firstName = () => profile.name || 'Abir';
-export const sisterName = () => profile.sister || 'Ghita';
+export const profile = { name: PROFIL.name, age: PROFIL.age, father: PROFIL.father, mother: PROFIL.mother, sister: PROFIL.sister, city: PROFIL.city, psy: PROFIL.psy };
+export const childName = () => (profile.name || NEUTRAL.name).toUpperCase();
+export const firstName = () => profile.name || NEUTRAL.name;
+export const sisterName = () => profile.sister || NEUTRAL.sister;
+export const psyName = () => profile.psy || NEUTRAL.psy;
 
 // Les vraies personnes de la vie d'Abir (partenaires des jeux sociaux, salutations, repas).
 export const people = () => [
   { id: 'ghita', name: sisterName(), vkey: 'person:ghita' },
   { id: 'papa', name: 'Papa', vkey: 'person:papa' },
   { id: 'maman', name: 'Maman', vkey: 'person:maman' },
-  { id: 'hosna', name: PROFIL.psy || 'Hosna', vkey: 'person:hosna' },
+  { id: 'hosna', name: psyName(), vkey: 'person:hosna' },
   { id: 'maitresse', name: 'La maîtresse', vkey: 'person:maitresse' },
   { id: 'camarade', name: 'Un camarade', vkey: 'person:camarade' },
 ];
 
 export async function loadContext() {
   Object.assign(clinic, (await db.getSetting('clinic')) || {});
-  const saved = await db.getSetting('profile');
-  Object.assign(profile, saved || {});
-  // Correction du 12/11 : la famille habite Salé (un profil enregistré avec l'ancienne ville est corrigé tout seul).
-  if (saved && ['', 'Témara', 'Temara'].includes(String(saved.city ?? '').trim())) {
-    profile.city = PROFIL.city || 'Salé';
-    await db.setSetting('profile', { ...profile });
+  let saved = await db.getSetting('profile');
+  // v9.8 : un téléphone installé AVANT la v9.8 garde le profil de la famille (rien n'est écrasé) ;
+  // seules les cases jamais remplies reçoivent l'ancienne valeur. Un nouveau téléphone reste neutre.
+  let origin = await db.getSetting('profileOrigin');
+  if (!origin) {
+    const installed = Boolean(saved) || Boolean(await db.getSetting('seeded')) || (await db.getAllCards()).length > 0;
+    origin = installed ? 'legacy' : 'neutral';
+    if (origin === 'legacy') {
+      const filled = { ...LEGACY_PROFIL };
+      for (const [key, value] of Object.entries(saved || {})) if (value !== undefined && value !== null) filled[key] = value;
+      // Correction du 12/11 (ancienne ville) : seulement pour ces téléphones-là.
+      if (['', 'Témara', 'Temara'].includes(String(filled.city ?? '').trim())) filled.city = LEGACY_PROFIL.city;
+      saved = filled;
+      await db.setSetting('profile', saved);
+    }
+    await db.setSetting('profileOrigin', origin);
   }
+  Object.assign(profile, saved || {});
 }
 export const saveClinic = () => db.setSetting('clinic', { ...clinic });
 export const saveProfile = (values) => { Object.assign(profile, values); return db.setSetting('profile', { ...profile }); };

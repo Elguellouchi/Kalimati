@@ -7,7 +7,7 @@ import * as db from '../db.js';
 import { h, btn, uid, dayKey } from './util.js';
 import { speak, sayCard, playBlob, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, canRecord, startRecording } from '../media.js';
-import { recordTrial, firstName, sisterName } from './aba.js';
+import { recordTrial, firstName, sisterName, profile } from './aba.js';
 import { renderVisual } from './visuals.js';
 import { sequenceBoard, praise, bigCard } from './widgets.js';
 import { SEQUENCES } from './content.js';
@@ -58,7 +58,7 @@ export const DEFAULT_ROUTINES = () => [
     S('e-retour', 'Rentrer à la maison', 'Nrje3 l dar', 'نرجع للدار', '🏠', 15),
     S('e-gouter', 'Prendre le goûter', 'Nakoul chi haja', 'ناكل شي حاجة', '🍪', 15), homework('e-devoirs'),
   ] },
-  { id: 'weekend', title: 'Week-end à Salé', emoji: '🏡', steps: [
+  { id: 'weekend', title: profile.city ? `Week-end à ${profile.city}` : 'Week-end en famille', emoji: '🏡', steps: [
     S('w-petitdej', 'Petit-déjeuner en famille', 'Nfter m3a l3a2ila', 'نفطر مع العائلة', '🥣', 20, { goalId: 'V.4' }), dress('w-habiller'),
     S('w-ranger', 'Ranger sa chambre', 'Nrettab bit', 'نرتب بيتي', '🧸', 15),
     S('w-mer', 'Promenade au bord de la mer', 'Ntsara 7da l b7er', 'نتسارا حدا البحر', '🌊', 60),

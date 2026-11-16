@@ -24,9 +24,10 @@ export const CATEGORIES = [
   { id: 'lieux', fr: 'Lieux', dr: 'Blayes', color: '#00897B' },
 ];
 
-const NAME = PROFIL.name || 'Abir';
-const SISTER = PROFIL.sister || 'Ghita';
-const PSY = PROFIL.psy || 'Hosna';
+// v9.8 : cartes de départ neutres pour un nouveau téléphone (les téléphones déjà installés gardent leurs cartes).
+const NAME = PROFIL.name;
+const SISTER = PROFIL.sister;
+const PSY = PROFIL.psy;
 
 // [catégorie, français, darija latine, emoji, rôle, darija arabe, version d'arrivée (0 = v1), options]
 // options : slug (identifiant stable), vkey (image partagée avec les exercices), sub (sous-titre), sayFr / sayAr (phrase dite).
@@ -59,11 +60,13 @@ const RAW = [
   ['actions', 'Sauter', 'N9fez', '🦘', 'verb', 'نقفز', 2], ['actions', 'Laver', 'Nghsel', '🧼', 'verb', 'نغسل', 2],
   ['actions', 'Dessiner', 'Nrsem', '🖍️', 'verb', 'نرسم', 2], ['actions', 'Ouvrir', 'Nhel', '🚪', 'verb', 'نحل', 2],
   // La vraie famille d'Abir et ses proches
-  ['personnes', `${NAME} (Moi)`, 'Ana', '🧒', 'person', 'أنا', 0, { slug: 'moi', vkey: 'person:abir' }],
-  ['personnes', SISTER, SISTER, '👧', 'person', 'غيتة', 2, { slug: 'ghita', vkey: 'person:ghita', sub: 'Ma sœur', sayFr: `${SISTER}, ma sœur`, sayAr: 'غيتة ختي' }],
+  ['personnes', NAME ? `${NAME} (Moi)` : 'Moi', 'Ana', '🧒', 'person', 'أنا', 0, { slug: 'moi', vkey: 'person:abir' }],
+  SISTER ? ['personnes', SISTER, SISTER, '👧', 'person', SISTER, 2, { slug: 'ghita', vkey: 'person:ghita', sub: 'Ma sœur', sayFr: `${SISTER}, ma sœur` }]
+    : ['personnes', 'Sœur / Frère', 'Khti / Khoya', '👧', 'person', 'ختي / خويا', 2, { slug: 'ghita', vkey: 'person:ghita' }],
   ['personnes', 'Papa', 'Baba', '👨', 'person', 'بابا', 0, { vkey: 'person:papa' }],
   ['personnes', 'Maman', 'Mama', '👩', 'person', 'ماما', 0, { vkey: 'person:maman' }],
-  ['personnes', PSY, PSY, '👩‍⚕️', 'person', 'حسناء', 3, { slug: 'hosna', vkey: 'person:hosna' }],
+  PSY ? ['personnes', PSY, PSY, '👩‍⚕️', 'person', PSY, 3, { slug: 'hosna', vkey: 'person:hosna' }]
+    : ['personnes', 'Thérapeute', 'Tbiba', '👩‍⚕️', 'person', 'الطبيبة', 3, { slug: 'hosna', vkey: 'person:hosna' }],
   ['personnes', 'Maîtresse', 'Lmo3allima', '👩‍🏫', 'person', 'المعلمة', 3, { vkey: 'person:maitresse' }],
   ['personnes', 'Mamie', 'Mima', '👵', 'person', 'ميمة', 0, { vkey: 'person:mamie' }],
   ['personnes', 'Papi', 'Jeddi', '👴', 'person', 'جدي', 0, { vkey: 'person:papi' }],

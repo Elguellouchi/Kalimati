@@ -1,6 +1,7 @@
 // Banques étendues pour la v4 (servent aussi hors ligne : emoji en image de secours).
 // Comptines : extraits traditionnels du domaine public.
 import { CATALOG } from './catalog.js';
+import { sisterName } from './aba.js';
 
 // C.1 : 40 consignes de plus (50 au total)
 export const MORE_COMMANDS = [
@@ -124,11 +125,15 @@ export const MORE_PHRASES = [
   ...FOODS.map((c) => ({ id: `veux-${c.id}`, words: [['🙋', 'Je veux'], [c.emoji, c.fr]] })),
   ...FOODS.slice(0, 12).map((c) => ({ id: `encore-${c.id}`, words: [['➕', 'Encore'], [c.emoji, c.fr]] })),
   ...TOYS.map((c) => ({ id: `jouer-${c.id}`, words: [['🧸', 'Je joue'], ['➡️', 'avec'], [c.emoji, c.fr]] })),
-  ...[['👨', 'Papa'], ['👩', 'Maman'], ['👧', 'Ghita']].flatMap(([emoji, who]) => [
-    { id: `bonjour-${who}`, words: [['👋', 'Bonjour'], [emoji, who]] },
-    { id: `aide-${who}`, words: [['🤝', 'Aide-moi'], [emoji, who]] },
-    { id: `viens-${who}`, words: [['🧑‍🤝‍🧑', 'Viens jouer'], [emoji, who]] },
-  ]),
+  // v9.8 : l'identifiant reste « Ghita » (historique des essais), le mot affiché suit le profil.
+  ...[['👨', 'Papa'], ['👩', 'Maman'], ['👧', 'Ghita']].flatMap(([emoji, who]) => {
+    const person = () => (who === 'Ghita' ? Object.defineProperty([emoji], 1, { get: sisterName, enumerable: true }) : [emoji, who]);
+    return [
+      { id: `bonjour-${who}`, words: [['👋', 'Bonjour'], person()] },
+      { id: `aide-${who}`, words: [['🤝', 'Aide-moi'], person()] },
+      { id: `viens-${who}`, words: [['🧑‍🤝‍🧑', 'Viens jouer'], person()] },
+    ];
+  }),
   { id: 'toilettes', words: [['🙋', 'Je veux'], ['➡️', 'aller aux'], ['🚽', 'toilettes']] },
   { id: 'mal', words: [['🤕', 'J’ai mal'], ['➡️', 'au'], ['🦵', 'genou']] },
   { id: 'dormir', words: [['🙋', 'Je veux'], ['😴', 'dormir']] },

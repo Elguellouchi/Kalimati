@@ -3,7 +3,7 @@
 import * as db from '../db.js';
 import { h, btn, uid, dayKey, addDays, percent } from './util.js';
 import { iconLabel } from './ui-icons.js';
-import { clinic, INTERVENANTS, ENVIRONMENTS } from './aba.js';
+import { clinic, INTERVENANTS, ENVIRONMENTS, profile } from './aba.js';
 
 export const SETTING_EVENTS = [
   { id: 'fatigue', label: '😴 Fatigue / mauvais sommeil' },
@@ -394,7 +394,7 @@ export function abcScreen(nav) {
       h('section', { class: 'card-box' },
         h('div', { class: 'row between' },
           h('h3', {}, `📋 Historique (${filtered.length})`),
-          btn(iconLabel('download', 'Exporter CSV (Hosna)'), exportAbcCsv, 'ghost')),
+          btn(iconLabel('download', `Exporter CSV${profile.psy ? ` (${profile.psy})` : ' (thérapeute)'}`), exportAbcCsv, 'ghost')),
         filterBar,
         filtered.length ? h('div', { class: 'stack' }, historyRows) : h('p', { class: 'note' }, 'Aucune entrée pour ce filtre.')));
   }

@@ -1,13 +1,14 @@
 // Sauvegarde (cartes, photos, vidéos, voix du parent, photos personnalisées, essais notés, réglages) et restauration.
 // Les enregistrements de la voix d'Abir ne sont jamais mis dans la sauvegarde : ils restent dans le téléphone.
+// v9.8 : la sauvegarde garde aussi le journal des comportements (ABC) et le journal d'orthophonie (texte seulement).
 import { blobToDataUrl, dataUrlToBlob } from './media.js';
 
 const BLOB_FIELDS = ['photo', 'video', 'audioFr', 'audioDr'];
-const FORMATS = ['kalimati-backup-v1', 'kalimati-backup-v2', 'kalimati-backup-v3'];
-const FORMAT = 'kalimati-backup-v3';
+const FORMATS = ['kalimati-backup-v1', 'kalimati-backup-v2', 'kalimati-backup-v3', 'kalimati-backup-v4'];
+const FORMAT = 'kalimati-backup-v4';
 const GRAMS = ['person', 'verb', 'noun', 'adj', 'social'];
 
-export async function exportBackup({ cards, trials = [], settings = {}, visuals = [] }) {
+export async function exportBackup({ cards, trials = [], settings = {}, visuals = [], abcLogs = [], orthoLogs = [] }) {
   const serialised = [];
   for (const card of cards) {
     const copy = { ...card };
@@ -16,7 +17,7 @@ export async function exportBackup({ cards, trials = [], settings = {}, visuals 
   }
   const photos = [];
   for (const visual of visuals) photos.push({ key: visual.key, meta: visual.meta || {}, ts: visual.ts || 0, data: await blobToDataUrl(visual.blob) });
-  const payload = { format: FORMAT, exportedAt: new Date().toISOString(), cards: serialised, trials, settings, visuals: photos };
+  const payload = { format: FORMAT, exportedAt: new Date().toISOString(), cards: serialised, trials, settings, visuals: photos, abcLogs, orthoLogs };
   const file = new Blob([JSON.stringify(payload)], { type: 'application/json' });
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
@@ -51,7 +52,16 @@ function cleanTrial(raw) {
   };
 }
 
-// Renvoie { cards, trials, settings, visuals } ; accepte les sauvegardes v1 (cartes seules), v2 et v3.
+// Une ligne de journal (ABC ou orthophonie) : un identifiant, une date, et seulement des données simples (pas de fichier).
+function cleanLog(raw) {
+  if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || raw.id.length > 80 || !Number.isFinite(raw.ts)) return null;
+  const copy = JSON.parse(JSON.stringify(raw));
+  return typeof copy.day === 'string' ? copy : { ...copy, day: dayOf(copy.ts) };
+}
+const dayOf = (ts) => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const cleanLogs = (list) => (Array.isArray(list) ? list.map(cleanLog).filter(Boolean) : []);
+
+// Renvoie { cards, trials, settings, visuals, abcLogs, orthoLogs } ; accepte les sauvegardes v1 (cartes seules), v2, v3 et v4.
 export async function readBackup(file) {
   const parsed = JSON.parse(await file.text());
   if (!parsed || !FORMATS.includes(parsed.format) || !Array.isArray(parsed.cards)) {
@@ -76,5 +86,5 @@ export async function readBackup(file) {
     const key = cleanKey(raw && raw.key);
     if (key && isDataUrl(raw.data, 'image')) visuals.push({ key, blob: await dataUrlToBlob(raw.data), meta: {}, ts: Number(raw.ts) || Date.now() });
   }
-  return { cards, trials, settings, visuals };
+  return { cards, trials, settings, visuals, abcLogs: cleanLogs(parsed.abcLogs), orthoLogs: cleanLogs(parsed.orthoLogs) };
 }
