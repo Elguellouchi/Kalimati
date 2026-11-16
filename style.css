@@ -899,3 +899,19 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
 .soft-green { background: #F1F8F5; border-color: #A5D6A7; }
 .err-text { color: #C62828; font-weight: 700; }
 .row.spread { justify-content: space-between; }
+
+/* v9.7 : sur téléphone, la phrase prend toute la largeur de la bande.
+   Les boutons ▶ ⌫ ✕ FR passent dessous, pour voir plusieurs cartes à la fois. */
+@media (max-width: 600px) {
+  .strip { flex-wrap: wrap; align-content: center; row-gap: 4px; min-height: 72px; }
+  .strip-cards { flex: 1 1 100%; min-height: 62px; scroll-behavior: smooth; }
+  .strip.empty .strip-cards { min-height: 0; flex-basis: 0; }
+  .strip .strip-btn { width: 44px; height: 36px; font-size: 17px; }
+  .strip .strip-btn.play { margin-left: auto; }
+  .strip-cards .card.small { width: 58px; height: 62px; padding: 3px 2px 2px; }
+  .strip-cards .card.small > .visual { --vs: 28px; }
+  .strip-cards .card.small .label { font-size: 11px; }
+}
+.strip-cards { position: relative; }
+.backup-age { font-weight: 700; }
+.backup-age.late { color: #B3261E; }

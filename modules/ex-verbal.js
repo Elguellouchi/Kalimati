@@ -1,7 +1,7 @@
 // Sections F, G, H : demandes avec le PECS (phases 1-2, délai vocal), dénomination et intraverbal.
 import * as db from '../db.js';
 import { h, btn, shuffle, pick, sample, sleep } from './util.js';
-import { speak, sayCard, sayCards, recognizeSpeech, canRecognizeSpeech } from '../speech.js';
+import { speak, sayCard, sayCards, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
 import { startListening, canRecord, playClap } from '../media.js';
 import { recordTrial, ratingPanel, profile } from './aba.js';
 import { bigCard, videoModel, praise, choiceBoard } from './widgets.js';
@@ -238,6 +238,7 @@ function completion(goalId, items) {
           } catch { window.alert('Le micro est refusé. Autorisez-le dans les réglages du téléphone.'); }
         }, 'primary');
         body.append(h('div', { class: 'row center' }, mic, btn('✨ Montrer l’image', () => reveal(answer), 'ghost')), gauge,
+          canRecognizeSpeech() ? h('p', { class: 'note' }, SPEECH_CLOUD_NOTE) : null,
           ratingPanel(goalId, { item: () => current.id, labels: { plus: 'Mot dit seule ✅' }, onRated: next }));
       } else {
         const others = sample(items.filter((i) => i !== current), 2).map((i) => ({ emoji: i.emoji, vkey: answerKey(i), fr: i.end, correct: false }));

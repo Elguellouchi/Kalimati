@@ -1,5 +1,27 @@
 // Petits outils partagés par tous les modules (aucune dépendance externe).
 
+// v9.7 : garde-fou. append / replaceChildren du navigateur écrivent « null » à l'écran
+// quand on leur passe un élément absent. On ignore donc null, undefined et false partout.
+(() => {
+  const keep = (items) => items.filter((x) => x !== null && x !== undefined && x !== false);
+  for (const proto of [Element.prototype, DocumentFragment.prototype, Document.prototype]) {
+    for (const name of ['append', 'prepend', 'replaceChildren']) {
+      const original = proto[name];
+      if (typeof original !== 'function' || original.kalimatiSafe) continue;
+      const safe = function (...items) { return original.apply(this, keep(items)); };
+      safe.kalimatiSafe = true;
+      proto[name] = safe;
+    }
+  }
+  for (const name of ['before', 'after', 'replaceWith']) {
+    const original = Element.prototype[name];
+    if (typeof original !== 'function' || original.kalimatiSafe) continue;
+    const safe = function (...items) { return original.apply(this, keep(items)); };
+    safe.kalimatiSafe = true;
+    Element.prototype[name] = safe;
+  }
+})();
+
 // Crée un élément : h('button', { class: 'btn', onclick }, 'Texte', autreElement)
 export function h(tag, props = {}, ...children) {
   const node = document.createElement(tag);

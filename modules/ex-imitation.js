@@ -2,7 +2,7 @@
 // La caméra du miroir n'enregistre rien. Les voix d'Abir restent dans le téléphone et ne sont jamais exportées.
 import * as db from '../db.js';
 import { h, btn, sample, sleep, uid } from './util.js';
-import { speak, playBlob, stopSpeaking, recognizeSpeech, canRecognizeSpeech } from '../speech.js';
+import { speak, playBlob, stopSpeaking, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
 import { startListening, startRecording, canRecord, playClap } from '../media.js';
 import { recordTrial, ratingPanel } from './aba.js';
 import { bigCard, videoModel, modeTabs } from './widgets.js';
@@ -135,6 +135,7 @@ function e1(ctx) {
         ev.target.disabled = false;
         if (r.match) { playClap(); speak(`Bravo ! ${word.fr}`); recordTrial('E.1', 'plus', { item: word.id, meta: { autoSpeech: r.transcript } }); }
       }, 'ghost tiny') : null),
+    canRecognizeSpeech() ? h('p', { class: 'note' }, SPEECH_CLOUD_NOTE) : null,
     otter,
     ratingPanel('E.1', { item: () => word.id, withPrompts: false, labels: { plus: 'Intelligible ✅', prompt: 'Approximatif 👉', minus: 'Pas de réponse ❌' } }));
 }

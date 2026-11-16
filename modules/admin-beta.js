@@ -7,7 +7,7 @@ import { LANGS, langInfo } from './languages.js';
 import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 
-export const APP_VERSION = 'v9.6';
+export const APP_VERSION = 'v9.7';
 export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
 // Empreinte SHA-256 de la clé maître de départ. Attention : cette clé de départ est déjà connue publiquement.
 // Changez-la dans la console (« Changer la clé maître ») : la nouvelle empreinte remplace alors celle-ci sur ce téléphone.

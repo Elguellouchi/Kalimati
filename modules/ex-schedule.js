@@ -84,7 +84,7 @@ const STEP_REPLACEMENTS = [
   ['👩‍🍳', 'Faire un gâteau / pâtisserie en famille', 'Nsawbo l 7elwa', 'نصاوبو الحلوى', 45],
   ['🧕', 'Visite chez les grands-parents / famille', 'Nzouro l3a2ila', 'نزورو العائلة', 60],
   ['🛒', 'Courses au supermarché (Marjane)', 'Ntqdaw f Marjane', 'نتقداو فمرجان', 45],
-  ['🎬', 'Regarder un dessin animé / cinéma', 'Ntferrej f رسوم', 'نتفرج فالرسوم', 45],
+  ['🎬', 'Regarder un dessin animé / cinéma', 'Ntferrej f rsoum', 'نتفرج فالرسوم', 45],
   ['🤸‍♀️', 'Sauter au trampoline / bouger', 'Nnegguez f trampoline', 'ننكز فالترامبولين', 25],
   ['🚿', 'Prendre une bonne douche tiède', 'Ndouwech b ma dafi', 'ندوش بما دافي', 15],
   ['💅', 'Couper ses ongles et prendre soin de soi', 'Nqette3 dfari', 'نقطع ضفاري', 10],

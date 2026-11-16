@@ -49,9 +49,9 @@ export const DEFAULT_STORIES = () => [
     P('🌟', 'Ensemble, on est une belle équipe dans la classe !', 'Mجموعين حنا فريق زوين!'),
   ] },
   { id: 'fratrie_jeu', emoji: '👭', title: 'Jouer avec ma sœur (Fratrie)', pages: [
-    P('👭', 'Ma sœur et moi, on aime passer de bons moments ensemble.', 'Ana w khti kanl3bou b زوج.'),
+    P('👭', 'Ma sœur et moi, on aime passer de bons moments ensemble.', 'Ana w khti kanl3bou bjouj.'),
     P('⏳', 'Chacune son tour : d’abord toi, ensuite moi, avec le sablier.', 'Marra nti, marra ana.'),
-    P('🗣️', 'Si je veux un jouet ou une pause, je le demande avec ma carte ou mes mots.', 'Ila bghit chi 7aja, kanطلبها b l karta.'),
+    P('🗣️', 'Si je veux un jouet ou une pause, je le demande avec ma carte ou mes mots.', 'Ila bghit chi 7aja, kantlebha b l karta.'),
     P('🫂', 'On se respecte et on reste calmes même quand on n’est pas d’accord.', 'Kan7tarmo b3diyatna.'),
   ] },
 ];

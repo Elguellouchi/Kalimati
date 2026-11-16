@@ -217,6 +217,10 @@ export function availableVoices(lang = 'fr') {
 // Normalise un mot prononcé pour comparer avec la cible (sans accents ni ponctuation).
 const normSpeech = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9\u0600-\u06ff]+/g, ' ').trim();
 
+// v9.7 : message honnête. La reconnaissance de la voix du navigateur (Chrome) passe par les serveurs de Google :
+// ce que dit l'enfant part sur internet le temps d'être compris. Kalimati ne garde que le mot reconnu.
+export const SPEECH_CLOUD_NOTE = '🌐 Bon à savoir : la reconnaissance automatique passe par Google (Chrome). La voix part sur internet le temps d’être comprise. Sans internet, l’adulte note lui-même.';
+
 export function canRecognizeSpeech() {
   return Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
 }

@@ -3,7 +3,7 @@ import { hygieneHubScreen } from './ex-hygiene.js';
 // Trois types de jeu : choisir (choiceGame), mettre dans l'ordre (orderGame), activité guidée notée par l'adulte (coachGame).
 // Les images viennent du catalogue (pictogrammes / photos en ligne, dessins hors ligne) : aucun appel réseau n'est obligatoire.
 import { h, btn } from './util.js';
-import { speak, recognizeSpeech, canRecognizeSpeech } from '../speech.js';
+import { speak, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
 import { playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName, sisterName, people } from './aba.js';
 import { choiceBoard, sequenceBoard, tokenBoard, praise, bigCard } from './widgets.js';
@@ -348,7 +348,7 @@ const e4 = coachGame('E.4', (rand) => {
     if (res.match) { playClap(); speak(`Bravo ! ${w.fr}`); status.textContent = `Entendu : « ${res.transcript} » ✅`; recordTrial('E.4', 'plus', { item: w.id, meta: { autoSpeech: res.transcript } }); }
     else status.textContent = res.transcript ? `Entendu : « ${res.transcript} » (à valider par l’adulte)` : 'Pas bien entendu — réessaie ou notez ci-dessous.';
   }, 'ghost') : null;
-  return { item: w.id, body: [pills, h('div', { class: 'row center' }, model, autoMic), status], labels: { plus: 'Répété clairement ✅', prompt: 'Approximatif 👉' } };
+  return { item: w.id, body: [pills, h('div', { class: 'row center' }, model, autoMic), status, autoMic ? h('p', { class: 'note' }, SPEECH_CLOUD_NOTE) : null], labels: { plus: 'Répété clairement ✅', prompt: 'Approximatif 👉' } };
 });
 const LONG_PHRASES = () => CATALOG.filter((c) => ['fruits', 'repas', 'jouets'].includes(c.cat)).slice(0, 30).flatMap((c) => [
   { id: `veux-${c.id}`, words: ['Je', 'veux', 'manger', 'une', c.fr], emoji: c.emoji },

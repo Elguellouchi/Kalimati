@@ -1,4 +1,5 @@
-// Kalimati v9.6 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI) + Console Super-Admin Bêta, Liens magiques & Chiffrement AES-256.
+// Kalimati v9.7 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI) + Console Super-Admin Bêta. Audit du 16/11 : corrections « null », phrase sur téléphone, messages de confidentialité honnêtes.
+import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
 import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl } from './speech.js';
@@ -26,7 +27,9 @@ const MAX_STRIP = 8;
 const CORE_CAT = 'base';
 const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
-const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels'];
+// v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
+const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
@@ -113,7 +116,11 @@ function renderStrip() {
     if (i === state.playing) el.classList.add('lit');
     return el;
   });
-  $('#strip-cards').replaceChildren(...items);
+  const row = $('#strip-cards');
+  row.replaceChildren(...items);
+  // v9.7 : on montre toujours le dernier mot ajouté (ou le mot dit), même sur petit téléphone.
+  const focus = items[state.playing] || items[items.length - 1];
+  if (focus) row.scrollLeft = focus.offsetLeft + focus.offsetWidth - row.clientWidth + 6;
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = langInfo(state.lang).short;
   renderSuggestions();
@@ -355,8 +362,23 @@ function renderView() {
     h('p', { class: 'note' }, 'Restez appuyé 3 secondes sur le cadenas en haut à droite.')));
 }
 
+// v9.7 : rappel discret dans le mode parent. Photos et voix ne vivent que dans ce téléphone :
+// si le téléphone est perdu ou le navigateur vidé, seule une sauvegarde les garde.
+const BACKUP_REMIND_DAYS = 14;
+async function showBackupAge() {
+  const span = document.getElementById('backup-age');
+  if (!span) return;
+  const at = await db.getSetting('lastBackupAt').catch(() => null);
+  const days = at ? Math.floor((Date.now() - at) / 86400000) : null;
+  span.textContent = days === null ? '⚠️ Jamais sauvegardé sur ce téléphone.'
+    : days === 0 ? '✅ Sauvegardé aujourd’hui.'
+      : `${days >= BACKUP_REMIND_DAYS ? '⚠️' : '✅'} Dernière sauvegarde : il y a ${days} jour${days > 1 ? 's' : ''}.`;
+  span.classList.toggle('late', days === null || days >= BACKUP_REMIND_DAYS);
+}
+
 function renderAll() {
   document.body.classList.toggle('parent', state.parent);
+  if (state.parent) showBackupAge();
   document.querySelectorAll('[data-lang-choice]').forEach((b) => b.classList.toggle('active', b.dataset.langChoice === state.lang));
   $('#cols').value = String(state.cols);
   renderStrip();
@@ -481,7 +503,11 @@ function setupParentBar() {
       },
     });
   }
-  $('#export').onclick = async () => exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides() });
+  $('#export').onclick = async () => {
+    await exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides() });
+    await db.setSetting('lastBackupAt', Date.now());
+    showBackupAge();
+  };
   $('#import').onchange = async (e) => {
     const file = e.target.files && e.target.files[0];
     e.target.value = '';
