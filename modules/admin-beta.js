@@ -2,14 +2,22 @@
 // Lien Partage Équipe (AVS / Orthophoniste) & Sauvegarde chiffrée Zero-Knowledge AES-256 (Web Crypto API).
 import * as db from '../db.js';
 import { h, btn, dayKey } from './util.js';
-import { profile, saveProfile, clinic, saveClinic } from './aba.js';
+import { profile, saveProfile, clinic, saveClinic, loadContext } from './aba.js';
 import { LANGS, langInfo } from './languages.js';
 import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 
 export const APP_VERSION = 'v9.6';
 export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
-const DEFAULT_MASTER_KEY = 'AZIZ-ADMIN-2026';
+// Empreinte SHA-256 de la clé maître de départ. Attention : cette clé de départ est déjà connue publiquement.
+// Changez-la dans la console (« Changer la clé maître ») : la nouvelle empreinte remplace alors celle-ci sur ce téléphone.
+const DEFAULT_MASTER_KEY_SHA256 = '723fb97bbdf2adce079c4c1cd4fe38e5a4f76df3b16c3cdb623c3d3d8c413c0a';
+
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(String(text || '').trim());
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
+}
 const MAX_BETA_FAMILIES = 100;
 
 // ---------- Détection anonyme de l'appareil (Météo d'usage sans donnée nominative) ----------
@@ -453,7 +461,8 @@ export async function openSetupWizard({ inviteCode = '', onDone } = {}) {
         h('div', { class: 'row spread' },
           btn('⬅ Retour', () => { step = 1; renderStep(); }, 'ghost'),
           btn('Continuer ➔', () => {
-            draft.name = nameIn.value.trim() || 'Mon enfant';
+            if (!nameIn.value.trim()) { nameIn.focus(); nameIn.placeholder = 'Merci d’indiquer le prénom'; return; }
+            draft.name = nameIn.value.trim();
             draft.age = ageIn.value.trim();
             draft.sister = sisterIn.value.trim();
             draft.father = fatherIn.value.trim() || 'Papa';
@@ -610,9 +619,14 @@ async function blobToDataUrl(blob) {
 }
 
 async function dataUrlToBlob(dataUrl) {
-  if (!dataUrl || typeof dataUrl !== 'string') return null;
-  const res = await fetch(dataUrl);
-  return res.blob();
+  if (!dataUrl || typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) return null;
+  const comma = dataUrl.indexOf(',');
+  if (comma < 0) return null;
+  const mime = dataUrl.slice(5, comma).split(';')[0] || 'application/octet-stream';
+  const bin = atob(dataUrl.slice(comma + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
 }
 
 export async function exportEncryptedBackup() {
@@ -670,46 +684,51 @@ export async function exportEncryptedBackup() {
 }
 
 export async function importEncryptedBackup(file, onRestored) {
-  const defaultKey = (await db.getSetting('familyEncryptionKey')) || '';
-  const pass = window.prompt('🔓 Entrez la clé de chiffrement familiale AES-256 pour déchiffrer ce dossier :', defaultKey);
-  if (!pass) return;
-  const text = await file.text();
-  const data = await decryptPayload(text, pass);
-  if (!window.confirm(`Dossier déchiffré avec succès (${(data.cards || []).length} cartes, ${(data.trials || []).length} essais ABA). Restaurer maintenant sur cet appareil ?`)) return;
+  try {
+    const defaultKey = (await db.getSetting('familyEncryptionKey')) || '';
+    const pass = window.prompt('🔓 Entrez la clé de chiffrement familiale AES-256 pour déchiffrer ce dossier :', defaultKey);
+    if (!pass) return;
+    const text = await file.text();
+    const data = await decryptPayload(text, pass);
+    if (!window.confirm(`Dossier déchiffré avec succès (${(data.cards || []).length} cartes, ${(data.trials || []).length} essais ABA). Restaurer maintenant sur cet appareil ?`)) return;
 
-  if (data.profile) await saveProfile(data.profile);
-  if (data.clinic) { Object.assign(clinic, data.clinic); await saveClinic(); }
-  if (data.lang) await db.setSetting('lang', data.lang);
-  if (data.cols) await db.setSetting('cols', data.cols);
-  if (data.levels) await db.setSetting('levels', data.levels);
-  if (data.customSchedules) await db.setSetting('customSchedules', data.customSchedules);
-  if (data.atecHistory) await db.setSetting('atecHistory', data.atecHistory);
-  await db.setSetting('familyEncryptionKey', pass.trim());
+    if (data.profile) await saveProfile(data.profile);
+    if (data.clinic) { Object.assign(clinic, data.clinic); await saveClinic(); }
+    if (data.lang) await db.setSetting('lang', data.lang);
+    if (data.cols) await db.setSetting('cols', data.cols);
+    if (data.levels) await db.setSetting('levels', data.levels);
+    if (data.customSchedules) await db.setSetting('customSchedules', data.customSchedules);
+    if (data.atecHistory) await db.setSetting('atecHistory', data.atecHistory);
+    await db.setSetting('familyEncryptionKey', pass.trim());
 
-  if (Array.isArray(data.cards) && data.cards.length) {
-    const cards = await Promise.all(data.cards.map(async (c) => ({
-      ...c,
-      photo: await dataUrlToBlob(c.photo),
-      video: await dataUrlToBlob(c.video),
-      audioFr: await dataUrlToBlob(c.audioFr),
-      audioDr: await dataUrlToBlob(c.audioDr),
-    })));
-    await db.clearCards();
-    await db.putCards(cards);
+    if (Array.isArray(data.cards) && data.cards.length) {
+      const cards = await Promise.all(data.cards.map(async (c) => ({
+        ...c,
+        photo: await dataUrlToBlob(c.photo),
+        video: await dataUrlToBlob(c.video),
+        audioFr: await dataUrlToBlob(c.audioFr),
+        audioDr: await dataUrlToBlob(c.audioDr),
+      })));
+      await db.clearCards();
+      await db.putCards(cards);
+    }
+    if (Array.isArray(data.visuals) && data.visuals.length) {
+      const vis = await Promise.all(data.visuals.map(async (v) => ({
+        ...v,
+        blob: await dataUrlToBlob(v.blob),
+      })));
+      await db.putVisualOverrides(vis);
+    }
+    if (Array.isArray(data.trials) && data.trials.length) await db.putTrials(data.trials);
+    if (Array.isArray(data.abcLogs) && data.abcLogs.length) await db.putAbcLogs(data.abcLogs);
+    if (Array.isArray(data.orthoLogs) && data.orthoLogs.length) await db.putOrthoLogs(data.orthoLogs);
+
+    await loadContext();
+    window.alert('Dossier familial restauré et déchiffré avec succès ✅');
+    if (onRestored) onRestored();
+  } catch (err) {
+    window.alert(err.message || 'Impossible de restaurer cette sauvegarde chiffrée.');
   }
-  if (Array.isArray(data.visuals) && data.visuals.length) {
-    const vis = await Promise.all(data.visuals.map(async (v) => ({
-      ...v,
-      blob: await dataUrlToBlob(v.blob),
-    })));
-    await db.putVisualOverrides(vis);
-  }
-  if (Array.isArray(data.trials) && data.trials.length) await db.putTrials(data.trials);
-  if (Array.isArray(data.abcLogs) && data.abcLogs.length) await db.putAbcLogs(data.abcLogs);
-  if (Array.isArray(data.orthoLogs) && data.orthoLogs.length) await db.putOrthoLogs(data.orthoLogs);
-
-  window.alert('Dossier familial restauré et déchiffré avec succès ✅');
-  if (onRestored) onRestored();
 }
 
 // ---------- 4. Bonus pratique : « Lien Partage Équipe » & Sauvegarde Chiffrée (Côté Parent ⚙️ Settings) ----------
@@ -853,7 +872,7 @@ export function superAdminScreen(nav) {
   };
 
   const renderLogin = async () => {
-    const savedKey = (await db.getSetting('superAdminMasterKey')) || DEFAULT_MASTER_KEY;
+    const savedHash = (await db.getSetting('superAdminKeyHash')) || DEFAULT_MASTER_KEY_SHA256;
     const keyInput = h('input', {
       type: 'password',
       placeholder: 'Clé maître Super-Admin',
@@ -861,8 +880,8 @@ export function superAdminScreen(nav) {
     });
     const err = h('p', { class: 'note err-text' });
 
-    const unlock = () => {
-      if (keyInput.value.trim() === savedKey || keyInput.value.trim() === DEFAULT_MASTER_KEY) {
+    const unlock = async () => {
+      if ((await sha256Hex(keyInput.value)) === savedHash) {
         sessionStorage.setItem('kalimati_super_admin_unlocked', '1');
         renderConsole();
       } else {
@@ -994,6 +1013,8 @@ export function superAdminScreen(nav) {
     const supaUrlIn = h('input', { value: supaCfg.url || '', placeholder: 'https://xxxx.supabase.co' });
     const supaKeyIn = h('input', { value: supaCfg.anonKey || '', placeholder: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' });
     const supaNote = h('span', { class: 'note' });
+    const newKeyIn = h('input', { type: 'password', placeholder: 'Nouvelle clé maître (8 caractères minimum)' });
+    const keyNote = h('span', { class: 'note' });
 
     container.replaceChildren(
       h('div', { class: 'row spread wrap' },
@@ -1125,7 +1146,17 @@ export function superAdminScreen(nav) {
               await db.setSetting('supabaseConfig', { url: supaUrlIn.value.trim(), anonKey: supaKeyIn.value.trim() });
               supaNote.textContent = 'Connecteur Supabase enregistré ✅';
             }, 'primary'),
-            supaNote))),
+            supaNote),
+          h('hr', { class: 'soft-hr' }),
+          h('label', { class: 'field' }, '🔐 Changer la clé maître (la clé de départ est connue publiquement : changez-la)', newKeyIn),
+          h('div', { class: 'row wrap' },
+            btn('Enregistrer la nouvelle clé', async () => {
+              if (newKeyIn.value.trim().length < 8) { keyNote.textContent = 'Au moins 8 caractères.'; return; }
+              await db.setSetting('superAdminKeyHash', await sha256Hex(newKeyIn.value));
+              newKeyIn.value = '';
+              keyNote.textContent = 'Nouvelle clé enregistrée sur ce téléphone ✅ L’ancienne ne marche plus ici.';
+            }, 'primary'),
+            keyNote))),
     );
   };
 
