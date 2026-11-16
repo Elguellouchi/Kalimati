@@ -1,4 +1,4 @@
-// Kalimati v3 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). Tout reste dans le téléphone.
+// Kalimati v9.6 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI) + Console Super-Admin Bêta, Liens magiques & Chiffrement AES-256.
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
 import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl } from './speech.js';
@@ -19,6 +19,7 @@ import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modu
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
+import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -163,7 +164,6 @@ function setupStrip() {
 // ---------- Espace Parler ----------
 const sortedCards = (cat) => state.cards.filter((c) => c.cat === cat).sort((a, b) => (a.gridRow - b.gridRow) || (a.gridCol - b.gridCol) || (a.order - b.order));
 const visibleFor = (card) => state.parent || !card.hidden;
-
 
 // Apport PictoTEA : impression / export PDF du tableau CAA personnalisé (avec vraies photos / pictos)
 function printAacBoard() {
@@ -339,7 +339,7 @@ function homeScreen() {
     h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, titleKey, subKey, cls]) => h('button', {
       type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(ui(titleKey, state.lang), { lang: menuVoice() }); openSpace(id); },
     }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang))))),
-    h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès (adultes)' : '🔒 Progrès (adultes)'));
+    h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès & Console Bêta (adultes)' : '🔒 Progrès (adultes)'));
 }
 
 function renderView() {
@@ -351,7 +351,8 @@ function renderView() {
   if (state.space === 'routines') { nav.openRoutines(); return; }
   if (state.space === 'emotions') { nav.openEmotions(); return; }
   view.replaceChildren(state.parent ? dashboardScreen(nav) : h('div', { class: 'screen locked' },
-    h('p', { class: 'ask' }, '🔒 Le suivi du PEI est réservé aux adultes.'), h('p', { class: 'note' }, 'Restez appuyé 3 secondes sur le cadenas en haut à droite.')));
+    h('p', { class: 'ask' }, '🔒 Le suivi du PEI, le partage équipe et la Console Bêta sont réservés aux adultes.'),
+    h('p', { class: 'note' }, 'Restez appuyé 3 secondes sur le cadenas en haut à droite.')));
 }
 
 function renderAll() {
@@ -460,6 +461,26 @@ function setupParentBar() {
     renderView();
   };
   $('#photos').onclick = () => { state.space = 'emotions'; renderSpaces(); nav.openGallery(); };
+  const adminBtn = document.getElementById('admin-console-btn');
+  if (adminBtn) {
+    adminBtn.onclick = () => {
+      state.space = 'progress';
+      renderSpaces();
+      nav.openScreen(() => superAdminScreen(nav), () => dashboardScreen(nav));
+    };
+  }
+  const wizardBtn = document.getElementById('wizard-btn');
+  if (wizardBtn) {
+    wizardBtn.onclick = () => openSetupWizard({
+      onDone: async () => {
+        await loadContext();
+        state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
+        state.cols = (await db.getSetting('cols')) || 4;
+        state.cards = await loadCards();
+        renderAll();
+      },
+    });
+  }
   $('#export').onclick = async () => exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides() });
   $('#import').onchange = async (e) => {
     const file = e.target.files && e.target.files[0];
@@ -566,6 +587,25 @@ async function init() {
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.
   document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
+  // Détection automatique de ?invite=KALI-XXX, ?team=KALI-XXX ou ?admin=1
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('admin') === '1') {
+    window.history.replaceState({}, document.title, window.location.pathname + window.location.hash);
+    state.parent = true;
+    state.space = 'progress';
+    renderAll();
+    nav.openScreen(() => superAdminScreen(nav), () => dashboardScreen(nav));
+  } else {
+    await checkUrlInvite({
+      onConfigured: async () => {
+        await loadContext();
+        state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
+        state.cols = (await db.getSetting('cols')) || 4;
+        state.cards = await loadCards();
+        renderAll();
+      },
+    });
+  }
   checkReminder();
   setInterval(checkReminder, REMINDER_CHECK_MS);
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});

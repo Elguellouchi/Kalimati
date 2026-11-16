@@ -863,3 +863,39 @@ dialog::backdrop { background: rgb(0 0 0 / .45); }
   .calm-bubble { animation: none; bottom: auto; top: 30%; }
   .calm-circle { transition: none; }
 }
+
+/* ---------- v9.6 : Console Super-Admin Bêta, Liens d'invitation magiques, Setup Wizard & Chiffrement AES-256 ---------- */
+.beta-parent-box { border-left: 5px solid #1F6F5C; }
+.admin-summary-card { border-left: 5px solid #3949AB; background: linear-gradient(135deg, #F5F7FF 0%, #FFFFFF 100%); }
+.status-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 4px 12px; font-size: 13px; font-weight: 800; }
+.status-pill.ok { background: #E8F5E9; color: #1B5E20; border: 1.5px solid #81C784; }
+.status-pill.pending { background: #FFF8E1; color: #E65100; border: 1.5px solid #FFB74D; }
+.status-pill.low { background: #FFEBEE; color: #B71C1C; border: 1.5px solid #E57373; }
+.invite-result-card { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px; border-radius: 16px; border: 2px solid #81C784; background: #F4FBF7; margin-top: 8px; }
+.invite-result-card.highlight { border-width: 3px; border-color: #1F6F5C; box-shadow: 0 8px 24px rgb(31 111 92 / .12); }
+.qr-wrap { flex: none; display: grid; place-items: center; background: #fff; padding: 8px; border-radius: 12px; border: 1px solid var(--line); }
+.magic-url { display: block; padding: 8px 10px; border-radius: 10px; background: #fff; border: 1px dashed #1F6F5C; font-size: 13px; font-weight: 700; color: #0F3D33; word-break: break-all; }
+.admin-invite-row { padding: 12px; border-radius: 14px; border: 1.5px solid var(--line); background: var(--surface); }
+.zk-table th, .zk-table td { text-align: left; padding: 10px 12px; vertical-align: top; font-size: 14px; }
+.zk-table thead th:first-child { background: #E8F5E9; color: #1B5E20; }
+.zk-table thead th:last-child { background: #E8EAF6; color: #1A237E; }
+.soft-hr { border: 0; border-top: 1px solid var(--line); margin: 8px 0; }
+.beta-fb-details summary { font-weight: 700; cursor: pointer; color: var(--brand); padding: 4px 0; }
+
+/* Assistant de configuration 1re connexion (Setup Wizard) */
+.wizard-dialog { width: min(640px, 95vw); max-height: 92vh; border: 0; border-radius: 24px; padding: 0; box-shadow: 0 20px 50px rgb(0 0 0 / .32); background: var(--surface); color: var(--text); }
+.wizard-dialog::backdrop { background: rgb(12 32 27 / .65); backdrop-filter: blur(4px); }
+.wizard-box { padding: 20px; }
+.wizard-header { display: flex; flex-direction: column; gap: 8px; }
+.wizard-badge { display: inline-block; background: var(--soft); color: var(--brand); font-weight: 800; font-size: 13px; padding: 4px 12px; border-radius: 999px; }
+.wizard-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.wizard-list { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.wizard-check { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; font-weight: 700; cursor: pointer; padding: 8px 10px; border-radius: 12px; background: var(--bg); }
+.wizard-check input { width: 20px; height: 20px; margin-top: 2px; flex: none; }
+.wizard-size-card { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px 14px; border-radius: 14px; border: 2.5px solid var(--line); background: var(--bg); text-align: left; cursor: pointer; }
+.wizard-size-card.active { border-color: var(--brand); background: var(--soft); }
+.key-vault-box { display: flex; flex-direction: column; gap: 10px; padding: 14px; border-radius: 16px; background: #FFF8E1; border: 2px solid #FFB74D; }
+.key-code { font-size: 20px; font-weight: 900; letter-spacing: 1px; color: #BF360C; background: #fff; padding: 8px 12px; border-radius: 10px; border: 1px solid #FFE082; text-align: center; }
+.soft-green { background: #F1F8F5; border-color: #A5D6A7; }
+.err-text { color: #C62828; font-weight: 700; }
+.row.spread { justify-content: space-between; }

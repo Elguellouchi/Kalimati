@@ -1,4 +1,4 @@
-// 📊 Progrès PEI : tableau de bord ABLLS-R des 71 objectifs (protégé par le cadenas parent).
+// 📊 Progrès PEI : tableau de bord ABLLS-R des 71 objectifs + Partage Équipe & Console Super-Admin Bêta (protégé par le cadenas parent).
 import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
 import { iconLabel } from './ui-icons.js';
@@ -13,6 +13,7 @@ import { levelOf } from './levels.js';
 import { abcSummaryCard, abcScreen } from './ex-abc.js';
 import { orthoSummaryCard, orthoReportScreen } from './ortho-report.js';
 import { getAtecHistory, atecSummaryCard, atecScreen } from './atec.js';
+import { parentBetaSettingsBox, adminSummaryCard, superAdminScreen } from './admin-beta.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur'], ['city', 'Ville']];
@@ -37,13 +38,11 @@ async function exportCsv() {
     const d = new Date(t.ts);
     return [t.day, d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }), t.goalId, PHASE.get(t.goalId) || '', t.result, t.prompt, t.item, t.intervenant, t.environment, t.reinforcer, JSON.stringify(t.meta || {})].map(csvCell).join(';');
   });
-  const blob = new Blob([`﻿${header.join(';')}\n${rows.join('\n')}`], { type: 'text/csv;charset=utf-8' });
+  const blob = new Blob([`\uFEFF${header.join(';')}\n${rows.join('\n')}`], { type: 'text/csv;charset=utf-8' });
   const link = h('a', { href: URL.createObjectURL(blob), download: `kalimati-essais-${dayKey()}.csv` });
   link.click();
   setTimeout(() => URL.revokeObjectURL(link.href), 5000);
 }
-
-// Indicateurs d'un ensemble d'objectifs : atteints, en cours, niveau moyen (et essais du jour pour le PEI).
 
 // v7 (Aegon) : Graphique SVG d'évolution sur 7 jours (essais autonomes ✅ vs guidés 👉) + Sélecteur de voix naturelles
 function weeklyTrendChart(all) {
@@ -132,6 +131,8 @@ export function dashboardScreen(nav) {
     body.replaceChildren(
       kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
       kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
+      parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) }),
+      adminSummaryCard(() => nav.openScreen(() => superAdminScreen(nav), self)),
       abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self)),
       orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self)),
       atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self)),
@@ -156,5 +157,5 @@ export function dashboardScreen(nav) {
       profileForm(),
       aboutBox());
   });
-  return h('div', { class: 'screen' }, h('h2', {}, '📊 Progrès PEI'), body);
+  return h('div', { class: 'screen' }, h('h2', {}, '📊 Progrès PEI & Réglages Adultes'), body);
 }
