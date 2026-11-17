@@ -3,6 +3,7 @@ import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
 import { iconLabel } from './ui-icons.js';
 import { visualStyleBox, aboutBox, speechCloudBox } from './about.js';
+import { friendsSettingsBox } from './friends.js';
 import { availableVoices, setPreferredVoice, speak } from '../speech.js';
 import { profile, saveProfile, firstName } from './aba.js';
 import { SECTIONS, GOALS, goalsOf } from './goals.js';
@@ -154,6 +155,7 @@ export function dashboardScreen(nav) {
       voiceSettingsBox(),
       speechCloudBox(),
       visualStyleBox(),
+      friendsSettingsBox(),
       profileForm(),
       aboutBox());
   });

@@ -1046,3 +1046,280 @@ dialog::backdrop { background: rgb(255 248 240 / .25); backdrop-filter: blur(2px
 body.parent .parent-bar.open .pb-chevron { transform: rotate(180deg); }
 body.parent .parent-bar:not(.open) > :not(.pb-head) { display: none !important; }
 body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-behavior: contain; }
+
+/* ==========================================================================
+   v9.12 : style-stitch-design.css (Drive d'Aziz, 17/11/2026) ajouté tel quel ci-dessous.
+   ========================================================================== */
+/* ==========================================================================
+   🎨 KALIMATI KIDS-FRIENDLY DESIGN SYSTEM (Extrait de DESIGN.md + 7 Amis)
+   "Calm AAC Sensory Workspace" — Tactile 3D Soft-Press, Pastels & Zero-Red
+   ========================================================================== */
+
+:root {
+  /* Sensory Canvas & Core Roles (DESIGN.md) */
+  --bg: #FFF8F0;
+  --surface: #FFFFFF;
+  --surface-low: #F9F3EA;
+  --surface-mid: #F3EDE4;
+  --surface-high: #EEE7DF;
+  --text: #1D1B16;
+  --muted: #6F7975;
+  --line: #DFD9D1;
+  --brand: #1F6F5C;
+  --brand-dark: #14473B;
+  --soft: #E2F4EB;
+  --sunshine: #FFD54F;
+  --slate-sky: #6F88A5;
+
+  /* Zero-Red Policy : Terracotta & Ochre remplacent le rouge agressif */
+  --danger: #D97D54;
+  --warning-ochre: #C28236;
+
+  /* Pastels sensoriels par catégorie de cartes (DESIGN.md) */
+  --pastel-verb: #E3E8FC;      /* Periwinkle : Actions & verbes */
+  --pastel-social: #FFE8DC;    /* Soft Peach : Personnes, émotions, social */
+  --pastel-noun: #E1F3FA;      /* Sky Blue : Noms & objets du quotidien */
+  --pastel-place: #E2F4EB;     /* Calm Meadow Green : Lieux, nature, routines */
+
+  /* Rayons & transitions douces (DESIGN.md) */
+  --radius-tile: 22px;
+  --radius-strip: 28px;
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-calm: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 1. Tuiles CAA Tactiles 3D "Soft Silicone Block" (Physical Lip + Inner Glow) */
+.card {
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: var(--radius-tile) !important;
+  border: 2px solid rgba(31, 111, 92, 0.14);
+  box-shadow:
+    0 4px 12px rgba(31, 111, 92, 0.06),
+    0 3px 0 rgba(31, 111, 92, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  transition: transform 0.22s var(--ease-calm), box-shadow 0.22s var(--ease-calm);
+  letter-spacing: 0.015em;
+}
+
+.card .label {
+  font-size: max(15px, 1rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Enfoncement mécanique doux au toucher (Physical Lip Pressed State) */
+.card:active,
+.card.pressed {
+  transform: translateY(2px) scale(0.985) !important;
+  box-shadow:
+    0 1px 3px rgba(31, 111, 92, 0.08),
+    0 1px 0 rgba(31, 111, 92, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Anneau de focus Soft Warm Sunshine (#FFD54F) pour contacteur & suivi oculaire */
+.card:focus-visible,
+.card.scan-active {
+  outline: 3px solid var(--sunshine) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 5px rgba(255, 213, 79, 0.45), 0 6px 16px rgba(31, 111, 92, 0.14) !important;
+}
+
+/* 2. Bande de phrase (Sentence Strip) aimantée & Bouton Effacer sécurisé */
+.strip {
+  border-radius: var(--radius-strip);
+  background: #FFFFFF;
+  border: 2px solid var(--line);
+  box-shadow:
+    inset 0 2px 5px rgba(29, 27, 22, 0.04),
+    0 4px 14px rgba(31, 111, 92, 0.06);
+  padding: 8px 12px;
+}
+
+.strip-btn.play {
+  background: var(--brand);
+  color: #FFFFFF;
+  box-shadow: 0 3px 0 var(--brand-dark);
+  transition: transform 0.18s var(--ease-calm);
+}
+.strip-btn.play:active {
+  transform: translateY(2px) scale(0.97);
+  box-shadow: 0 1px 0 var(--brand-dark);
+}
+
+#btn-clear {
+  background: #FFF3EC;
+  color: var(--danger);
+  border: 1.5px solid rgba(217, 125, 84, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+/* 3. Politique Zero-Red : Oscillation calme 4Hz + Halo ocre au lieu d'erreur rouge */
+@keyframes calmWiggle {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.wiggle-soft {
+  animation: calmWiggle 0.35s ease-in-out;
+  box-shadow: 0 0 0 4px rgba(194, 130, 54, 0.28) !important;
+}
+
+/* 4. Les 7 Amis de Kalimati (Bandeau compagnon, Poses & Album des Amis) */
+.friend-banner {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 16px;
+  border-radius: 22px;
+  background: #FFFFFF;
+  border: 2px solid var(--line);
+  box-shadow: 0 4px 12px rgba(31, 111, 92, 0.06), 0 3px 0 rgba(31, 111, 92, 0.12);
+  text-align: left;
+  transition: transform 0.3s var(--ease-calm);
+}
+
+.friend-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.friend-banner-text strong {
+  font-size: 16px;
+  color: var(--brand);
+}
+
+.friend-speech {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.friend-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* Mouvements lents (> 1,5 s à 4 s) sans aucun clignotement */
+@keyframes friendNodSlow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-4px) rotate(2deg); }
+}
+
+.friend-nod .friend-avatar,
+.pose-happy svg {
+  animation: friendNodSlow 1.6s ease-in-out 1;
+}
+
+/* Bosse de Jmimla la chamelle : respiration lente de 4 secondes */
+@keyframes camelBreatheSlow {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-3px) scaleY(1.04); }
+}
+
+.friend-jmimla .friend-camel-hump {
+  transform-origin: 72px 96px;
+  animation: camelBreatheSlow 4s ease-in-out infinite;
+}
+
+/* Bulles lentes de Nour et Mchicha (cycle doux de 3,6 secondes) */
+@keyframes gentleBubblesSlow {
+  0%, 100% { transform: translateY(0) scale(1); opacity: 0.75; }
+  50% { transform: translateY(-3px) scale(1.08); opacity: 1; }
+}
+
+.friend-nour .friend-bubbles,
+.friend-mchicha .friend-bubbles {
+  animation: gentleBubblesSlow 3.6s ease-in-out infinite;
+}
+
+/* Carte de récompense calme & Grille de l'Album des 7 Amis */
+.friend-reward-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: #FFFDF7;
+  border: 2.5px solid var(--sunshine);
+  box-shadow: 0 6px 18px rgba(255, 213, 79, 0.22);
+}
+
+.album-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+  gap: 12px;
+}
+
+.album-friend-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: 14px 10px;
+  border-radius: 22px;
+  background: #FFFFFF;
+  border: 2.5px solid var(--line);
+  box-shadow: 0 3px 0 rgba(31, 111, 92, 0.14);
+}
+
+.album-friend-card.is-unlocked {
+  border-color: #4FC3B8;
+  background: #FAFDFB;
+}
+
+.album-friend-card.is-locked {
+  opacity: 0.58;
+  filter: grayscale(0.35);
+}
+
+.album-mission-tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--brand);
+}
+
+.album-phrase {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+/* v9.12 : garde-fous ajoutés après le bloc ci-dessus.
+   1) Le mode sombre du téléphone garde ses couleurs (le bloc :root ci-dessus est en clair).
+   2) Les amis et l'album suivent la couleur de fond du thème.
+   3) Petit écran : bandeau compact, le tableau CAA garde sa place.
+   4) Si le téléphone demande moins de mouvements, les amis restent immobiles. */
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #141917; --surface: #1F2623; --surface-low: #1A201E; --surface-mid: #222A27; --surface-high: #28312D; --text: #EEF2F0; --muted: #A3B0AB; --line: #34403B; --brand: #4DB89A; --brand-dark: #2F7E69; --soft: #213430; }
+  .friend-banner, .album-friend-card, .strip, .friend-reward-card { background: var(--surface); }
+  .album-friend-card.is-unlocked { background: var(--surface-mid); }
+  #btn-clear { background: var(--surface-mid); }
+}
+.friend-banner { color: var(--text); }
+.friend-avatar { flex: none; }
+.friend-reward-slot:empty { display: none; }
+.album-dialog { max-width: min(760px, 96vw); max-height: 90dvh; border: 0; border-radius: 24px; padding: 16px; background: var(--surface); color: var(--text); }
+.album-dialog::backdrop { background: rgb(0 0 0 / .35); }
+@media (max-width: 480px) {
+  .friend-banner { padding: 6px 10px; gap: 10px; }
+  .friend-banner .friend-avatar { width: 52px !important; height: 60px !important; }
+  .friend-banner-text strong { font-size: 14px; }
+  .friend-speech { font-size: 14.5px; }
+  .talk > .friend-banner .friend-sub { display: none; }
+  .album-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .friend-reward-card { flex-direction: column; text-align: center; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .friend-avatar *, .friend-avatar svg { animation: none !important; }
+}

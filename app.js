@@ -1,4 +1,4 @@
-// Kalimati v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -20,6 +20,7 @@ import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modu
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
+import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
 import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -162,7 +163,10 @@ function noteUtterance() {
 }
 
 function setupStrip() {
-  $('#btn-play').onclick = () => { noteUtterance(); sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } }); };
+  $('#btn-play').onclick = () => {
+    // v9.12 : une phrase d'au moins 2 mots dite par l'enfant réveille Nour dans l'Album (sans bruit ni écran en plus).
+    if (state.strip.length >= 2 && !state.parent) unlockFriendSticker('nour').catch(() => {});
+    noteUtterance(); sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } }); };
   $('#btn-back').onclick = () => { state.strip = state.strip.slice(0, -1); renderStrip(); };
   // v9.9 : « Tout effacer » demande un appui long de 0,8 s (évite d'effacer la phrase par erreur).
   const clear = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
@@ -249,7 +253,9 @@ function renderTalk() {
   state.modeling ? '✋ Arrêter « Je montre »' : '🧑‍🏫 Je montre (adulte)');
   const modelLine = state.modeling ? h('div', { class: 'model-line', id: 'model-line' }) : null;
   const suggest = h('div', { class: 'suggest-row', id: 'suggest-row', hidden: true });
-  const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}` }, suggest, modelToggle, modelLine, core, tabs, personalise, grid,
+  // v9.12 : Nour accompagne l'espace Parler (masquable par le parent).
+  const friend = state.parent ? null : friendCompanionBanner('talk', { lang: state.lang });
+  const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}` }, friend, suggest, modelToggle, modelLine, core, tabs, personalise, grid,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? touchSettingsBox() : null, state.parent ? legend() : null);
   const ms = scanSpeed();
@@ -672,6 +678,8 @@ async function init() {
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
+  await loadFriendsState().catch(() => {});
+  document.addEventListener('kalimati-friends-changed', () => { if (state.space === 'talk') renderView(); });
   await loadVisuals();
   await loadDefaultVoices();
   setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);

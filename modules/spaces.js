@@ -3,7 +3,8 @@
 import * as db from '../db.js';
 import { h, btn } from './util.js';
 import { stopSpeaking } from '../speech.js';
-import { clinicBar, firstName, sisterName } from './aba.js';
+import { clinicBar, firstName, sisterName, onTrial } from './aba.js';
+import { friendCompanionBanner, friendCalmRewardCard, unlockFriendSticker } from './friends.js';
 import { SECTIONS, GOALS, goalById, goalsOf } from './goals.js';
 import { evaluate } from './progress.js';
 import { nour } from './nour.js';
@@ -73,6 +74,22 @@ export function createNavigator(app) {
   const context = () => ({ lang: app.state.lang, parent: app.state.parent, cards: app.state.cards, onCleanup: (fn) => cleanups.push(fn) });
   const photoHint = () => (app.state.parent ? h('p', { class: 'photo-hint' }, '📸 Mode parent : touchez le petit 📷 d’une image pour mettre une vraie photo.') : null);
 
+  // v9.12 : un seul ami par écran. Le bandeau en haut de chaque espace ; l'autocollant de l'ami après 3 essais notés.
+  const friendBanner = (mission) => friendCompanionBanner(mission, { lang: app.state.lang });
+  const MISSION_TRIALS = 3;
+  const missionReward = (friendId) => {
+    const holder = h('div', { class: 'friend-reward-slot' });
+    let count = 0;
+    const off = onTrial((trial) => {
+      if (trial.result === 'log' || ++count !== MISSION_TRIALS) return;
+      unlockFriendSticker(friendId).then(() => holder.replaceChildren(...[friendCalmRewardCard(friendId, { lang: app.state.lang })].filter(Boolean))).catch(() => {});
+    });
+    cleanups.push(off);
+    return holder;
+  };
+  const routineIds = () => new Set(routines().flatMap((g) => g.items.map(([id]) => id)));
+  const friendOfGoal = (goalId) => (goalId.startsWith('W.') ? 'mchicha' : routineIds().has(goalId) ? 'fakroun' : 'fennou');
+
   // En ligne : version enrichie (catalogue + images en ligne) quand elle existe ; hors ligne : exercice d'origine.
   const exerciseFor = (goalId) => (navigator.onLine && ONLINE_EXERCISES[goalId]) || REGISTRY[goalId];
 
@@ -91,7 +108,7 @@ export function createNavigator(app) {
     // Montée de niveau automatique : seuls les exercices qui dépendent du niveau sont relancés (un minuteur en cours n'est jamais coupé).
     const offLevel = onLevelChange((id, state, reason) => { if (id === goalId && reason === 'levelup' && navigator.onLine && ONLINE_EXERCISES[goalId]) remount(); });
     cleanups.push(() => { unmount(); bar.cleanup(); offLevel(); });
-    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), starBar(), bar, clinicBar(), photoHint(), holder);
+    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), starBar(), bar, clinicBar(), photoHint(), holder, missionReward(friendOfGoal(goalId)));
   }
 
   function sectionScreen(sectionId) {
@@ -116,7 +133,7 @@ export function createNavigator(app) {
   }
 
   function sessionHome() {
-    return h('div', { class: 'screen' }, header(''),
+    return h('div', { class: 'screen' }, header(''), friendBanner('session'),
       h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, `🎮 Les jeux d'${firstName()}`), h('p', { class: 'note' }, 'Pour l’adulte : choisissez l’intervenant et le lieu, puis un jeu.'))),
       starBar(),
       clinicBar(),
@@ -131,7 +148,7 @@ export function createNavigator(app) {
   // « 📅 Ma journée » : le planning visuel d'abord (routine MATIN / SOIR), puis les autres activités de la journée.
   function routinesHome() {
     const planning = scheduleView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) });
-    return h('div', { class: 'screen' }, header(''),
+    return h('div', { class: 'screen' }, header(''), friendBanner('routines'),
       h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, `📅 Ma journée · ${firstName()}`), h('p', { class: 'note' }, 'Ma routine quotidienne : je coche chaque étape.'))),
       planning,
       h('details', { class: 'more-day' }, h('summary', {}, '⏳ Autres activités de la journée (sablier, repas, classe, toilettes)'),
@@ -141,11 +158,17 @@ export function createNavigator(app) {
             h('span', { class: 'emoji' }, emoji), h('span', {}, label))))))));
   }
 
-  const storiesScreen = () => h('div', { class: 'screen' }, header('📖 Mes histoires'),
+  const storiesScreen = () => {
+    // Bouma : l'autocollant arrive quand l'enfant a passé au moins 20 secondes dans ses histoires.
+    const start = Date.now();
+    cleanups.push(() => { if (Date.now() - start >= 20000) unlockFriendSticker('bouma').catch(() => {}); });
+    return storiesScreenBody();
+  };
+  const storiesScreenBody = () => h('div', { class: 'screen' }, header('📖 Mes histoires'), friendBanner('stories'),
     storiesView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) }));
-  const orthoHome = () => h('div', { class: 'screen' }, header('🗣️ Atelier Orthophonie'), clinicBar(), orthoScreen(context()));
-  const hygieneHome = (initialId = null) => h('div', { class: 'screen' }, header('🫧 Hygiène & Soins du corps', 'Douche, shampoing, ongles, dents, mains, visage, nez, coiffure, ablutions'), clinicBar(), photoHint(), hygieneHubScreen(context(), initialId));
-  const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), photoHint(), emotionStudio(context()));
+  const orthoHome = () => h('div', { class: 'screen' }, header('🗣️ Atelier Orthophonie'), friendBanner('talk'), clinicBar(), orthoScreen(context()), missionReward('nour'));
+  const hygieneHome = (initialId = null) => h('div', { class: 'screen' }, header('🫧 Hygiène & Soins du corps', 'Douche, shampoing, ongles, dents, mains, visage, nez, coiffure, ablutions'), friendBanner('hygiene'), clinicBar(), photoHint(), hygieneHubScreen(context(), initialId), missionReward('mchicha'));
+  const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), friendBanner('emotions'), photoHint(), emotionStudio(context()), missionReward('hmama'));
   const galleryScreen = () => h('div', { class: 'screen' }, header('📸 Personnaliser avec nos vraies photos'),
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));
 
@@ -153,7 +176,7 @@ export function createNavigator(app) {
     const head = header('');
     const family = [['person:abir', firstName()], ['person:ghita', sisterName()], ['person:papa', 'Papa'], ['person:maman', 'Maman']];
     return h('div', { class: 'screen' },
-      head, h('h2', {}, '😊 Mes émotions et ma famille'),
+      head, friendBanner('emotions'), h('h2', {}, '😊 Mes émotions et ma famille'),
       h('div', { class: 'family-table' }, family.map(([vkey, label]) => h('div', { class: 'family-seat' }, renderVisual({ vkey, label }), h('span', {}, label)))),
       h('div', { class: 'section-grid' },
         h('button', { type: 'button', class: 'section-tile big', onclick: () => go(studioScreen) }, h('span', { class: 'emoji' }, '😊'), h('span', {}, 'Studio des émotions')),

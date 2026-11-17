@@ -4,6 +4,7 @@ import { h, btn } from './util.js';
 import { speak, stopSpeaking, hasArabicVoice } from '../speech.js';
 import { renderVisual, EMOTIONS } from './visuals.js';
 import { playBeep, playClap } from '../media.js';
+import { friendCompanionBanner, unlockFriendSticker } from './friends.js';
 
 const BREATH_SECONDS = 4;
 const FEELINGS = ['content', 'triste', 'colere', 'peur', 'fatigue', 'mal'];
@@ -122,8 +123,12 @@ function feelings(lang) {
       h('span', { class: 'emoji' }, emoji), h('span', { class: 'label' }, fr)))));
 }
 
+let calmOpenedAt = 0;
 export function closeCalm() {
   if (!overlay) return;
+  // v9.12 : après au moins 30 secondes au calme, Jmimla rejoint l'Album des Amis (en silence).
+  if (calmOpenedAt && Date.now() - calmOpenedAt >= 30000) unlockFriendSticker('jmimla').catch(() => {});
+  calmOpenedAt = 0;
   stopSpeaking();
   overlay.remove();
   overlay = null;
@@ -134,7 +139,9 @@ export function openCalm(lang = 'fr') {
   overlay = h('div', { class: 'calm-overlay', role: 'dialog', 'aria-label': 'Coin calme' },
     h('div', { class: 'calm-panel' },
       h('div', { class: 'row calm-head' }, h('h2', {}, '🌈 Mon coin calme'), btn('✖ Fermer', closeCalm, 'ghost')),
+      friendCompanionBanner('calm', { lang }),
       breathing(lang), bubbles(lang), counting(lang), feelings(lang)));
   document.body.append(overlay);
+  calmOpenedAt = Date.now();
   say('Je me calme. On respire ensemble.', 'نهدن. نتنفسو جميع.', lang);
 }
