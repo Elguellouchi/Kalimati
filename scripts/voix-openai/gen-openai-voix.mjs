@@ -3,6 +3,7 @@
 // Seuls les mots des cartes (et prénoms) sont envoyés. Jamais la voix de l'enfant.
 // Usage :
 //   node gen-openai-darija.mjs --env "C:\Users\HP\Projets\b2b-contact-platform\.env" --essais   -> 8 mots x 3 voix dans essais/
+//   node gen-openai-darija.mjs --env "..." --tout --voix shimmer --langue fr   -> toutes les cartes en français dans fr/
 //   node gen-openai-darija.mjs --env "..." --tout --voix coral                                     -> toutes les cartes dans dr/
 import fs from 'node:fs';
 import path from 'node:path';
@@ -19,9 +20,19 @@ const rawFile = !envText.includes('=') && /^sk-[\w-]+$/.test(envText.trim()) ? e
 const key = (process.env.OPENAI_API_KEY || fromEnv || rawFile || '').trim();
 if (!key) { console.error('Clé OpenAI introuvable (OPENAI_API_KEY dans ' + envPath + ').'); process.exit(1); }
 
-const index = JSON.parse(fs.readFileSync(path.join(here, 'index.json'), 'utf8')).dr;
+const LANGUE = opt('--langue', 'dr');  // 'dr' (darija) ou 'fr' (français)
+const index = JSON.parse(fs.readFileSync(path.join(here, 'index.json'), 'utf8'))[LANGUE];
 const pron = JSON.parse(fs.readFileSync(path.join(here, 'prononciation.json'), 'utf8'));
 const MODEL = opt('--modele', 'gpt-4o-mini-tts');
+
+const consigneFr = () => [
+  'Tu parles en français standard, accent de France neutre et naturel.',
+  'Voix de maman douce et chaleureuse qui parle à sa petite fille de 8 ans.',
+  'Très claire, un peu lente, bien articulée. Pas d\'emphase théâtrale.',
+  'Dis seulement le mot ou la courte phrase, une seule fois, sans rien ajouter.',
+].join(' ');
+// Ce qui est dit en français : « Abir (Moi) » devient « Abir, moi ».
+const texteFr = (t) => t.replace(/\s*\(([^)]*)\)/g, ', $1').trim();
 
 const consigne = (latin) => [
   'Tu parles en darija marocaine (arabe dialectal du Maroc, région de Rabat-Salé), pas en arabe classique ni en arabe du Moyen-Orient.',
@@ -31,8 +42,9 @@ const consigne = (latin) => [
 ].join(' ');
 
 async function say(id, voice, target) {
-  const text = index[id];
-  const body = { model: MODEL, voice, input: text, instructions: consigne(pron[id] || text), response_format: 'mp3', speed: 0.9 };
+  const text = LANGUE === 'fr' ? texteFr(index[id]) : index[id];
+  const instructions = LANGUE === 'fr' ? consigneFr() : consigne(pron[id] || text);
+  const body = { model: MODEL, voice, input: text, instructions, response_format: 'mp3', speed: 0.9 };
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     const res = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST', headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
@@ -53,7 +65,7 @@ if (args.includes('--essais')) {
   for (const voice of voices) for (const id of ids) { await say(id, voice, path.join(dir, `${voice}__${id}.mp3`)); console.log('ok', voice, id); }
 } else if (args.includes('--tout')) {
   const voice = opt('--voix', 'coral');
-  const dir = path.join(here, 'dr'); fs.mkdirSync(dir, { recursive: true });
+  const dir = path.join(here, LANGUE); fs.mkdirSync(dir, { recursive: true });
   let ok = 0; const ko = [];
   for (const id of Object.keys(index)) {
     const target = path.join(dir, `${id}.mp3`);
