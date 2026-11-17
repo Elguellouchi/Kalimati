@@ -430,6 +430,18 @@ async function checkReminder() {
 }
 
 // ---------- Mode parent (appui long de 3 secondes sur le cadenas) ----------
+// v9.10 : panneau « Réglages parent » repliable (fermé par défaut, choix gardé sur ce téléphone).
+function setupParentPanel() {
+  const bar = $('#parent-bar');
+  const toggle = $('#pb-toggle');
+  if (!bar || !toggle) return;
+  let open = false;
+  try { open = localStorage.getItem('kalimati-pb-open') === '1'; } catch { open = false; }
+  const apply = () => { bar.classList.toggle('open', open); toggle.setAttribute('aria-expanded', String(open)); };
+  toggle.onclick = () => { open = !open; apply(); try { localStorage.setItem('kalimati-pb-open', open ? '1' : '0'); } catch { /* rien */ } };
+  apply();
+}
+
 function setupLock() {
   const lock = $('#lock');
   lock.innerHTML = `<span class="lock-off">${uiIcon('lock', 26)}</span><span class="lock-on">${uiIcon('unlock', 26)}</span>`;
@@ -665,7 +677,7 @@ async function init() {
   setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
   await loadLevels();
   state.cards = await loadCards();
-  setupLock(); setupParentBar(); setupStrip(); setupToilet();
+  setupLock(); setupParentBar(); setupParentPanel(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
   ['touchend', 'click'].forEach((type) => { document.addEventListener(type, unlockAudio); document.addEventListener(type, unlockSounds); });
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.

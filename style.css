@@ -1037,3 +1037,12 @@ dialog::backdrop { background: rgb(255 248 240 / .25); backdrop-filter: blur(2px
 .backup-panel[hidden] { display: none; }
 .backup-msg { font-weight: 700; }
 .backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* v9.10 : le panneau parent se replie. Avant, il occupait tout l'écran et la page Progrès
+   ne défilait que dans une petite bande en bas. Replié par défaut ; ouvert, il ne dépasse pas 45 % de l'écran. */
+.pb-head { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 48px; padding: 6px 12px;
+  border: 1px solid var(--brand); border-radius: 14px; background: var(--soft); color: var(--brand); font-size: 16px; }
+.pb-chevron { transition: transform .2s; font-size: 18px; }
+body.parent .parent-bar.open .pb-chevron { transform: rotate(180deg); }
+body.parent .parent-bar:not(.open) > :not(.pb-head) { display: none !important; }
+body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-behavior: contain; }
