@@ -121,7 +121,7 @@ const a4 = () => {
   };
   const timer = visualTimer({ minutes: 3, choices: [3, 4, 5], onEnd: () => { out.textContent = finish(true); } });
   return h('div', { class: 'stack' }, h('p', { class: 'note' }, 'L’adulte s’éloigne. L’enfant travaille seule jusqu’à la fin du sablier.'), timer.element,
-    h('div', { class: 'row center' }, btn('✅ Restée autonome', () => { out.textContent = finish(true); }, 'rate-plus'), btn('❌ A eu besoin de l’adulte', () => { out.textContent = finish(false); }, 'rate-minus')), out);
+    h('div', { class: 'row center' }, btn('✅ Restée autonome', () => { out.textContent = finish(true); }, 'rate-plus'), btn('🌱 A eu besoin de l’adulte', () => { out.textContent = finish(false); }, 'rate-minus')), out);
 };
 
 const a5 = coachGame('A.5', (rand, p) => {
@@ -136,7 +136,7 @@ const a6 = coachGame('A.6', (rand) => {
   const draw = (a, b) => board.replaceChildren(h('div', { class: 'ft-cell' }, h('span', { class: 'ft-title' }, 'D’abord'), bigCard(a[0], a[1])), h('div', { class: 'ft-arrow' }, '➜'), h('div', { class: 'ft-cell' }, h('span', { class: 'ft-title' }, 'Ensuite'), bigCard(b[0], b[1])));
   draw(first, then);
   const change = btn('🔄 Changement !', () => { draw(first, other); speak(`Changement : ensuite, ${other[1]}`); }, 'ghost');
-  return { item: `${first[1]}>${other[1]}`, body: [board, change], labels: { plus: 'A accepté le changement ✅', minus: 'Opposition ❌' } };
+  return { item: `${first[1]}>${other[1]}`, body: [board, change], labels: { plus: 'A accepté le changement ✅', minus: 'Opposition 🌱' } };
 });
 
 const a7 = coachGame('A.7', () => ({ item: 'apres-erreur', body: [bigCard('🙂', 'On se trompe, ce n’est pas grave. On recommence !')],

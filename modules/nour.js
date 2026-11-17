@@ -74,7 +74,8 @@ const bubblesOnly = `<svg class="bubbles-overlay" viewBox="76 10 44 50" aria-hid
 // (carte « Abir », 📷 ou « Nos vraies photos »), sinon son portrait dessiné. La photo reste dans le téléphone.
 export function nour({ pose = 'stand', size = 120, says = '' } = {}) {
   const box = document.createElement('div');
-  box.className = 'nour-box';
+  // v9.9 : petite apparition douce (< 350 ms) quand le compagnon parle.
+  box.className = says ? 'nour-box nour-pop' : 'nour-box';
   // Le parent peut choisir l'image du compagnon (« Nos vraies photos ➜ Le compagnon ») ; sinon, la photo ou le portrait d'Abir.
   const key = hasPhoto(COMPANION_KEY) ? COMPANION_KEY : 'person:abir';
   const picture = renderVisual({ vkey: key, label: key === COMPANION_KEY ? 'Le compagnon' : firstName() }, { cls: 'buddy', button: false });

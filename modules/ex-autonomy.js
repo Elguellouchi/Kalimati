@@ -211,7 +211,7 @@ function passes() {
   };
   draw();
   return h('div', { class: 'stack' }, bigCard('⚽', `Lancer et attraper à 2 mètres (avec Papa ou ${sisterName()})`), dots,
-    h('div', { class: 'row center' }, btn('Attrapé à deux mains ✅', () => pass(true), 'rate-plus'), btn('Raté ❌', () => pass(false), 'rate-minus'), btn('↺', () => { n = 0; draw(); }, 'ghost')));
+    h('div', { class: 'row center' }, btn('Attrapé à deux mains ✅', () => pass(true), 'rate-plus'), btn('Raté 🌱', () => pass(false), 'rate-minus'), btn('↺', () => { n = 0; draw(); }, 'ghost')));
 }
 
 // Y.3 : « Flamant rose 1 - 2 - 3 ! »
@@ -428,7 +428,7 @@ function toiletReal(ctx) {
     if (index >= TOILET_STEPS.length) {
       playClap();
       root.replaceChildren(praise('Bravo, tout est fait !'),
-        ratingPanel('X.2', { item: 'en-vrai', meta: { mode: 'reel' }, labels: { plus: '✅ Seule', prompt: '👉 Avec rappel', minus: '❌ Non réussi' }, onRated: () => { index = 0; show(); } }));
+        ratingPanel('X.2', { item: 'en-vrai', meta: { mode: 'reel' }, labels: { plus: '✅ Seule', prompt: '👉 Avec rappel', minus: '🌱 Non réussi' }, onRated: () => { index = 0; show(); } }));
       return;
     }
     const step = TOILET_STEPS[index];

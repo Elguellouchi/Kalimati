@@ -1,6 +1,7 @@
 // Collecte de données ABA : intervenant, lieu, renforçateur actif, cotation rapide de chaque essai.
 // Machine à états de la cotation : idle → (👉) choix de la guidance → idle. Chaque essai est daté et rangé par jour.
 import * as db from '../db.js';
+import { addStar } from './rewards-kids.js';
 import { h, btn, uid, dayKey, weekKey, percent } from './util.js';
 import { PROFIL, LEGACY_PROFIL, NEUTRAL } from './profil.js';
 
@@ -100,7 +101,7 @@ export function clinicBar() {
     segmented(ENVIRONMENTS, clinic.environment, (id) => { clinic.environment = id; saveClinic(); }));
 }
 
-const DEFAULT_LABELS = { plus: '✅ Autonome', prompt: '👉 Guidé', minus: '❌ Non réussi' };
+const DEFAULT_LABELS = { plus: '✅ Autonome', prompt: '👉 Guidé', minus: '🌱 Pas encore' };
 
 // Panneau de cotation d'un essai. item : valeur ou fonction (ex. image affichée).
 export function ratingPanel(goalId, { item = null, labels = {}, onRated, withPrompts = true, meta = null } = {}) {
@@ -123,6 +124,8 @@ export function ratingPanel(goalId, { item = null, labels = {}, onRated, withPro
     lastTrial = await recordTrial(goalId, result, { item: currentItem, prompt, meta: extra });
     undo.disabled = false;
     await refresh();
+    // v9.9 : réussite autonome = une étoile pour l'enfant.
+    if (result === 'plus') addStar();
     if (onRated) onRated(result, lastTrial);
   };
   promptRow.append(...PROMPTS.map((p) => btn(p.label, () => rate('prompt', p.id), 'ghost')));

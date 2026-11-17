@@ -1,4 +1,4 @@
-// Kalimati v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -164,7 +164,14 @@ function noteUtterance() {
 function setupStrip() {
   $('#btn-play').onclick = () => { noteUtterance(); sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } }); };
   $('#btn-back').onclick = () => { state.strip = state.strip.slice(0, -1); renderStrip(); };
-  $('#btn-clear').onclick = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
+  // v9.9 : « Tout effacer » demande un appui long de 0,8 s (évite d'effacer la phrase par erreur).
+  const clear = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
+  const clearBtn = $('#btn-clear');
+  let clearTimer = null;
+  const stopHold = () => { clearTimeout(clearTimer); clearTimer = null; clearBtn.classList.remove('holding'); };
+  clearBtn.onpointerdown = () => { stopHold(); clearBtn.classList.add('holding'); clearTimer = setTimeout(() => { stopHold(); clear(); }, 800); };
+  clearBtn.onpointerup = stopHold; clearBtn.onpointerleave = stopHold; clearBtn.onpointercancel = stopHold;
+  clearBtn.onclick = (e) => { if (e.detail === 0) clear(); }; // clavier : Entrée / Espace
   $('#btn-lang').onclick = openLangPicker;
 }
 

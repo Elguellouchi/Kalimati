@@ -7,6 +7,7 @@ import { clinicBar, firstName, sisterName } from './aba.js';
 import { SECTIONS, GOALS, goalById, goalsOf } from './goals.js';
 import { evaluate } from './progress.js';
 import { nour } from './nour.js';
+import { starBar } from './rewards-kids.js';
 import { renderVisual } from './visuals.js';
 import { emotionStudio, photoGallery } from './ex-emotions.js';
 import { EXERCISES as A } from './ex-coop.js';
@@ -90,7 +91,7 @@ export function createNavigator(app) {
     // Montée de niveau automatique : seuls les exercices qui dépendent du niveau sont relancés (un minuteur en cours n'est jamais coupé).
     const offLevel = onLevelChange((id, state, reason) => { if (id === goalId && reason === 'levelup' && navigator.onLine && ONLINE_EXERCISES[goalId]) remount(); });
     cleanups.push(() => { unmount(); bar.cleanup(); offLevel(); });
-    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), bar, clinicBar(), photoHint(), holder);
+    return h('div', { class: 'screen' }, header(`${goal.id} · ${goal.title}`, `Critère : ${goal.criterion}`), starBar(), bar, clinicBar(), photoHint(), holder);
   }
 
   function sectionScreen(sectionId) {
@@ -117,6 +118,7 @@ export function createNavigator(app) {
   function sessionHome() {
     return h('div', { class: 'screen' }, header(''),
       h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, `🎮 Les jeux d'${firstName()}`), h('p', { class: 'note' }, 'Pour l’adulte : choisissez l’intervenant et le lieu, puis un jeu.'))),
+      starBar(),
       clinicBar(),
       h('button', { type: 'button', class: 'section-tile big ortho-tile', onclick: () => go(orthoHome) }, h('span', { class: 'emoji' }, '🗣️'), h('span', {}, 'Atelier Orthophonie'),
         h('small', {}, 'Articulation, phrases, situations, sons')),

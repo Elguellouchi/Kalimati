@@ -166,7 +166,7 @@ function b3() {
     h('p', { class: 'ask' }, 'Fais pareil avec tes vrais cubes sur la table.'),
     stage,
     h('div', { class: 'row center' }, btn('🧱 Nouvelle tour', tower, 'ghost'), btn('🔺 Suite de formes', shapes, 'ghost')),
-    ratingPanel('B.3', { item: () => current, labels: { plus: 'Fidèle ✅', minus: 'Non fidèle ❌' } }));
+    ratingPanel('B.3', { item: () => current, labels: { plus: 'Fidèle ✅', minus: 'Non fidèle 🌱' } }));
 }
 
 // B.4 (visuel) et C.4 (réceptif, avec consigne vocale) : « ce qui va avec ».

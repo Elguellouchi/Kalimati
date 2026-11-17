@@ -105,7 +105,7 @@ function a3() {
   return h('div', { class: 'stack' },
     h('div', { class: 'row center' }, h('span', {}, "D'abord"), pick(first, (a) => { first = a; draw(); }), h('span', {}, 'Ensuite'), pick(then, (a) => { then = a; draw(); })),
     board,
-    ratingPanel('A.3', { item: () => `${first.id}>${then.id}`, labels: { plus: 'Transition calme ✅', prompt: 'Avec aide 👉', minus: 'Opposition ❌' }, onRated: () => draw() }));
+    ratingPanel('A.3', { item: () => `${first.id}>${then.id}`, labels: { plus: 'Transition calme ✅', prompt: 'Avec aide 👉', minus: 'Opposition 🌱' }, onRated: () => draw() }));
 }
 
 export const EXERCISES = { 'A.1': a1, 'A.2': a2, 'A.3': a3 };

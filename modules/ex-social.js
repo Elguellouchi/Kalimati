@@ -105,7 +105,7 @@ function groupMode() {
   const m2 = h('div');
   const timer = visualTimer({ minutes: 5, choices: [3, 5, 8, 10], pose: 'sit', onEnd: () => {
     speak('Le regroupement est fini.');
-    m2.replaceChildren(h('p', { class: 'ask' }, 'Est-elle restée assise et attentive 5 minutes ?'), ratingPanel('M.2', { item: 'regroupement', labels: { plus: 'Assise et attentive ✅', minus: 'S’est levée ❌' } }));
+    m2.replaceChildren(h('p', { class: 'ask' }, 'Est-elle restée assise et attentive 5 minutes ?'), ratingPanel('M.2', { item: 'regroupement', labels: { plus: 'Assise et attentive ✅', minus: 'S’est levée 🌱' } }));
   } });
   return h('div', { class: 'stack' }, timer.element, m2,
     h('h3', {}, 'M.1 Consigne collective (sans dire son prénom)'), ratingPanel('M.1', { item: 'collectif', labels: { plus: 'A suivi avec le groupe ✅' } }),

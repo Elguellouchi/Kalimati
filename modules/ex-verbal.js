@@ -116,7 +116,7 @@ function f2(ctx) {
       h('div', { class: 'row center' },
         btn('Arrivée à ≥ 2 m ✅', () => arrive('plus', '>=2m'), 'rate-plus'),
         btn('Avec aide 👉', () => arrive('prompt', '>=2m'), 'rate-prompt'),
-        btn('Moins de 2 m / abandon ❌', () => arrive('minus', '<2m'), 'rate-minus')),
+        btn('Moins de 2 m / abandon 🌱', () => arrive('minus', '<2m'), 'rate-minus')),
       after);
   };
   book();
@@ -142,7 +142,7 @@ function g1() {
     const glass = hourglass(5);
     progress.textContent = `Image ${index + 1}/${order.length}`;
     stage.replaceChildren(bigCard(item.emoji, ''), glass.element,
-      ratingPanel('G.1', { item: item.id, labels: { plus: '✅ Dénommé spontanément', prompt: '👉 Après aide', minus: '❌ Pas de mot' }, onRated: () => { index += 1; draw(); } }));
+      ratingPanel('G.1', { item: item.id, labels: { plus: '✅ Dénommé spontanément', prompt: '👉 Après aide', minus: '🌱 Pas de mot' }, onRated: () => { index += 1; draw(); } }));
     glass.run();
   };
   draw();

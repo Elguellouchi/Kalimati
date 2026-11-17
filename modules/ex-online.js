@@ -105,7 +105,7 @@ function b3() {
   return h('div', { class: 'stack' },
     h('p', { class: 'ask' }, 'Fais pareil avec tes vrais cubes sur la table.'), stage,
     btn('🔀 Nouveau modèle', draw, 'ghost'),
-    ratingPanel('B.3', { item: () => current, labels: { plus: 'Fidèle ✅', minus: 'Non fidèle ❌' }, onRated: draw }));
+    ratingPanel('B.3', { item: () => current, labels: { plus: 'Fidèle ✅', minus: 'Non fidèle 🌱' }, onRated: draw }));
 }
 
 // ---------- B.4 / C.4 : 80 paires logiques, de 2 à 6 choix ----------
@@ -238,7 +238,7 @@ function g1() {
     progress.textContent = `Image ${index + 1}/${order.length}`;
     stage.replaceChildren(h('div', { class: 'big-card' }, conceptVisual(item, { style: 'best' })), glass.element,
       h('details', {}, h('summary', {}, 'Mot attendu (pour l’adulte)'), h('p', { class: 'adult-text' }, item.fr)),
-      ratingPanel('G.1', { item: item.id, labels: { plus: '✅ Dénommé spontanément', prompt: '👉 Après aide', minus: '❌ Pas de mot' }, onRated: () => { index += 1; draw(); } }));
+      ratingPanel('G.1', { item: item.id, labels: { plus: '✅ Dénommé spontanément', prompt: '👉 Après aide', minus: '🌱 Pas de mot' }, onRated: () => { index += 1; draw(); } }));
     glass.run();
   };
   newRound();

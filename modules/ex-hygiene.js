@@ -401,7 +401,7 @@ function hygieneReal(routine, ctx) {
         ratingPanel(routine.goalId, {
           item: `hygiene-${routine.id}`,
           meta: { routine: routine.id, mode: 'reel' },
-          labels: { plus: '✅ Seule', prompt: '👉 Avec aide / rappel', minus: '❌ Difficile aujourd’hui' },
+          labels: { plus: '✅ Seule', prompt: '👉 Avec aide / rappel', minus: '🌱 Difficile aujourd’hui' },
           onRated: () => { index = 0; show(); },
         }));
       return;

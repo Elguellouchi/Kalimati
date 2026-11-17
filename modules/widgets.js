@@ -6,6 +6,7 @@ import { prepareVideo } from '../media.js';
 import { draggable, hitTest } from './drag.js';
 import { nour } from './nour.js';
 import { renderVisual } from './visuals.js';
+import { addStar } from './rewards-kids.js';
 
 // Grande carte : vraie photo si le parent en a mis une, sinon illustration, sinon emoji.
 export const bigCard = (emoji, label, cls = '', vkey = null) => h('div', { class: `big-card ${cls}`.trim() },
@@ -23,13 +24,18 @@ export function choiceBoard({ choices, cols = 2, onAnswer, praise = 'Bravo' }) {
       if (finished) return;
       if (choice.correct) {
         finished = true;
+        el.classList.remove('hint');
         el.classList.add('right');
         speak(praise);
+        // v9.9 : réussite du premier coup = une étoile.
+        if (!erred) addStar();
         if (onAnswer) onAnswer(!erred, choice);
         return;
       }
       erred = true;
-      buttons.forEach((b) => { if (!b.choice.correct) b.el.classList.add('faded'); });
+      // v9.9 : jamais de croix ni de son négatif. Petit mouvement doux, puis un halo d'indice sur la bonne réponse.
+      el.classList.remove('nudge'); void el.offsetWidth; el.classList.add('nudge');
+      buttons.forEach((b) => { if (b.choice.correct) b.el.classList.add('hint'); else b.el.classList.add('faded'); });
     };
     return { el, choice };
   });
@@ -51,7 +57,7 @@ export function sequenceBoard(steps, { fade = false, onComplete, onStep } = {}) 
       index += 1;
       if (onStep) onStep(i);
       if (index < cards.length) cards[index].classList.add('current');
-      else if (onComplete) onComplete();
+      else { addStar(); if (onComplete) onComplete(); }
     };
   });
   const element = h('div', { class: 'sequence' }, cards);

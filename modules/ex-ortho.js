@@ -53,7 +53,7 @@ const TARGETS_DR = [
 ];
 const STEPS = [[1, '① Ensemble, lentement'], [2, '② Je répète tout de suite'], [3, '③ Je répète après 3 s'], [4, '④ Je dis toute seule']];
 const LEVELS = [[1, 'Syllabe'], [2, 'Mot court'], [3, 'Mot long']];
-const RATINGS = [['exact', '✅ Exact', 'rate-plus'], ['approx', '〰️ Approximatif', 'rate-prompt'], ['prompt', '👉 Guidé', 'rate-prompt'], ['fail', '❌ Non produit', 'rate-minus']];
+const RATINGS = [['exact', '✅ Exact', 'rate-plus'], ['approx', '〰️ Approximatif', 'rate-prompt'], ['prompt', '👉 Guidé', 'rate-prompt'], ['fail', '🌱 Non produit', 'rate-minus']];
 const SLOW_RATE = 0.65;
 const DELAY_MS = 3000;
 const LATENCY_MAX_MS = 6000;
@@ -253,7 +253,7 @@ function pragmaticWorkshop(ctx) {
           setTimeout(sayOk, 900);
           after.replaceChildren(h('p', { class: 'note' }, 'Pour l’adulte : et dans la vraie vie, en ce moment ?'),
             h('div', { class: 'row center' }, btn('🗣️ Elle le fait seule', note(true, first ? 'exact' : 'approx'), 'rate-plus'),
-              btn('👉 Avec aide', note(false, 'prompt'), 'rate-prompt'), btn('❌ Pas encore', note(false, 'fail'), 'rate-minus')));
+              btn('👉 Avec aide', note(false, 'prompt'), 'rate-prompt'), btn('🌱 Pas encore', note(false, 'fail'), 'rate-minus')));
         } }),
       after);
   }

@@ -136,7 +136,7 @@ function r3() {
   };
   draw();
   return h('div', { class: 'stack' }, h('p', { class: 'note' }, 'Touchez le nuage suivant à chaque nombre dit par l’enfant.'), clouds, after,
-    ratingPanel('R.3', { item: 'comptine', meta: () => ({ reached: revealed }), labels: { plus: 'Récitation complète ✅', minus: 'Incomplète ❌' }, onRated: () => { revealed = 0; after.replaceChildren(); draw(); } }));
+    ratingPanel('R.3', { item: 'comptine', meta: () => ({ reached: revealed }), labels: { plus: 'Récitation complète ✅', minus: 'Incomplète 🌱' }, onRated: () => { revealed = 0; after.replaceChildren(); draw(); } }));
 }
 
 // T.1 : reconnaître son prénom parmi 3 mots.

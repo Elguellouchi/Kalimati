@@ -137,7 +137,7 @@ function e1(ctx) {
       }, 'ghost tiny') : null),
     canRecognizeSpeech() ? h('p', { class: 'note' }, SPEECH_CLOUD_NOTE) : null,
     otter,
-    ratingPanel('E.1', { item: () => word.id, withPrompts: false, labels: { plus: 'Intelligible ✅', prompt: 'Approximatif 👉', minus: 'Pas de réponse ❌' } }));
+    ratingPanel('E.1', { item: () => word.id, withPrompts: false, labels: { plus: 'Intelligible ✅', prompt: 'Approximatif 👉', minus: 'Pas de réponse 🌱' } }));
 }
 
 // E.2 : phrases de 2-3 mots, cartes éclairées l'une après l'autre.

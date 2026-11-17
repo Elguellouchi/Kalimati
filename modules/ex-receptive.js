@@ -22,7 +22,7 @@ function c1() {
     text,
     ratingPanel('C.1', {
       item: () => current.id, withPrompts: false,
-      labels: { plus: 'Sans geste ✅ (valide)', prompt: 'Avec geste 👉', minus: 'Non réussi ❌' },
+      labels: { plus: 'Sans geste ✅ (valide)', prompt: 'Avec geste 👉', minus: 'Non réussi 🌱' },
       onRated: () => { current = pick(COMMANDS); show(); setTimeout(say, 600); },
     }));
 }
@@ -72,7 +72,7 @@ function c3real() {
   const select = h('select', { onchange: (e) => { current = e.target.value; } }, TWO_STEP_REAL.map((t) => h('option', { value: t }, t)));
   return h('div', { class: 'stack' },
     h('div', { class: 'row center' }, select, btn('🔊 Dire la consigne', () => speak(current), 'primary')),
-    ratingPanel('C.3', { item: () => current, meta: { mode: 'reel' }, labels: { plus: 'Deux éléments, bon ordre ✅', minus: 'Ordre faux / incomplet ❌' } }));
+    ratingPanel('C.3', { item: () => current, meta: { mode: 'reel' }, labels: { plus: 'Deux éléments, bon ordre ✅', minus: 'Ordre faux / incomplet 🌱' } }));
 }
 
 const c3 = () => modeTabs([['📱 Sur l’écran', c3screen], ['🧍 En vrai', c3real]]);

@@ -13,7 +13,7 @@ const EMERGING = 50;
 const MIN_TRIALS = 5;
 const MAX_AUDIO = 12;
 const PROTOCOLS = { dttc: 'Articulation (DTTC)', mlu: 'Construction de phrases', pragmatic: 'Pragmatique', phono: 'Sons et intonation', aac_mlu: 'Phrases dans Parler' };
-const RESULTS = { exact: '✅ Exact', approx: '〰️ Approximatif', prompt: '👉 Guidé', fail: '❌ Non produit' };
+const RESULTS = { exact: '✅ Exact', approx: '〰️ Approximatif', prompt: '👉 Guidé', fail: '🌱 Non produit' };
 
 const daysBack = (from, count) => new Set(Array.from({ length: count }, (_, i) => addDays(dayKey(), -(from + i))));
 const mean = (values) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : null);

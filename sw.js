@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v9-8';
+const CACHE = 'kalimati-v9-9';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -12,9 +12,11 @@ const FILES = [
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js',
-  './modules/ui-icons.js', './modules/about.js', './modules/darija-lexicon.js',
+  './modules/ui-icons.js', './modules/about.js', './modules/rewards-kids.js', './modules/darija-lexicon.js',
   './assets/manifest.json', './assets/mulberry/index.json', './assets/emoji/index.json', './assets/darija-lexicon.json',
   './assets/fonts/AtkinsonHyperlegibleNext-Regular.woff2', './assets/fonts/AtkinsonHyperlegibleNext-Bold.woff2',
+  './assets/fonts/NunitoSans-400.woff2', './assets/fonts/NunitoSans-700.woff2', './assets/fonts/NunitoSans-800.woff2',
+  './assets/amis/nour.svg', './assets/amis/mchicha.svg', './assets/amis/bouma.svg',
 ];
 
 // v9.1 : pictogrammes Mulberry et émojis OpenMoji (liste dans assets/manifest.json), mis en cache sans bloquer l'installation.
