@@ -7,11 +7,12 @@ import { LANGS, langInfo } from './languages.js';
 import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 
-export const APP_VERSION = 'v9.10';
+export const APP_VERSION = 'v9.11';
 export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
-// v9.8 : plus aucune clé maître de départ dans le code publié.
-// À la première ouverture de la console sur un téléphone, l'administrateur crée sa clé.
-// Seule son empreinte SHA-256 est gardée (réglage « superAdminKeyHash ») : la clé elle-même n'est jamais enregistrée.
+// v9.11 : la clé maître d'Aziz n'est jamais écrite dans le code, seulement son empreinte SHA-256.
+// La clé tapée est transformée en empreinte puis comparée. Aucun mot de passe en clair.
+// Une clé changée sur un téléphone (réglage « superAdminKeyHash ») marche aussi, sur ce téléphone seulement.
+const OWNER_KEY_HASH = 'cd90045ded349f3a2eebe51dcf4d1373aadf26af393d8ac1855181266724dc22';
 const MIN_MASTER_KEY_LENGTH = 10;
 
 async function sha256Hex(text) {
@@ -878,34 +879,8 @@ export function superAdminScreen(nav) {
     else window.location.href = window.location.pathname;
   };
 
-  // Première fois sur ce téléphone : créer la clé maître (seule son empreinte est gardée).
-  const renderCreateKey = () => {
-    const first = h('input', { type: 'password', placeholder: 'Nouvelle clé maître', autocomplete: 'new-password' });
-    const second = h('input', { type: 'password', placeholder: 'Retapez la clé', autocomplete: 'new-password' });
-    const err = h('p', { class: 'note err-text' });
-    const create = async () => {
-      const key = first.value.trim();
-      if (key.length < MIN_MASTER_KEY_LENGTH) { err.textContent = `Au moins ${MIN_MASTER_KEY_LENGTH} caractères.`; return; }
-      if (key !== second.value.trim()) { err.textContent = 'Les deux clés ne sont pas pareilles.'; return; }
-      await db.setSetting('superAdminKeyHash', await sha256Hex(key));
-      first.value = ''; second.value = '';
-      sessionStorage.setItem('kalimati_super_admin_unlocked', '1');
-      renderConsole();
-    };
-    container.replaceChildren(
-      h('div', { class: 'row spread' }, h('h2', {}, '🛡️ Console Super-Admin Kalimati'), btn('⬅ Retour', leave, 'ghost')),
-      h('section', { class: 'card-box stack' },
-        h('h3', {}, '🔑 Créer la clé maître de ce téléphone'),
-        h('p', { class: 'note' }, 'Aucune clé n’existe encore sur ce téléphone. Choisissez-en une et notez-la dans un endroit sûr. Kalimati ne garde pas la clé, seulement une empreinte : impossible de la retrouver si elle est oubliée.'),
-        h('label', { class: 'field' }, 'Clé maître', first),
-        h('label', { class: 'field' }, 'Retapez la clé', second),
-        err,
-        h('div', { class: 'row wrap' }, btn('✅ Créer la clé et ouvrir la console', create, 'primary'))));
-  };
-
   const renderLogin = async () => {
     const savedHash = await db.getSetting('superAdminKeyHash');
-    if (!savedHash) { renderCreateKey(); return; }
     const keyInput = h('input', {
       type: 'password',
       placeholder: 'Clé maître Super-Admin',
@@ -914,7 +889,8 @@ export function superAdminScreen(nav) {
     const err = h('p', { class: 'note err-text' });
 
     const unlock = async () => {
-      if ((await sha256Hex(keyInput.value)) === savedHash) {
+      const typed = await sha256Hex(keyInput.value);
+      if (typed === OWNER_KEY_HASH || (savedHash && typed === savedHash)) {
         sessionStorage.setItem('kalimati_super_admin_unlocked', '1');
         renderConsole();
       } else {
