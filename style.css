@@ -1323,3 +1323,22 @@ body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-b
 @media (prefers-reduced-motion: reduce) {
   .friend-avatar *, .friend-avatar svg { animation: none !important; }
 }
+
+/* v9.13 : barre des temps (Hier / Maintenant / Après) + aperçu de la phrase conjuguée, sous la bande de phrase. Zéro rouge. */
+.morph-slot { padding: 6px 12px 0; }
+.morph-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.morph-tenses { display: flex; gap: 6px; flex-wrap: wrap; }
+.morph-tense-btn { min-height: 40px; padding: 6px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface, #fff); color: var(--text); font-weight: 700; font-size: 14px; }
+.morph-tense-btn.active { background: var(--soft); border-color: var(--brand); color: var(--brand); box-shadow: 0 2px 0 var(--brand); }
+.morph-sentence-preview { flex: 1 1 220px; min-width: 0; min-height: 44px; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 12px; border-radius: 18px; border: 2px solid var(--sunshine, #FFD54F); background: #FFFDF7; color: var(--text); text-align: left; }
+.morph-sentence-preview strong { font-size: 16px; line-height: 1.25; overflow-wrap: anywhere; }
+.morph-sentence-preview small { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.card .label.inflected { color: var(--brand); }
+@media (max-width: 480px) {
+  .morph-slot { padding: 4px 8px 0; }
+  .morph-tense-btn { padding: 4px 9px; font-size: 13px; min-height: 36px; }
+  .morph-sentence-preview strong { font-size: 15px; }
+}
+@media (prefers-color-scheme: dark) {
+  .morph-sentence-preview { background: var(--surface, #1f2421); }
+}

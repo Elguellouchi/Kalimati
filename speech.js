@@ -2,6 +2,7 @@
 // Voix lente (0,85), darija lue avec une voix arabe si la graphie arabe existe, phrases mélangeant FR et darija.
 
 import { langInfo, isExtraLang, cardWord, hasWord } from './modules/languages.js';
+import { inflectStrip } from './modules/morphology.js';
 
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
@@ -278,12 +279,36 @@ export function recognizeSpeech({ expected = '', lang = 'fr', timeoutMs = 4500 }
   });
 }
 
-// v7 (Aegon) : Assemblage grammatical naturel des phrases de la bande CAA (élision « Je veux » + verbe/nom, pronoms, etc.)
+// v9.13 : phrase conjuguée et accordée (moteur hors-ligne modules/morphology.js : temps, genre, articles).
+// Ancienne méthode (v7) gardée en secours si le moteur ne rend rien.
 export function buildNaturalSentence(items, lang = 'fr') {
   if (!items || !items.length) return '';
-  if (lang === 'dr' || items.every((x) => x.lang === 'dr')) {
-    return items.map((x) => x.card.sayAr || x.card.ar || x.card.dr || x.card.fr).join(' ');
+  const darija = lang === 'dr' || items.every((x) => x.lang === 'dr');
+  let inflected = null;
+  try { inflected = inflectStrip(items); } catch { inflected = null; }
+  if (darija) {
+    return (inflected && inflected.sentenceAr) || items.map((x) => x.card.sayAr || x.card.ar || x.card.dr || x.card.fr).join(' ');
   }
+  if (inflected && inflected.sentenceFr) return inflected.sentenceFr;
+  return legacyNaturalSentence(items);
+}
+
+// v9.13 : dit la phrase conjuguée entière (bouton « ✨ » sous la bande). Voix du téléphone.
+// Darija : seulement si le téléphone a une voix arabe. Sinon on renvoie false et l'appelant rejoue les mots un par un (fichiers sons).
+export async function sayNaturalSentence({ sentenceFr = '', sentenceAr = '', lang = 'fr' } = {}) {
+  if (lang === 'dr') {
+    if (!sentenceAr || !hasArabicVoice()) return false;
+    stopSpeaking();
+    await speak(sentenceAr, { lang: 'ar' });
+    return true;
+  }
+  if (!sentenceFr) return false;
+  stopSpeaking();
+  await speak(sentenceFr, { lang: 'fr' });
+  return true;
+}
+
+function legacyNaturalSentence(items) {
   const words = items.map((x) => {
     const c = x.card;
     if (c.id === 'c-personnes-moi') return 'Je';

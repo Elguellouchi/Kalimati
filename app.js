@@ -1,8 +1,8 @@
-// Kalimati v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
-import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY } from './speech.js';
+import { sayCard, sayCards, sayNaturalSentence, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY } from './speech.js';
 import { openEditor } from './editor.js';
 import { unlockSounds } from './media.js';
 import { buildBackupFile, deliverBackup, readBackup } from './backup.js';
@@ -21,6 +21,7 @@ import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchS
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
+import { loadMorphologyState, inflectStrip, renderMorphologyBar } from './modules/morphology.js';
 import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -111,12 +112,29 @@ function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
 }
 
 // ---------- Bande de phrase (chaque mot garde sa langue : code-switching) ----------
+// v9.13 : le moteur hors-ligne (modules/morphology.js) conjugue et accorde la phrase. Seulement en français et en darija.
+const morphLangOk = (strip) => strip.length > 0 && strip.every((item) => item.lang === 'fr' || item.lang === 'dr');
+function stripInflection() {
+  if (!morphLangOk(state.strip)) return null;
+  try { return inflectStrip(state.strip); } catch { return null; }
+}
+
 function renderStrip() {
+  const inflected = stripInflection();
   const items = state.strip.map((item, i) => {
     const el = cardElement(item.card, { small: true, lang: item.lang });
     if (i === state.playing) el.classList.add('lit');
+    // Étiquette conjuguée / accordée sous la carte (« Manger » devient « mange », « Content » devient « contente »).
+    const shown = inflected && inflected.tokens[i] && inflected.tokens[i].displayLabel;
+    const lab = el.querySelector('.label');
+    if (shown && lab && shown.trim().toLowerCase() !== lab.textContent.trim().toLowerCase()) {
+      lab.textContent = shown;
+      lab.classList.add('inflected');
+      el.title = shown;
+    }
     return el;
   });
+  renderMorphSlot();
   const row = $('#strip-cards');
   row.replaceChildren(...items);
   // v9.7 : on montre toujours le dernier mot ajouté (ou le mot dit), même sur petit téléphone.
@@ -125,6 +143,26 @@ function renderStrip() {
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = langInfo(state.lang).short;
   renderSuggestions();
+}
+
+// v9.13 : barre « ⏪ Hier / ⏺ Maintenant / ⏩ Après » + aperçu de la phrase complète (français et darija), sous la bande.
+function renderMorphSlot() {
+  const slot = document.getElementById('morph-slot');
+  if (!slot) return;
+  const show = morphLangOk(state.strip) && ['talk', 'home'].includes(state.space) && !state.modeling;
+  const lang = state.strip.every((item) => item.lang === 'dr') ? 'dr' : 'fr';
+  const bar = show ? renderMorphologyBar(state.strip, {
+    lang,
+    onTenseChange: () => renderStrip(),
+    onSpeakNatural: async (sentences) => {
+      unlockAudio();
+      // Darija sans voix arabe sur le téléphone : on rejoue les mots un par un (sons enregistrés).
+      const said = await sayNaturalSentence(sentences);
+      if (!said) sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
+    },
+  }) : null;
+  slot.replaceChildren(...(bar ? [bar] : []));
+  slot.hidden = !bar;
 }
 
 // Mots proposés après le dernier mot de la phrase (appris sur les phrases d'Abir).
@@ -365,6 +403,7 @@ function homeScreen() {
 function renderView() {
   const view = $('#view');
   nav.leave();
+  renderMorphSlot();
   if (state.space === 'home') { view.replaceChildren(homeScreen()); return; }
   if (state.space === 'talk') { view.replaceChildren(renderTalk()); return; }
   if (state.space === 'session') { nav.openSession(); return; }
@@ -598,6 +637,7 @@ function setupParentBar() {
       for (const key of EXPORTED_SETTINGS) if (backup.settings[key] !== undefined) await db.setSetting(key, backup.settings[key]);
       setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
       await loadFriendsState().catch(() => {});
+      await loadMorphologyState().catch(() => {});
       await loadContext();
       await loadVisuals();
       await loadLevels();
@@ -680,6 +720,7 @@ async function init() {
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
   await loadFriendsState().catch(() => {});
+  await loadMorphologyState().catch(() => {});
   document.addEventListener('kalimati-friends-changed', () => { if (state.space === 'talk') renderView(); });
   await loadVisuals();
   await loadDefaultVoices();
