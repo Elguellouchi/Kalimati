@@ -6,7 +6,7 @@
 // - Le parent peut masquer/afficher les amis à tout moment dans ses réglages.
 import * as db from '../db.js';
 import { h, btn, dayKey } from './util.js';
-import { speak } from '../speech.js';
+import { speak, playVoiceFile } from '../speech.js';
 
 const HIDE_FRIENDS_KEY = 'hideFriends';
 const ALBUM_KEY = 'friendsAlbum';
@@ -265,11 +265,12 @@ export function sayFriendPhrase(friendId, { index = 0, lang = 'fr' } = {}) {
   const f = FRIEND_BY_ID.get(friendId) || FRIENDS[0];
   const phrase = f.phrases[index] || f.phrases[0];
   if (!phrase) return;
-  if (lang === 'dr' || lang === 'ar') {
-    speak(phrase.ar || phrase.dr, { lang: 'ar' });
-  } else {
-    speak(phrase.fr, { lang: 'fr' });
-  }
+  const darija = lang === 'dr' || lang === 'ar';
+  const phoneVoice = () => (darija ? speak(phrase.ar || phrase.dr, { lang: 'ar' }) : speak(phrase.fr, { lang: 'fr' }));
+  // v9.14 : voix Shimmer préparée à l'avance (2 phrases par ami), sinon voix du téléphone.
+  const n = f.phrases[index] ? index + 1 : 1;
+  if (n > 2) { phoneVoice(); return; }
+  playVoiceFile(`./voix/${darija ? 'dr' : 'fr'}/ami-${f.id}-${n}.mp3`).then((ok) => { if (!ok) phoneVoice(); });
 }
 
 // ---------- Bandeau compagnon en haut d'une mission (un seul ami à l'écran à la fois) ----------

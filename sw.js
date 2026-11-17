@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v9-13';
+const CACHE = 'kalimati-v9-14';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -13,6 +13,8 @@ const FILES = [
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js',
   './modules/ui-icons.js', './modules/about.js', './modules/rewards-kids.js', './modules/darija-lexicon.js', './modules/friends.js', './modules/morphology.js',
+  // v9.14 : voix des 7 Amis (Shimmer)
+  './voix/dr/ami-nour-1.mp3', './voix/dr/ami-nour-2.mp3', './voix/dr/ami-fennou-1.mp3', './voix/dr/ami-fennou-2.mp3', './voix/dr/ami-fakroun-1.mp3', './voix/dr/ami-fakroun-2.mp3', './voix/dr/ami-hmama-1.mp3', './voix/dr/ami-hmama-2.mp3', './voix/dr/ami-jmimla-1.mp3', './voix/dr/ami-jmimla-2.mp3', './voix/dr/ami-mchicha-1.mp3', './voix/dr/ami-mchicha-2.mp3', './voix/dr/ami-bouma-1.mp3', './voix/dr/ami-bouma-2.mp3', './voix/fr/ami-nour-1.mp3', './voix/fr/ami-nour-2.mp3', './voix/fr/ami-fennou-1.mp3', './voix/fr/ami-fennou-2.mp3', './voix/fr/ami-fakroun-1.mp3', './voix/fr/ami-fakroun-2.mp3', './voix/fr/ami-hmama-1.mp3', './voix/fr/ami-hmama-2.mp3', './voix/fr/ami-jmimla-1.mp3', './voix/fr/ami-jmimla-2.mp3', './voix/fr/ami-mchicha-1.mp3', './voix/fr/ami-mchicha-2.mp3', './voix/fr/ami-bouma-1.mp3', './voix/fr/ami-bouma-2.mp3',
   './assets/manifest.json', './assets/mulberry/index.json', './assets/emoji/index.json', './assets/darija-lexicon.json',
   './assets/fonts/AtkinsonHyperlegibleNext-Regular.woff2', './assets/fonts/AtkinsonHyperlegibleNext-Bold.woff2',
   './assets/fonts/NunitoSans-400.woff2', './assets/fonts/NunitoSans-700.woff2', './assets/fonts/NunitoSans-800.woff2',

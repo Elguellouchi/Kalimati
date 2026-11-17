@@ -121,7 +121,8 @@ export function recordingFor(card, lang) {
 // Voix par défaut livrées avec l'app (voix/fr/<id>.mp3, voix/dr/<id>.mp3) : marchent sans voix installée sur le téléphone.
 // v9.10 : darija refaite avec la voix OpenAI « shimmer » (consigne accent marocain), fabriquée à l'avance sur le PC (scripts/voix-openai).
 // Le français garde Éloïse (edge-tts) : la voix OpenAI lisait certains mots à l'anglaise (« Pain » = douleur).
-// Aucune clé dans l'appli. 2 cartes (Donner, Chips) gardent la voix Mouna. La voix du parent passe toujours avant.
+// Aucune clé dans l'appli. v9.14 : Donner et Chips passent aussi en Shimmer (plus d'exception Mouna). La voix du parent passe toujours avant.
+// v9.14 : voix des 7 Amis (voix/fr|dr/ami-<id>-<1|2>.mp3), jouées par playVoiceFile.
 // voix/index.json = { fr: { <id>: <texte dit> }, dr: { <id>: <texte dit> } } ; un mot modifié par le parent n'utilise plus le fichier.
 let defaultVoices = { fr: {}, dr: {} };
 export async function loadDefaultVoices() {
@@ -151,6 +152,12 @@ function playUrl(url) {
     audio.onerror = () => done(started);
     audio.play().catch(() => done(false));
   });
+}
+
+// v9.14 : joue un fichier son livré avec l'app (voix des Amis). Renvoie false si le fichier manque.
+export function playVoiceFile(url) {
+  stopSpeaking();
+  return playUrl(url);
 }
 
 // Voix du téléphone : voix arabe pour la darija (si graphie arabe), sinon français.
