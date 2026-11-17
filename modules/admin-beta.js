@@ -7,7 +7,7 @@ import { LANGS, langInfo } from './languages.js';
 import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 
-export const APP_VERSION = 'v9.9';
+export const APP_VERSION = 'v9.10';
 export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
 // v9.8 : plus aucune clé maître de départ dans le code publié.
 // À la première ouverture de la console sur un téléphone, l'administrateur crée sa clé.

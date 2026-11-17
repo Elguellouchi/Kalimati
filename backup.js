@@ -8,23 +8,68 @@ const FORMATS = ['kalimati-backup-v1', 'kalimati-backup-v2', 'kalimati-backup-v3
 const FORMAT = 'kalimati-backup-v4';
 const GRAMS = ['person', 'verb', 'noun', 'adj', 'social'];
 
-export async function exportBackup({ cards, trials = [], settings = {}, visuals = [], abcLogs = [], orthoLogs = [] }) {
-  const serialised = [];
-  for (const card of cards) {
-    const copy = { ...card };
-    for (const field of BLOB_FIELDS) copy[field] = card[field] ? await blobToDataUrl(card[field]) : null;
-    serialised.push(copy);
+// v9.10 : la sauvegarde se fait en 2 temps, sans bloquer l'écran.
+// 1) buildBackupFile prépare le fichier morceau par morceau (l'écran respire entre chaque carte et indique l'avancement).
+// 2) deliverBackup le donne au parent : feuille de partage du téléphone (« Enregistrer dans Fichiers », Drive…)
+//    ou, à défaut, téléchargement classique. Sur iPhone, le partage exige un nouveau toucher : d'où le 2e bouton.
+const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+export async function buildBackupFile({ cards, trials = [], settings = {}, visuals = [], abcLogs = [], orthoLogs = [] }, onProgress = () => {}) {
+  const total = cards.length + visuals.length || 1;
+  let done = 0;
+  const step = async () => { done += 1; onProgress(Math.min(99, Math.round((done / total) * 100))); await pause(); };
+  const head = { format: FORMAT, exportedAt: new Date().toISOString(), trials, settings, abcLogs, orthoLogs };
+  const parts = [JSON.stringify(head).slice(0, -1), ',"cards":['];
+  for (let i = 0; i < cards.length; i += 1) {
+    const copy = { ...cards[i] };
+    for (const field of BLOB_FIELDS) copy[field] = cards[i][field] ? await blobToDataUrl(cards[i][field]) : null;
+    parts.push((i ? ',' : '') + JSON.stringify(copy));
+    await step();
   }
-  const photos = [];
-  for (const visual of visuals) photos.push({ key: visual.key, meta: visual.meta || {}, ts: visual.ts || 0, data: await blobToDataUrl(visual.blob) });
-  const payload = { format: FORMAT, exportedAt: new Date().toISOString(), cards: serialised, trials, settings, visuals: photos, abcLogs, orthoLogs };
-  const file = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+  parts.push('],"visuals":[');
+  for (let i = 0; i < visuals.length; i += 1) {
+    const v = visuals[i];
+    parts.push((i ? ',' : '') + JSON.stringify({ key: v.key, meta: v.meta || {}, ts: v.ts || 0, data: await blobToDataUrl(v.blob) }));
+    await step();
+  }
+  parts.push(']}');
+  onProgress(100);
+  const name = `kalimati-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  return new File(parts, name, { type: 'application/json' });
+}
+
+// Renvoie 'shared', 'downloaded' ou 'cancelled'. Doit être appelée juste après un toucher du parent.
+export async function deliverBackup(file) {
+  if (navigator.canShare && navigator.share) {
+    let shareable = false;
+    try { shareable = navigator.canShare({ files: [file] }); } catch { shareable = false; }
+    if (shareable) {
+      try {
+        await navigator.share({ files: [file], title: 'Sauvegarde Kalimati' });
+        return 'shared';
+      } catch (error) {
+        if (error && error.name === 'AbortError') return 'cancelled';
+        // Partage refusé par le navigateur : on passe au téléchargement classique.
+      }
+    }
+  }
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `kalimati-sauvegarde-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = file.name;
+  link.rel = 'noopener';
+  link.style.display = 'none';
+  document.body.appendChild(link);
   link.click();
-  setTimeout(() => URL.revokeObjectURL(url), 5000);
+  link.remove();
+  // On laisse le temps au téléphone de demander « Télécharger ? » avant de libérer le fichier.
+  setTimeout(() => URL.revokeObjectURL(url), 120000);
+  return 'downloaded';
+}
+
+// Ancien nom gardé pour compatibilité (prépare puis télécharge d'un coup).
+export async function exportBackup(data) {
+  return deliverBackup(await buildBackupFile(data));
 }
 
 function isValidCard(card) {

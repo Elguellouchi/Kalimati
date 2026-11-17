@@ -1030,3 +1030,10 @@ dialog::backdrop { background: rgb(255 248 240 / .25); backdrop-filter: blur(2px
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* v9.10 : sauvegarde en 2 temps */
+.btn[aria-busy="true"] { opacity: .75; cursor: progress; }
+.backup-panel { width: 100%; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: var(--soft); border: 1px solid var(--brand); }
+.backup-panel[hidden] { display: none; }
+.backup-msg { font-weight: 700; }
+.backup-actions { display: flex; flex-wrap: wrap; gap: 8px; }

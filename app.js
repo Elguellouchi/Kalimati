@@ -1,11 +1,11 @@
-// Kalimati v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
 import { sayCard, sayCards, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY } from './speech.js';
 import { openEditor } from './editor.js';
 import { unlockSounds } from './media.js';
-import { exportBackup, readBackup } from './backup.js';
+import { buildBackupFile, deliverBackup, readBackup } from './backup.js';
 import { h, btn } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName } from './modules/aba.js';
 import { nour } from './modules/nour.js';
@@ -510,11 +510,55 @@ function setupParentBar() {
       },
     });
   }
-  $('#export').onclick = async () => {
-    await exportBackup({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(), visuals: await db.getAllVisualOverrides(),
-      abcLogs: await db.getAllAbcLogs(), orthoLogs: await db.getAllOrthoLogs() });
-    await db.setSetting('lastBackupAt', Date.now());
-    showBackupAge();
+  // v9.10 : sauvegarde en 2 temps. L'écran reste libre, le bouton montre où on en est, et un message dit clairement le résultat.
+  let backupFile = null;
+  const exportBtn = $('#export');
+  const panel = $('#backup-panel');
+  const showPanel = (text, withSave) => {
+    panel.replaceChildren(h('span', { class: 'backup-msg' }, text));
+    if (withSave) {
+      const save = h('button', { type: 'button', class: 'btn primary', id: 'backup-save' }, '📤 Enregistrer le fichier');
+      const close = h('button', { type: 'button', class: 'btn ghost tiny' }, 'Fermer');
+      save.onclick = async () => {
+        save.disabled = true;
+        try {
+          const result = await deliverBackup(backupFile);
+          if (result === 'cancelled') { save.disabled = false; return; }
+          await db.setSetting('lastBackupAt', Date.now());
+          backupFile = null;
+          showPanel(result === 'shared'
+            ? '✅ Sauvegarde envoyée. Gardez ce fichier en lieu sûr (Fichiers, Drive ou e-mail).'
+            : '✅ Sauvegarde téléchargée. Vous la trouverez dans « Téléchargements » ou « Fichiers ».', false);
+          showBackupAge();
+        } catch (error) {
+          save.disabled = false;
+          showPanel(`⚠️ L’enregistrement n’a pas marché. Réessayez. (${error.message || 'erreur inconnue'})`, true);
+        }
+      };
+      close.onclick = () => { backupFile = null; panel.replaceChildren(); panel.hidden = true; };
+      panel.append(h('div', { class: 'backup-actions' }, save, close));
+    }
+    panel.hidden = false;
+  };
+  exportBtn.onclick = async () => {
+    if (exportBtn.disabled) return;
+    exportBtn.disabled = true;
+    exportBtn.setAttribute('aria-busy', 'true');
+    exportBtn.textContent = '⏳ Préparation… 0 %';
+    panel.hidden = true;
+    try {
+      backupFile = await buildBackupFile({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(),
+        visuals: await db.getAllVisualOverrides(), abcLogs: await db.getAllAbcLogs(), orthoLogs: await db.getAllOrthoLogs() },
+      (pct) => { exportBtn.textContent = `⏳ Préparation… ${pct} %`; });
+      const size = backupFile.size >= 1048576 ? `${(backupFile.size / 1048576).toFixed(1).replace('.', ',')} Mo` : `${Math.max(1, Math.round(backupFile.size / 1024))} Ko`;
+      showPanel(`✅ Sauvegarde prête (${size}). Touchez « Enregistrer le fichier » pour la garder.`, true);
+    } catch (error) {
+      showPanel(`⚠️ La sauvegarde n’a pas pu être préparée. Réessayez. (${error.message || 'erreur inconnue'})`, false);
+    } finally {
+      exportBtn.disabled = false;
+      exportBtn.removeAttribute('aria-busy');
+      exportBtn.textContent = '💾 Sauvegarder';
+    }
   };
   $('#import').onchange = async (e) => {
     const file = e.target.files && e.target.files[0];
