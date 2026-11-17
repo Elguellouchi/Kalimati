@@ -30,7 +30,7 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
@@ -597,6 +597,7 @@ function setupParentBar() {
       if (backup.orthoLogs.length) await db.putOrthoLogs(backup.orthoLogs);
       for (const key of EXPORTED_SETTINGS) if (backup.settings[key] !== undefined) await db.setSetting(key, backup.settings[key]);
       setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
+      await loadFriendsState().catch(() => {});
       await loadContext();
       await loadVisuals();
       await loadLevels();
