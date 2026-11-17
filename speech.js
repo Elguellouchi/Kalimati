@@ -118,8 +118,8 @@ export function recordingFor(card, lang) {
 }
 
 // Voix par défaut livrées avec l'app (voix/fr/<id>.mp3, voix/dr/<id>.mp3) : marchent sans voix installée sur le téléphone.
-// v9.10 : darija et français refaits avec la voix OpenAI « shimmer » (consigne accent marocain), fabriquée à l'avance sur le PC (scripts/voix-openai).
-// Le français aussi (même voix shimmer, sauf « Chaud » qui garde Éloïse).
+// v9.10 : darija refaite avec la voix OpenAI « shimmer » (consigne accent marocain), fabriquée à l'avance sur le PC (scripts/voix-openai).
+// Le français garde Éloïse (edge-tts) : la voix OpenAI lisait certains mots à l'anglaise (« Pain » = douleur).
 // Aucune clé dans l'appli. 2 cartes (Donner, Chips) gardent la voix Mouna. La voix du parent passe toujours avant.
 // voix/index.json = { fr: { <id>: <texte dit> }, dr: { <id>: <texte dit> } } ; un mot modifié par le parent n'utilise plus le fichier.
 let defaultVoices = { fr: {}, dr: {} };
