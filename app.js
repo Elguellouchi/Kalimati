@@ -22,7 +22,7 @@ import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './m
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
 import { loadMorphologyState, inflectStrip, renderMorphologyBar } from './modules/morphology.js';
-import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
+import { APP_VERSION, checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -398,7 +398,9 @@ function homeScreen() {
     h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, titleKey, subKey, cls]) => h('button', {
       type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(ui(titleKey, state.lang), { lang: menuVoice() }); openSpace(id); },
     }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang))))),
-    h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès & Console Bêta (adultes)' : '🔒 Progrès (adultes)'));
+    h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès & Console Bêta (adultes)' : '🔒 Progrès (adultes)'),
+    // v9.16.2 : numéro de version visible, pour vérifier que le téléphone a bien la dernière mise à jour.
+    h('p', { class: 'app-version' }, `Kalimati ${APP_VERSION}`));
 }
 
 function renderView() {

@@ -1342,3 +1342,6 @@ body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-b
 @media (prefers-color-scheme: dark) {
   .morph-sentence-preview { background: var(--surface, #1f2421); }
 }
+
+/* v9.16.2 : numéro de version discret sur l’accueil */
+.app-version { text-align: center; font-size: 12px; color: var(--muted); margin: 8px 0 0; }
