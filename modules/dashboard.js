@@ -5,6 +5,7 @@ import { iconLabel } from './ui-icons.js';
 import { visualStyleBox, aboutBox, speechCloudBox } from './about.js';
 import { friendsSettingsBox } from './friends.js';
 import { cloudSyncAndCohortBox } from './cloud-sync.js';
+import { eyeTrackingAndPacksBox } from './eye-and-packs.js';
 import { availableVoices, setPreferredVoice, speak } from '../speech.js';
 import { profile, saveProfile, firstName } from './aba.js';
 import { SECTIONS, GOALS, goalsOf } from './goals.js';
@@ -157,6 +158,8 @@ export function dashboardScreen(nav) {
       speechCloudBox(),
       visualStyleBox(),
       friendsSettingsBox(),
+      // v10.1 : mode regard (dwell), suivi de tête par caméra locale, packs de cartes ARASAAC.
+      eyeTrackingAndPacksBox({ onCardsAdded: () => location.reload() }),
       // v9.15 : synchro équipe chiffrée (Supabase) + suivi clinique. Rien ne part sans le bouton « Synchroniser ».
       cloudSyncAndCohortBox({ onMerged: () => location.reload() }),
       profileForm(),

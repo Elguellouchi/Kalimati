@@ -1,12 +1,11 @@
 // ☁️ Synchronisation Cloud Zero-Knowledge (AES-256-GCM) entre Papa, Maman, AVS et Orthophoniste / Psy (Hosna Mehri)
-// + 📊 Cohorte Clinique Longitudinale Anonymisée (Évolution ATEC, LME/MLU, autonomie ABA & réduction des crises ABC sur 3 à 6 mois).
+// + 📊 Cohorte Clinique Longitudinale Anonymisée (T0, T+90, T+180 — ATEC, LME/MLU, autonomie ABA & réduction des crises ABC).
 //
-// Version v10.0 (intègre les 5 correctifs de l'audit v9.15 de Claude) :
-// 1. Unification complète des clés ATEC (`atec_history` et `atecHistory`) en lecture, fusion et sauvegarde.
-// 2. Protection du profil local (`profile`), de la langue (`lang`) et du rôle (`clinic`) : une synchronisation avec l'AVS ou Hosna
-//    ne remplace jamais la langue ou le profil déjà configuré sur le téléphone local.
-// 3. Partage WhatsApp sécurisé (séparation de l'invitation et de la clé secrète AES-256 copiée à part).
-// 4. Synchronisation texte uniquement par défaut (`includeMedia: false`) : les photos et voix restent dans le téléphone sauf accord explicite.
+// Version v10.1 Finale :
+// 1. Astuce cryptographique `#key=KALI-SYNC-...` dans le fragment d'URL (jamais transmis au serveur HTTP) :
+//    dès que l'AVS ou l'orthophoniste ouvre le lien magique une fois, la clé AES-256 est enregistrée et nettoyée de l'URL.
+// 2. Synchronisation automatique en arrière-plan (Wi-Fi / réseau) + fusion CRDT sans perte.
+// 3. Collecte longitudinale automatisée T0 / T+90 / T+180 vers `kalimati_clinical_cohort` (avec opt-in Loi 09-08 CNDP) + export CSV de cohorte.
 import * as db from '../db.js';
 import { h, btn, dayKey, percent } from './util.js';
 import { profile, clinic } from './aba.js';
@@ -15,14 +14,12 @@ import { blobToDataUrl, dataUrlToBlob } from '../media.js';
 const SYNC_SETTINGS_KEY = 'cloudSyncConfig';
 const LAST_SYNC_KEY = 'cloudSyncLastState';
 const COHORT_OPTIN_KEY = 'clinicalCohortOptIn';
-// Réglages partagés sans écraser `lang`, `clinic` ni `profile` existant sur le téléphone récepteur
 const SHARED_SETTING_KEYS = [
   'cols', 'toiletReminder', 'levels', 'stories',
   'atec_history', 'atecHistory', 'aacHistory', 'touch',
   'visualStyle', 'hideFriends', 'friendsAlbum', 'morphAuto', 'childGender',
 ];
 
-// ---------- Utilitaires cryptographiques Web Crypto API (AES-256-GCM + SHA-256) ----------
 function bufToB64(buf) {
   const bytes = new Uint8Array(buf);
   let bin = '';
@@ -120,7 +117,26 @@ async function saveUnifiedAtecList(list) {
   ]);
 }
 
-// ---------- Collecte et fusion sans perte (CRDT par ID) du dossier complet de l'enfant ----------
+// ---------- Astuce cryptographique du fragment d'URL (#key=KALI-SYNC-...) ----------
+// Tout ce qui suit '#' dans l'URL ne quitte jamais le navigateur vers le serveur.
+export async function initCloudSyncFromUrlAndAuto() {
+  if (typeof window === 'undefined') return;
+  const hash = window.location.hash || '';
+  const match = hash.match(/[#&]key=(KALI-[A-Z0-9-]{8,40})/i);
+  if (match && match[1]) {
+    const importedKey = match[1].toUpperCase();
+    await saveCloudSyncConfig({ familyKey: importedKey, autoSyncWifi: true });
+    // Nettoie immédiatement le fragment #key= de la barre d'adresse
+    const cleanHash = hash.replace(/([#&])key=KALI-[A-Z0-9-]{8,40}/i, '').replace(/^#&/, '#');
+    window.history.replaceState(null, '', window.location.pathname + window.location.search + (cleanHash === '#' ? '' : cleanHash));
+  }
+
+  const cfg = await getCloudSyncConfig();
+  if (cfg.autoSyncWifi && cfg.supabaseUrl && cfg.supabaseAnonKey && navigator.onLine) {
+    syncNowWithTeam({ includeMedia: false }).catch(() => {});
+  }
+}
+
 export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
   const [cards, trials, abcLogs, orthoLogs, scheduleLogs, visuals, atecUnified] = await Promise.all([
     db.getAllCards(),
@@ -216,7 +232,6 @@ function mergeById(localList = [], remoteList = []) {
   return { merged: Array.from(map.values()), added };
 }
 
-// Applique et fusionne un paquet distant déchiffré dans IndexedDB sans écraser le profil ni la langue locale
 export async function mergeRemoteSyncPayload(remote) {
   if (!remote || remote.schema !== 'kalimati-sync-v1') {
     throw new Error('Format de synchronisation incompatible.');
@@ -231,7 +246,6 @@ export async function mergeRemoteSyncPayload(remote) {
     getUnifiedAtecList(),
   ]);
 
-  // 1. Fusion des cartes (préserve toujours les photos/voix locales si le paquet distant est sans média)
   const localCardMap = new Map(localCards.map((c) => [c.id, c]));
   let newOrUpdatedCards = 0;
   for (const rc of (remote.cards || [])) {
@@ -254,7 +268,6 @@ export async function mergeRemoteSyncPayload(remote) {
   }
   await db.putCards(Array.from(localCardMap.values()));
 
-  // 2. Fusion CRDT des essais ABA, journaux ABC, journaux orthophoniques et coches du planning
   const trialsRes = mergeById(localTrials, remote.trials || []);
   const abcRes = mergeById(localAbc, remote.abcLogs || []);
   const orthoRes = mergeById(localOrtho, remote.orthoLogs || []);
@@ -267,12 +280,10 @@ export async function mergeRemoteSyncPayload(remote) {
     ...schedRes.merged.map((log) => db.addScheduleLog(log)),
   ]);
 
-  // 3. Fusion du planning
   if (remote.scheduleConfig?.matin) await db.putScheduleConfig(remote.scheduleConfig.matin);
   if (remote.scheduleConfig?.soir) await db.putScheduleConfig(remote.scheduleConfig.soir);
   if (remote.scheduleConfig?.routines) await db.putScheduleConfig(remote.scheduleConfig.routines);
 
-  // 4. Fusion sécurisée des réglages (unifie atec_history + atecHistory et protège lang/clinic/profile locaux)
   if (remote.settings && typeof remote.settings === 'object') {
     const remoteAtec = [
       ...(Array.isArray(remote.settings.atec_history) ? remote.settings.atec_history : []),
@@ -291,11 +302,10 @@ export async function mergeRemoteSyncPayload(remote) {
     for (const [k, val] of Object.entries(remote.settings)) {
       if (val === undefined || val === null) continue;
       if (k === 'atec_history' || k === 'atecHistory' || k === 'lang' || k === 'clinic') {
-        continue; // Géré séparément ou protégé localement
+        continue;
       }
       if (k === 'profile') {
         const currentProf = await db.getSetting('profile');
-        // Ne remplace le profil que si le téléphone récepteur n'a pas encore de prénom d'enfant configuré
         if (!currentProf || !currentProf.name) {
           await db.setSetting('profile', val);
         }
@@ -309,7 +319,6 @@ export async function mergeRemoteSyncPayload(remote) {
     }
   }
 
-  // 5. Fusion des photos personnalisées uniquement si envoyées explicitement
   if (Array.isArray(remote.visuals) && remote.visuals.length) {
     for (const v of remote.visuals) {
       if (v && v.key && typeof v.data === 'string' && v.data.startsWith('data:image/')) {
@@ -330,7 +339,6 @@ export async function mergeRemoteSyncPayload(remote) {
   };
 }
 
-// ---------- Configuration et Synchronisation Cloud Zero-Knowledge via Supabase ----------
 export async function getCloudSyncConfig() {
   const saved = await db.getSetting(SYNC_SETTINGS_KEY);
   const supa = await db.getSetting('supabaseConfig');
@@ -344,7 +352,7 @@ export async function getCloudSyncConfig() {
     supabaseAnonKey: saved?.supabaseAnonKey || supa?.anonKey || '',
     familyKey: saved?.familyKey || familyKey,
     autoSyncWifi: Boolean(saved?.autoSyncWifi),
-    includeMedia: false, // Toujours désactivé par défaut pour que photos/voix ne quittent pas le téléphone par erreur
+    includeMedia: false,
   };
 }
 
@@ -378,7 +386,6 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
 
   let mergeReport = { cardsChanged: 0, trialsAdded: 0, abcAdded: 0, orthoAdded: 0, scheduleAdded: 0 };
 
-  // Étape 1 : Récupérer et fusionner le paquet distant s'il existe
   const getRes = await fetch(
     `${baseUrl}/rest/v1/kalimati_encrypted_relay?room_hash=eq.${encodeURIComponent(roomHash)}&select=*`,
     { method: 'GET', headers },
@@ -391,7 +398,6 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
     }
   }
 
-  // Étape 2 : Construire le paquet local fusionné, le chiffrer en AES-256-GCM et l'envoyer
   const mergedLocalPayload = await buildLocalSyncPayload({ includeMedia });
   const encryptedBundle = await encryptSyncBundle(mergedLocalPayload, cfg.familyKey);
 
@@ -411,6 +417,21 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
     throw new Error(`Erreur serveur relai Supabase (${postRes.status}) : ${errText}`);
   }
 
+  // Si le parent a activé le partage anonyme d'étude clinique (Loi 09-08), on met aussi à jour les métriques anonymisées T0/T90/T180
+  const cohortOptIn = await db.getSetting(COHORT_OPTIN_KEY);
+  if (cohortOptIn) {
+    const metrics = await computeClinicalCohortMetrics();
+    await fetch(`${baseUrl}/rest/v1/kalimati_clinical_cohort`, {
+      method: 'POST',
+      headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({
+        cohort_id: metrics.cohortId,
+        metrics,
+        updated_at: new Date().toISOString(),
+      }),
+    }).catch(() => {});
+  }
+
   const syncMeta = {
     lastSyncAt: Date.now(),
     roomHash: roomHash.slice(0, 12),
@@ -421,7 +442,7 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
   return syncMeta;
 }
 
-// ---------- Protocole d'Étude Clinique Longitudinale Anonymisée (Cohorte Bêta 100 familles) ----------
+// ---------- Protocole d'Étude Clinique Longitudinale Anonymisée (T0, T+90, T+180) ----------
 export async function computeClinicalCohortMetrics() {
   const [trials, orthoLogs, abcLogs, atecList, activeInvite] = await Promise.all([
     db.getAllTrials(),
@@ -436,6 +457,10 @@ export async function computeClinicalCohortMetrics() {
   const latestAtec = atecList.length ? atecList[atecList.length - 1] : null;
   const atecDelta = (firstAtec && latestAtec && firstAtec !== latestAtec)
     ? (latestAtec.total - firstAtec.total)
+    : null;
+
+  const daysSinceLastAtec = latestAtec?.ts
+    ? Math.floor((Date.now() - latestAtec.ts) / 86400000)
     : null;
 
   const mluLogs = orthoLogs.filter((l) => typeof l.mlu === 'number' && l.mlu > 0).sort((a, b) => (a.ts || 0) - (b.ts || 0));
@@ -467,6 +492,8 @@ export async function computeClinicalCohortMetrics() {
     atecBaseline: firstAtec ? { date: firstAtec.day, total: firstAtec.total, scores: firstAtec.scores } : null,
     atecLatest: latestAtec ? { date: latestAtec.day, total: latestAtec.total, scores: latestAtec.scores } : null,
     atecDeltaPoints: atecDelta,
+    daysSinceLastAtec,
+    atecDue90Days: daysSinceLastAtec === null || daysSinceLastAtec >= 90,
     abcTotalEpisodes: abcLogs.length,
   };
 }
@@ -500,7 +527,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     const statusMsg = h('p', { class: 'note' },
       lastSync?.lastSyncAt
         ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
-        : '🔒 Chiffrement AES-256 de bout en bout actif. Vos essais ABA, bilans ATEC et journaux ortho sont chiffrés sur votre téléphone avant d’être partagés avec l’équipe (sans toucher à la langue ni au profil local).');
+        : '🔒 Chiffrement AES-256 de bout en bout actif. Vos essais ABA, bilans ATEC et journaux ortho sont chiffrés sur votre téléphone avant d’être partagés avec l’équipe.');
 
     const keyInput = h('input', {
       value: cfg.familyKey,
@@ -516,8 +543,13 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       value: cfg.supabaseAnonKey,
       placeholder: 'Clé publique Supabase (anon public key)',
     });
-    const mediaChk = h('input', {
+    const mediaChk = h('input', { type: 'checkbox' });
+    const autoWifiChk = h('input', {
       type: 'checkbox',
+      checked: cfg.autoSyncWifi ? 'checked' : null,
+      onchange: async (e) => {
+        await saveCloudSyncConfig({ autoSyncWifi: e.target.checked });
+      },
     });
 
     const doSync = async () => {
@@ -527,6 +559,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
           familyKey: keyInput.value.trim(),
           supabaseUrl: urlInput.value.trim(),
           supabaseAnonKey: anonInput.value.trim(),
+          autoSyncWifi: autoWifiChk.checked,
         });
         const res = await syncNowWithTeam({ includeMedia: mediaChk.checked });
         statusMsg.textContent = `✅ Synchronisé à ${new Date(res.lastSyncAt).toLocaleTimeString('fr-FR')} ! Nouveaux éléments fusionnés : +${res.trialsAdded} essais ABA, +${res.orthoAdded} notes ortho, +${res.abcAdded} notes ABC, ${res.cardsChanged} cartes mises à jour.`;
@@ -540,9 +573,20 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       const k = keyInput.value.trim() || cfg.familyKey;
       try {
         await navigator.clipboard.writeText(k);
-        statusMsg.textContent = '📋 Clé AES-256 copiée dans le presse-papiers (transmettez-la séparément du lien).';
+        statusMsg.textContent = '📋 Clé AES-256 copiée dans le presse-papiers.';
       } catch {
         statusMsg.textContent = `🔑 Clé à copier : ${k}`;
+      }
+    };
+
+    const copyMagicHashLink = async () => {
+      const k = keyInput.value.trim() || cfg.familyKey;
+      const magicUrl = `https://elguellouchi.github.io/Kalimati/#key=${encodeURIComponent(k)}`;
+      try {
+        await navigator.clipboard.writeText(magicUrl);
+        statusMsg.textContent = '🔗 Lien magique #key= copié (le fragment après # ne transite jamais par le serveur web et enregistre la clé automatiquement à l’ouverture).';
+      } catch {
+        statusMsg.textContent = `🔗 Lien magique : ${magicUrl}`;
       }
     };
 
@@ -551,7 +595,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
         `Bonjour 👋,`,
         `Pour synchroniser les progrès ABA, le planning et le cahier de liaison d'*${profile?.name || 'Abir'}* dans *Kalimati* :`,
         `1. Ouvrez Kalimati -> Mode Parent -> Progrès -> ☁️ Synchronisation Équipe.`,
-        `2. Collez la clé secrète AES-256 (envoyée dans un second message séparé ou dictée de vive voix) puis touchez « 🔄 Synchroniser maintenant ».`,
+        `2. Collez la clé secrète AES-256 (envoyée dans un second message séparé ou via le lien #key=) puis touchez « 🔄 Synchroniser maintenant ».`,
       ].join('\n');
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     };
@@ -564,13 +608,22 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       },
     });
 
+    const atecReminderBanner = metrics.atecDue90Days
+      ? h('p', { class: 'note', style: { color: '#783006', fontWeight: '700' } },
+        metrics.daysSinceLastAtec === null
+          ? '⏰ Protocole clinique J0 : pensez à remplir le 1er bilan ATEC initial dans Progrès pour établir le point de départ T0.'
+          : `⏰ Protocole clinique J+90 (${metrics.daysSinceLastAtec} jours depuis le dernier bilan) : il est temps de remplir le nouveau bilan ATEC trimestriel !`)
+      : null;
+
     body.replaceChildren(
       statusMsg,
       h('div', { class: 'row wrap' },
         btn('🔄 Synchroniser maintenant avec l’équipe', doSync, 'primary'),
-        btn('📋 Copier la clé secrète seule', copyKeyOnly, 'ghost tiny'),
-        btn('💬 Envoyer la consigne (sans la clé) sur WhatsApp', shareTeamInstructionsWhatsApp, 'ghost tiny')),
-      h('label', { class: 'check' }, mediaChk, ' Inclure exceptionnellement les photos et voix parentales chiffrées dans cet envoi (par défaut : textes et journaux uniquement, les photos restent sur ce téléphone)'),
+        btn('🔗 Copier le lien magique #key=', copyMagicHashLink, 'ghost tiny'),
+        btn('📋 Copier la clé seule', copyKeyOnly, 'ghost tiny'),
+        btn('💬 Consigne WhatsApp (sans clé)', shareTeamInstructionsWhatsApp, 'ghost tiny')),
+      h('label', { class: 'check' }, autoWifiChk, ' Synchroniser automatiquement en arrière-plan à l’ouverture quand le Wi-Fi est actif'),
+      h('label', { class: 'check' }, mediaChk, ' Inclure exceptionnellement les photos et voix parentales chiffrées dans cet envoi (par défaut : textes et journaux uniquement)'),
       h('details', {},
         h('summary', {}, '⚙️ Paramètres de connexion Cloud Zero-Knowledge ( Clé AES-256 & Supabase )'),
         h('div', { class: 'stack' },
@@ -583,16 +636,18 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
                 familyKey: keyInput.value.trim(),
                 supabaseUrl: urlInput.value.trim(),
                 supabaseAnonKey: anonInput.value.trim(),
+                autoSyncWifi: autoWifiChk.checked,
               });
               statusMsg.textContent = 'Configuration Cloud enregistrée ✅';
             }, 'ghost tiny')))),
       h('div', { class: 'card-box', style: { background: 'var(--soft, #E3F4EF)' } },
-        h('h3', {}, `📊 Suivi Clinique Longitudinal Anonymisé (${metrics.cohortId})`),
+        h('h3', {}, `📊 Suivi Clinique Longitudinal Anonymisé T0 → T+90 → T+180 (${metrics.cohortId})`),
+        atecReminderBanner,
         h('p', { class: 'note' },
           `Jours actifs : ${metrics.activeDays} j · Essais ABA : ${metrics.totalAbaTrials} (${metrics.autonomyRatePct ?? '—'} % en autonomie) · `,
           `LME / MLU : ${metrics.mluBaseline ?? '—'} → ${metrics.mluCurrent ?? '—'} mots/phrase · `,
           `ATEC : ${metrics.atecBaseline?.total ?? '—'} → ${metrics.atecLatest?.total ?? '—'}${metrics.atecDeltaPoints !== null ? ` (${metrics.atecDeltaPoints > 0 ? '+' : ''}${metrics.atecDeltaPoints} pts)` : ''}`),
-        h('label', { class: 'check' }, cohortChk, ' Participer de façon 100 % anonyme à l’étude clinique longitudinale Kalimati (aucun prénom, aucune photo, aucune voix)'),
+        h('label', { class: 'check' }, cohortChk, ' Participer de façon 100 % anonyme à l’étude clinique longitudinale Kalimati (aucun prénom, aucune photo, aucune voix — conforme Loi 09-08 CNDP)'),
         h('div', { class: 'row wrap' },
           btn('📥 Exporter le rapport clinique anonymisé (JSON)', () => exportClinicalCohortReportJson(), 'ghost tiny'))),
     );

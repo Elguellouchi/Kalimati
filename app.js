@@ -1,4 +1,4 @@
-// Kalimati v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -22,6 +22,8 @@ import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './m
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
 import { loadMorphologyState, inflectStrip, renderMorphologyBar } from './modules/morphology.js';
+import { loadEyeTracking } from './modules/eye-and-packs.js';
+import { initCloudSyncFromUrlAndAuto } from './modules/cloud-sync.js';
 import { APP_VERSION, checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -724,6 +726,7 @@ async function init() {
   await loadContext();
   await loadFriendsState().catch(() => {});
   await loadMorphologyState().catch(() => {});
+  await loadEyeTracking().catch(() => {}); // v10.1 : mode regard (désactivé par défaut)
   document.addEventListener('kalimati-friends-changed', () => { if (state.space === 'talk') renderView(); });
   await loadVisuals();
   await loadDefaultVoices();
@@ -757,6 +760,8 @@ async function init() {
   }
   checkReminder();
   setInterval(checkReminder, REMINDER_CHECK_MS);
+  // v10.1 : lien #key=KALI-SYNC-… (clé gardée dans le téléphone) + synchro auto si le parent l'a activée. Ne bloque jamais l'ouverture.
+  initCloudSyncFromUrlAndAuto().catch(() => {});
   // v9.16.1 : on vérifie toujours le service worker sur le serveur, et on recharge une fois quand une nouvelle version prend la main.
   if ('serviceWorker' in navigator) {
     const hadController = Boolean(navigator.serviceWorker.controller);
