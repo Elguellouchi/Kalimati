@@ -1,4 +1,4 @@
-// Kalimati v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.3.2 (restauration par fusion : rien n'est effacé, bilans ATEC inclus dans la sauvegarde). Avant, v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -33,7 +33,7 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
@@ -654,15 +654,24 @@ function setupParentBar() {
       const parts = [backup.trials.length && `${backup.trials.length} essais notés`, backup.abcLogs.length && `${backup.abcLogs.length} notes du journal des comportements`,
         backup.orthoLogs.length && `${backup.orthoLogs.length} notes d’orthophonie`].filter(Boolean);
       const extra = parts.length ? ` et ${parts.join(', ')}` : '';
-      if (!window.confirm(`Remplacer les cartes actuelles par ${backup.cards.length} cartes${extra} de la sauvegarde ?`)) return;
-      const cards = assignPositions(backup.cards, state.cols);
-      await db.clearCards();
+      // v10.3.2 : la restauration AJOUTE la sauvegarde sans rien effacer. Rien n'est écrit avant le « OK » du parent.
+      if (!window.confirm(`Ajouter ${backup.cards.length} cartes${extra} de la sauvegarde ?\n\nRien n’est effacé : les cartes, bilans, histoires et notes plus récents du téléphone sont gardés.`)) return;
+      const localCards = await db.getAllCards();
+      const cards = assignPositions(mergeBackupCards(localCards, backup.cards), state.cols);
       await db.putCards(cards);
       if (backup.trials.length) await db.putTrials(backup.trials);
-      if (backup.visuals.length) await db.putVisualOverrides(backup.visuals);
+      if (backup.visuals.length) {
+        // Une photo personnalisée déjà sur le téléphone n'est pas remplacée.
+        const localKeys = new Set((await db.getAllVisualOverrides()).map((v) => v.key));
+        const newVisuals = backup.visuals.filter((v) => !localKeys.has(v.key));
+        if (newVisuals.length) await db.putVisualOverrides(newVisuals);
+      }
       if (backup.abcLogs.length) await db.putAbcLogs(backup.abcLogs);
       if (backup.orthoLogs.length) await db.putOrthoLogs(backup.orthoLogs);
-      for (const key of EXPORTED_SETTINGS) if (backup.settings[key] !== undefined) await db.setSetting(key, backup.settings[key]);
+      for (const key of EXPORTED_SETTINGS) {
+        if (backup.settings[key] === undefined) continue;
+        await db.setSetting(key, mergeBackupSetting(key, await db.getSetting(key), backup.settings[key]));
+      }
       setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
       await loadFriendsState().catch(() => {});
       await loadMorphologyState().catch(() => {});
@@ -675,6 +684,44 @@ function setupParentBar() {
       window.alert(error.message || 'Sauvegarde illisible.');
     }
   };
+}
+
+// ---------- v10.3.2 : restauration par fusion (rien n'est effacé, le plus récent du téléphone est gardé) ----------
+// Cartes : celles de la sauvegarde sont ajoutées ou mises à jour ; les cartes créées depuis restent.
+// Une photo, une vidéo ou une voix déjà sur le téléphone n'est pas perdue si la sauvegarde n'en a pas.
+function mergeBackupCards(localCards, backupCards) {
+  const byId = new Map(localCards.map((c) => [c.id, c]));
+  for (const card of backupCards) {
+    const local = byId.get(card.id);
+    if (!local) { byId.set(card.id, card); continue; }
+    const merged = { ...local, ...card };
+    for (const field of ['photo', 'video', 'audioFr', 'audioDr']) merged[field] = card[field] || local[field] || null;
+    byId.set(card.id, merged);
+  }
+  return [...byId.values()];
+}
+
+const LIST_SETTINGS = ['stories', 'atecHistory', 'atec_history'];
+const itemKey = (item) => (item && typeof item === 'object' ? (item.id || `${item.day || ''}-${item.ts || ''}`) : JSON.stringify(item));
+function mergeBackupSetting(key, local, incoming) {
+  if (local === undefined || local === null) return incoming;
+  // Listes (histoires, bilans ATEC) : on additionne ; en cas de doublon, la version du téléphone gagne.
+  if (LIST_SETTINGS.includes(key) && Array.isArray(local) && Array.isArray(incoming)) {
+    const map = new Map(incoming.filter(Boolean).map((item) => [itemKey(item), item]));
+    for (const item of local.filter(Boolean)) map.set(itemKey(item), item);
+    return [...map.values()];
+  }
+  // Suggestions de mots : on garde le plus grand compteur de chaque mot.
+  if (key === 'aacHistory' && typeof local === 'object' && typeof incoming === 'object') {
+    const out = { uni: { ...(incoming.uni || {}) }, bi: { ...(incoming.bi || {}) } };
+    for (const part of ['uni', 'bi']) for (const [k, v] of Object.entries(local[part] || {})) out[part][k] = Math.max(Number(v) || 0, Number(out[part][k]) || 0);
+    return out;
+  }
+  // Plannings et réglages en objet : on ajoute ce qui manque, le téléphone garde ses valeurs.
+  if (['customSchedules', 'scheduleTempOverrides', 'levels'].includes(key) && typeof local === 'object' && typeof incoming === 'object' && !Array.isArray(local)) {
+    return { ...incoming, ...local };
+  }
+  return incoming;
 }
 
 // ---------- Démarrage et passages v1 → v2 → v3 (aucune carte ni photo existante n'est perdue) ----------
