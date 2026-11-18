@@ -1,24 +1,25 @@
 // ☁️ Synchronisation Cloud Zero-Knowledge (AES-256-GCM) entre Papa, Maman, AVS et Orthophoniste / Psy (Hosna Mehri)
 // + 📊 Cohorte Clinique Longitudinale Anonymisée (Évolution ATEC, LME/MLU, autonomie ABA & réduction des crises ABC sur 3 à 6 mois).
 //
-// Garanties de sécurité & vie privée :
-// 1. Chiffrement de bout en bout (AES-256-GCM via Web Crypto API native, PBKDF2 100 000 itérations) AVANT tout envoi réseau.
-// 2. Le serveur relai (Supabase) ne reçoit qu'un identifiant de salon haché en SHA-256 (room_hash) et un bloc chiffré (cipher_bundle).
-// 3. Fusion intelligente sans perte (CRDT par identifiant unique) : les essais ABA notés par l'AVS à l'école et ceux notés par Papa
-//    à la maison s'additionnent sans jamais s'écraser.
-// 4. Les enregistrements de la voix de l'enfant ne quittent jamais le téléphone.
+// Version v10.0 (intègre les 5 correctifs de l'audit v9.15 de Claude) :
+// 1. Unification complète des clés ATEC (`atec_history` et `atecHistory`) en lecture, fusion et sauvegarde.
+// 2. Protection du profil local (`profile`), de la langue (`lang`) et du rôle (`clinic`) : une synchronisation avec l'AVS ou Hosna
+//    ne remplace jamais la langue ou le profil déjà configuré sur le téléphone local.
+// 3. Partage WhatsApp sécurisé (séparation de l'invitation et de la clé secrète AES-256 copiée à part).
+// 4. Synchronisation texte uniquement par défaut (`includeMedia: false`) : les photos et voix restent dans le téléphone sauf accord explicite.
 import * as db from '../db.js';
-import { h, btn, dayKey, addDays, percent } from './util.js';
+import { h, btn, dayKey, percent } from './util.js';
 import { profile, clinic } from './aba.js';
 import { blobToDataUrl, dataUrlToBlob } from '../media.js';
 
 const SYNC_SETTINGS_KEY = 'cloudSyncConfig';
 const LAST_SYNC_KEY = 'cloudSyncLastState';
 const COHORT_OPTIN_KEY = 'clinicalCohortOptIn';
-const EXPORTED_SETTING_KEYS = [
-  'lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'stories', 'atec_history', 'aacHistory', 'touch', 'visualStyle',
-  'hideFriends', 'friendsAlbum', 'morphAuto', 'childGender',
+// Réglages partagés sans écraser `lang`, `clinic` ni `profile` existant sur le téléphone récepteur
+const SHARED_SETTING_KEYS = [
+  'cols', 'toiletReminder', 'levels', 'stories',
+  'atec_history', 'atecHistory', 'aacHistory', 'touch',
+  'visualStyle', 'hideFriends', 'friendsAlbum', 'morphAuto', 'childGender',
 ];
 
 // ---------- Utilitaires cryptographiques Web Crypto API (AES-256-GCM + SHA-256) ----------
@@ -95,26 +96,59 @@ export function generateSyncPassphrase() {
   return `KALI-SYNC-${seg(0, 4)}-${seg(4, 4)}-${seg(8, 4)}`;
 }
 
+// Lecture et fusion unifiée des bilans ATEC (`atec_history` et `atecHistory`)
+export async function getUnifiedAtecList() {
+  const [a, b] = await Promise.all([
+    db.getSetting('atec_history'),
+    db.getSetting('atecHistory'),
+  ]);
+  const listA = Array.isArray(a) ? a : [];
+  const listB = Array.isArray(b) ? b : [];
+  const map = new Map();
+  for (const item of [...listA, ...listB]) {
+    if (!item) continue;
+    const key = item.id || `${item.day || ''}-${item.ts || item.total || ''}`;
+    map.set(key, item);
+  }
+  return Array.from(map.values()).sort((x, y) => (x.ts || 0) - (y.ts || 0));
+}
+
+async function saveUnifiedAtecList(list) {
+  await Promise.all([
+    db.setSetting('atec_history', list),
+    db.setSetting('atecHistory', list),
+  ]);
+}
+
 // ---------- Collecte et fusion sans perte (CRDT par ID) du dossier complet de l'enfant ----------
 export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
-  const [cards, trials, abcLogs, orthoLogs, scheduleLogs, visuals] = await Promise.all([
+  const [cards, trials, abcLogs, orthoLogs, scheduleLogs, visuals, atecUnified] = await Promise.all([
     db.getAllCards(),
     db.getAllTrials(),
     db.getAllAbcLogs(),
     db.getAllOrthoLogs(),
     db.getAllScheduleLogs(),
     includeMedia ? db.getAllVisualOverrides() : Promise.resolve([]),
+    getUnifiedAtecList(),
   ]);
 
   const settings = {};
-  for (const k of EXPORTED_SETTING_KEYS) {
+  for (const k of SHARED_SETTING_KEYS) {
     const val = await db.getSetting(k);
     if (val !== undefined && val !== null) settings[k] = val;
   }
+  settings.atec_history = atecUnified;
+  settings.atecHistory = atecUnified;
 
-  const [matinCfg, soirCfg] = await Promise.all([
+  const localProfile = await db.getSetting('profile');
+  if (localProfile && localProfile.name) {
+    settings.profile = localProfile;
+  }
+
+  const [matinCfg, soirCfg, routinesCfg] = await Promise.all([
     db.getScheduleConfig('matin').catch(() => null),
     db.getScheduleConfig('soir').catch(() => null),
+    db.getScheduleConfig('routines').catch(() => null),
   ]);
 
   const serializedCards = [];
@@ -125,7 +159,6 @@ export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
         copy[f] = c[f] instanceof Blob ? await blobToDataUrl(c[f]) : null;
       }
     } else {
-      // En mode rapide (Wi-Fi/4G < 100 Ko), on synchronise les textes, l'ordre et la grille sans ré-envoyer les gros fichiers binaires
       delete copy.photo;
       delete copy.video;
       delete copy.audioFr;
@@ -158,13 +191,12 @@ export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
     abcLogs,
     orthoLogs,
     scheduleLogs,
-    scheduleConfig: { matin: matinCfg, soir: soirCfg },
+    scheduleConfig: { matin: matinCfg, soir: soirCfg, routines: routinesCfg },
     settings,
     visuals: serializedVisuals,
   };
 }
 
-// Fusionne deux listes d'enregistrements par identifiant `id` (garde le plus récent en cas de doublon)
 function mergeById(localList = [], remoteList = []) {
   const map = new Map();
   for (const item of localList) {
@@ -184,21 +216,22 @@ function mergeById(localList = [], remoteList = []) {
   return { merged: Array.from(map.values()), added };
 }
 
-// Applique et fusionne un paquet distant déchiffré dans IndexedDB sans écraser les photos ni les essais locaux
+// Applique et fusionne un paquet distant déchiffré dans IndexedDB sans écraser le profil ni la langue locale
 export async function mergeRemoteSyncPayload(remote) {
   if (!remote || remote.schema !== 'kalimati-sync-v1') {
     throw new Error('Format de synchronisation incompatible.');
   }
 
-  const [localCards, localTrials, localAbc, localOrtho, localSched] = await Promise.all([
+  const [localCards, localTrials, localAbc, localOrtho, localSched, localAtec] = await Promise.all([
     db.getAllCards(),
     db.getAllTrials(),
     db.getAllAbcLogs(),
     db.getAllOrthoLogs(),
     db.getAllScheduleLogs(),
+    getUnifiedAtecList(),
   ]);
 
-  // 1. Fusion des cartes (préserve toujours les photos/voix locales si le paquet distant est en mode rapide sans média)
+  // 1. Fusion des cartes (préserve toujours les photos/voix locales si le paquet distant est sans média)
   const localCardMap = new Map(localCards.map((c) => [c.id, c]));
   let newOrUpdatedCards = 0;
   for (const rc of (remote.cards || [])) {
@@ -221,7 +254,7 @@ export async function mergeRemoteSyncPayload(remote) {
   }
   await db.putCards(Array.from(localCardMap.values()));
 
-  // 2. Fusion des essais ABA, journaux ABC, journaux orthophoniques et coches du planning
+  // 2. Fusion CRDT des essais ABA, journaux ABC, journaux orthophoniques et coches du planning
   const trialsRes = mergeById(localTrials, remote.trials || []);
   const abcRes = mergeById(localAbc, remote.abcLogs || []);
   const orthoRes = mergeById(localOrtho, remote.orthoLogs || []);
@@ -234,29 +267,49 @@ export async function mergeRemoteSyncPayload(remote) {
     ...schedRes.merged.map((log) => db.addScheduleLog(log)),
   ]);
 
-  // 3. Fusion de la configuration du planning et des réglages partagés (notamment bilan ATEC et Album des 7 Amis)
+  // 3. Fusion du planning
   if (remote.scheduleConfig?.matin) await db.putScheduleConfig(remote.scheduleConfig.matin);
   if (remote.scheduleConfig?.soir) await db.putScheduleConfig(remote.scheduleConfig.soir);
+  if (remote.scheduleConfig?.routines) await db.putScheduleConfig(remote.scheduleConfig.routines);
 
+  // 4. Fusion sécurisée des réglages (unifie atec_history + atecHistory et protège lang/clinic/profile locaux)
   if (remote.settings && typeof remote.settings === 'object') {
+    const remoteAtec = [
+      ...(Array.isArray(remote.settings.atec_history) ? remote.settings.atec_history : []),
+      ...(Array.isArray(remote.settings.atecHistory) ? remote.settings.atecHistory : []),
+    ];
+    if (remoteAtec.length || localAtec.length) {
+      const atecMap = new Map();
+      for (const item of [...localAtec, ...remoteAtec]) {
+        if (!item) continue;
+        const key = item.id || `${item.day || ''}-${item.ts || item.total || ''}`;
+        atecMap.set(key, item);
+      }
+      await saveUnifiedAtecList(Array.from(atecMap.values()).sort((x, y) => (x.ts || 0) - (y.ts || 0)));
+    }
+
     for (const [k, val] of Object.entries(remote.settings)) {
       if (val === undefined || val === null) continue;
-      if (k === 'atec_history') {
-        const localAtec = (await db.getSetting('atec_history')) || [];
-        const mergedAtec = mergeById(localAtec, Array.isArray(val) ? val : []).merged;
-        await db.setSetting('atec_history', mergedAtec);
+      if (k === 'atec_history' || k === 'atecHistory' || k === 'lang' || k === 'clinic') {
+        continue; // Géré séparément ou protégé localement
+      }
+      if (k === 'profile') {
+        const currentProf = await db.getSetting('profile');
+        // Ne remplace le profil que si le téléphone récepteur n'a pas encore de prénom d'enfant configuré
+        if (!currentProf || !currentProf.name) {
+          await db.setSetting('profile', val);
+        }
       } else if (k === 'friendsAlbum') {
         const localAlbum = (await db.getSetting('friendsAlbum')) || { unlocked: ['nour'], history: [] };
         const unlocked = Array.from(new Set([...(localAlbum.unlocked || []), ...(val.unlocked || [])]));
         await db.setSetting('friendsAlbum', { unlocked, history: val.history || localAlbum.history || [] });
-      } else if (k !== 'clinic') {
-        // On ne remplace pas le rôle intervenant local (ex. l'AVS garde son rôle « AVS » sur son téléphone)
+      } else {
         await db.setSetting(k, val);
       }
     }
   }
 
-  // 4. Fusion des photos personnalisées si présentes
+  // 5. Fusion des photos personnalisées uniquement si envoyées explicitement
   if (Array.isArray(remote.visuals) && remote.visuals.length) {
     for (const v of remote.visuals) {
       if (v && v.key && typeof v.data === 'string' && v.data.startsWith('data:image/')) {
@@ -291,7 +344,7 @@ export async function getCloudSyncConfig() {
     supabaseAnonKey: saved?.supabaseAnonKey || supa?.anonKey || '',
     familyKey: saved?.familyKey || familyKey,
     autoSyncWifi: Boolean(saved?.autoSyncWifi),
-    includeMedia: Boolean(saved?.includeMedia),
+    includeMedia: false, // Toujours désactivé par défaut pour que photos/voix ne quittent pas le téléphone par erreur
   };
 }
 
@@ -306,10 +359,6 @@ export async function saveCloudSyncConfig(nextCfg) {
   return merged;
 }
 
-// Synchronisation bidirectionnelle en 1 clic :
-// 1. Télécharge le dernier paquet chiffré du salon familial (identifié par SHA-256(familyKey)),
-// 2. Déchiffre et fusionne localement avec les données du téléphone,
-// 3. Re-chiffre l'ensemble fusionné en AES-256-GCM et le dépose dans le salon familial.
 export async function syncNowWithTeam({ includeMedia = false } = {}) {
   const cfg = await getCloudSyncConfig();
   if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
@@ -343,7 +392,7 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
   }
 
   // Étape 2 : Construire le paquet local fusionné, le chiffrer en AES-256-GCM et l'envoyer
-  const mergedLocalPayload = await buildLocalSyncPayload({ includeMedia: includeMedia || cfg.includeMedia });
+  const mergedLocalPayload = await buildLocalSyncPayload({ includeMedia });
   const encryptedBundle = await encryptSyncBundle(mergedLocalPayload, cfg.familyKey);
 
   const postRes = await fetch(`${baseUrl}/rest/v1/kalimati_encrypted_relay`, {
@@ -373,41 +422,32 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
 }
 
 // ---------- Protocole d'Étude Clinique Longitudinale Anonymisée (Cohorte Bêta 100 familles) ----------
-// Calcule l'évolution clinique longitudinale (J0 -> Aujourd'hui) sur les 4 indicateurs publiables :
-// 1. Score ATEC global et sous-échelles (I. Parole /28, II. Sociabilité /40, III. Sensoriel /36, IV. Comportement /75)
-// 2. LME / MLU (Longueur Moyenne d'Énoncé en mots par phrase CAA & orthophonie)
-// 3. Taux d'autonomie ABA (% d'essais réussis sans guidance sur les 71 objectifs ABLLS-R)
-// 4. Fréquence hebdomadaire des épisodes comportementaux ABC / FBA
 export async function computeClinicalCohortMetrics() {
-  const [trials, orthoLogs, abcLogs, atecHistory, activeInvite] = await Promise.all([
+  const [trials, orthoLogs, abcLogs, atecList, activeInvite] = await Promise.all([
     db.getAllTrials(),
     db.getAllOrthoLogs(),
     db.getAllAbcLogs(),
-    db.getSetting('atec_history'),
+    getUnifiedAtecList(),
     db.getSetting('activeInviteCode'),
   ]);
 
   const cohortHash = (await sha256Hex(`kalimati-cohort:${activeInvite || profile?.name || 'anon'}`)).slice(0, 10).toUpperCase();
-  const atecList = Array.isArray(atecHistory) ? [...atecHistory].sort((a, b) => (a.ts || 0) - (b.ts || 0)) : [];
   const firstAtec = atecList[0] || null;
   const latestAtec = atecList.length ? atecList[atecList.length - 1] : null;
   const atecDelta = (firstAtec && latestAtec && firstAtec !== latestAtec)
     ? (latestAtec.total - firstAtec.total)
     : null;
 
-  // Calcul LME / MLU : 14 premiers jours d'usage vs 14 derniers jours
   const mluLogs = orthoLogs.filter((l) => typeof l.mlu === 'number' && l.mlu > 0).sort((a, b) => (a.ts || 0) - (b.ts || 0));
   const avg = (arr) => (arr.length ? Number((arr.reduce((s, x) => s + x, 0) / arr.length).toFixed(2)) : null);
   const earlyMlu = avg(mluLogs.slice(0, Math.min(20, Math.ceil(mluLogs.length / 2))).map((l) => l.mlu));
   const recentMlu = avg(mluLogs.slice(-20).map((l) => l.mlu));
 
-  // Taux d'autonomie ABA (essais 'plus' vs total 'plus'+'prompt'+'minus')
   const scoredTrials = trials.filter((t) => ['plus', 'prompt', 'minus'].includes(t.result)).sort((a, b) => (a.ts || 0) - (b.ts || 0));
   const autonomyRate = scoredTrials.length
     ? percent(scoredTrials.filter((t) => t.result === 'plus').length, scoredTrials.length)
     : null;
 
-  // Jours actifs uniques
   const activeDays = new Set([
     ...trials.map((t) => t.day),
     ...orthoLogs.map((l) => l.day),
@@ -426,7 +466,7 @@ export async function computeClinicalCohortMetrics() {
     mluGain: (earlyMlu !== null && recentMlu !== null) ? Number((recentMlu - earlyMlu).toFixed(2)) : null,
     atecBaseline: firstAtec ? { date: firstAtec.day, total: firstAtec.total, scores: firstAtec.scores } : null,
     atecLatest: latestAtec ? { date: latestAtec.day, total: latestAtec.total, scores: latestAtec.scores } : null,
-    atecDeltaPoints: atecDelta, // En ATEC, une baisse (ex. -14 pts) traduit une diminution clinique des difficultés
+    atecDeltaPoints: atecDelta,
     abcTotalEpisodes: abcLogs.length,
   };
 }
@@ -460,7 +500,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     const statusMsg = h('p', { class: 'note' },
       lastSync?.lastSyncAt
         ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
-        : '🔒 Chiffrement AES-256 de bout en bout actif. Vos cartes, essais ABA, bilans ATEC et journaux ortho sont chiffrés sur votre téléphone avant d’être partagés avec l’équipe.');
+        : '🔒 Chiffrement AES-256 de bout en bout actif. Vos essais ABA, bilans ATEC et journaux ortho sont chiffrés sur votre téléphone avant d’être partagés avec l’équipe (sans toucher à la langue ni au profil local).');
 
     const keyInput = h('input', {
       value: cfg.familyKey,
@@ -478,7 +518,6 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     });
     const mediaChk = h('input', {
       type: 'checkbox',
-      checked: cfg.includeMedia ? 'checked' : null,
     });
 
     const doSync = async () => {
@@ -488,7 +527,6 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
           familyKey: keyInput.value.trim(),
           supabaseUrl: urlInput.value.trim(),
           supabaseAnonKey: anonInput.value.trim(),
-          includeMedia: mediaChk.checked,
         });
         const res = await syncNowWithTeam({ includeMedia: mediaChk.checked });
         statusMsg.textContent = `✅ Synchronisé à ${new Date(res.lastSyncAt).toLocaleTimeString('fr-FR')} ! Nouveaux éléments fusionnés : +${res.trialsAdded} essais ABA, +${res.orthoAdded} notes ortho, +${res.abcAdded} notes ABC, ${res.cardsChanged} cartes mises à jour.`;
@@ -498,18 +536,26 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       }
     };
 
-    const shareTeamSyncWhatsApp = () => {
+    const copyKeyOnly = async () => {
       const k = keyInput.value.trim() || cfg.familyKey;
+      try {
+        await navigator.clipboard.writeText(k);
+        statusMsg.textContent = '📋 Clé AES-256 copiée dans le presse-papiers (transmettez-la séparément du lien).';
+      } catch {
+        statusMsg.textContent = `🔑 Clé à copier : ${k}`;
+      }
+    };
+
+    const shareTeamInstructionsWhatsApp = () => {
       const text = [
         `Bonjour 👋,`,
-        `Voici la clé de synchronisation chiffrée *Kalimati* pour partager en temps réel les progrès et cartes d'*${profile?.name || 'Abir'}* (Papa, Maman, AVS, Hosna) :`,
-        `🔑 Clé AES-256 : *${k}*`,
-        `Dans Kalimati -> Mode Parent -> ☁️ Synchronisation Équipe, collez cette clé et touchez « 🔄 Synchroniser maintenant ».`,
+        `Pour synchroniser les progrès ABA, le planning et le cahier de liaison d'*${profile?.name || 'Abir'}* dans *Kalimati* :`,
+        `1. Ouvrez Kalimati -> Mode Parent -> Progrès -> ☁️ Synchronisation Équipe.`,
+        `2. Collez la clé secrète AES-256 (envoyée dans un second message séparé ou dictée de vive voix) puis touchez « 🔄 Synchroniser maintenant ».`,
       ].join('\n');
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     };
 
-    // Section Cohorte Clinique anonymisée
     const cohortChk = h('input', {
       type: 'checkbox',
       checked: cohortOptIn ? 'checked' : null,
@@ -522,8 +568,9 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       statusMsg,
       h('div', { class: 'row wrap' },
         btn('🔄 Synchroniser maintenant avec l’équipe', doSync, 'primary'),
-        btn('💬 Envoyer la clé à Maman / AVS / Hosna (WhatsApp)', shareTeamSyncWhatsApp, 'ghost tiny')),
-      h('label', { class: 'check' }, mediaChk, ' Inclure aussi les photos et voix parentales (plus lourd, à faire en Wi-Fi)'),
+        btn('📋 Copier la clé secrète seule', copyKeyOnly, 'ghost tiny'),
+        btn('💬 Envoyer la consigne (sans la clé) sur WhatsApp', shareTeamInstructionsWhatsApp, 'ghost tiny')),
+      h('label', { class: 'check' }, mediaChk, ' Inclure exceptionnellement les photos et voix parentales chiffrées dans cet envoi (par défaut : textes et journaux uniquement, les photos restent sur ce téléphone)'),
       h('details', {},
         h('summary', {}, '⚙️ Paramètres de connexion Cloud Zero-Knowledge ( Clé AES-256 & Supabase )'),
         h('div', { class: 'stack' },
@@ -536,7 +583,6 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
                 familyKey: keyInput.value.trim(),
                 supabaseUrl: urlInput.value.trim(),
                 supabaseAnonKey: anonInput.value.trim(),
-                includeMedia: mediaChk.checked,
               });
               statusMsg.textContent = 'Configuration Cloud enregistrée ✅';
             }, 'ghost tiny')))),

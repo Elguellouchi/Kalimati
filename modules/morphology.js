@@ -1,8 +1,16 @@
 // 🧠 Moteur morphologique et syntaxique bilingue (Français + Darija marocaine + Code-Switching) — 100 % hors-ligne.
-// Comble l'écart avec Proloquo2Go (Crescendo) et TouchChat (WordPower) :
-// 1. Conjugaison automatique des verbes (Présent, Passé, Futur) selon le sujet (Je/Moi, Papa/Il, Maman/Ghita/Elle) et après un verbe modal (« Je veux manger » / « Bghit nakoul » vs « Ana kanakoul »).
-// 2. Accord automatique en genre (Féminin / Masculin) des émotions et adjectifs en Français ET en Darija (« Je suis contente / Ana fer7ana » pour une fille, « Papa est fatigué / Baba 3eyyan » vs « Maman est fatiguée / Mama 3eyyana »).
-// 3. Ajout intelligent des déterminants partitifs/articles (« du pain », « de l'eau », « une pomme ») et prépositions de lieu (« au parc », « à l'école », « à la maison »).
+// Version v10.0 :
+// 1. Conjugaison automatique des verbes (Présent, Passé, Futur) selon le sujet (Je/Moi, Papa/Il, Maman/Ghita/Elle) et après « Je veux / Bghit ».
+// 2. Insertion automatique du verbe sous-entendu après « Je veux » quand l'enfant pose un nom sans verbe :
+//    - Aliment : « Je veux » + « Pain » -> « Je veux manger du pain » (bghit nakoul l-khobz, verbCardId: 'c-actions-manger')
+//    - Boisson : « Je veux » + « Eau » -> « Je veux boire de l'eau » (bghit nchreb l-ma, verbCardId: 'c-actions-boire')
+//    - Jeu : « Je veux » + « Ballon » -> « Je veux jouer au ballon » (bghit nl3eb b l-kora, verbCardId: 'c-actions-jouer')
+//    - Dessin animé : « Je veux » + « Dessin animé » -> « Je veux regarder le dessin animé » (bghit nchouf r-rassoum, verbCardId: 'c-actions-regarder')
+//    - Musique : « Je veux » + « Musique » -> « Je veux écouter de la musique » (bghit nsme3 l-mousi9a, verbCardId: 'c-actions-ecouter')
+//    - Lieu : « Je veux » + « Parc » -> « Je veux aller au parc » (bghit nmchi l-jarda)
+// 3. Accord en genre ET en temps (Hier / Maintenant / Après) sur les émotions, adjectifs et « Bghit » :
+//    - « Moi + Content » : Présent « Je suis contente / Ana fer7ana », Passé « J'étais contente / Kount fer7ana », Futur « Je serai contente / Ghadi nkoun fer7ana ».
+//    - « Je veux » : Présent « bghit », Passé « kount bghit », Futur « ghadi nbghi ».
 
 import * as db from '../db.js';
 import { h } from './util.js';
@@ -27,7 +35,6 @@ export async function setChildGender(gender) {
 }
 
 // ---------- 1. Base morphologique des personnes / sujets ----------
-// person: '1s' (Moi/Je), '3ms' (Papa, Papi, Il), '3fs' (Maman, Ghita, Hosna, Maîtresse, Mamie, Elle)
 const SUBJECTS = {
   'c-personnes-moi': { person: '1s', gender: () => (childGenderCached === 'boy' ? 'm' : 'f'), fr: 'Je', dr: 'Ana', ar: 'أنا' },
   'c-personnes-papa': { person: '3ms', gender: () => 'm', fr: 'Papa', dr: 'Baba', ar: 'بابا' },
@@ -40,12 +47,9 @@ const SUBJECTS = {
 };
 
 // ---------- 2. Table de conjugaison bilingue (Français + Darija latine + Darija arabe) ----------
-// En Darija :
-// - sub_* = radical subjonctif/aoriste utilisé après « bghit » (je veux) ou « ghadi » (futur) : ex. nakoul, yakoul, takoul
-// - pres_* = présent progressif/habituel avec préfixe ka- : ex. kanakoul, kayakoul, katakoul
-// - past_* = accompli (passé) : ex. klit, kla, klat
 const VERBS = {
   manger: {
+    cardId: 'c-actions-manger',
     infFr: 'manger', ppFr: 'mangé', auxFr: 'avoir',
     presFr: { '1s': 'mange', '3ms': 'mange', '3fs': 'mange' },
     subDr: { '1s': 'nakoul', '3ms': 'yakoul', '3fs': 'takoul' },
@@ -56,6 +60,7 @@ const VERBS = {
     pastAr: { '1s': 'كليت', '3ms': 'كلا', '3fs': 'كلات' },
   },
   boire: {
+    cardId: 'c-actions-boire',
     infFr: 'boire', ppFr: 'bu', auxFr: 'avoir',
     presFr: { '1s': 'bois', '3ms': 'boit', '3fs': 'boit' },
     subDr: { '1s': 'nchreb', '3ms': 'ychreb', '3fs': 'tchreb' },
@@ -66,6 +71,7 @@ const VERBS = {
     pastAr: { '1s': 'شربت', '3ms': 'شرب', '3fs': 'شربات' },
   },
   jouer: {
+    cardId: 'c-actions-jouer',
     infFr: 'jouer', ppFr: 'joué', auxFr: 'avoir',
     presFr: { '1s': 'joue', '3ms': 'joue', '3fs': 'joue' },
     subDr: { '1s': 'nl3eb', '3ms': 'yl3eb', '3fs': 'tl3eb' },
@@ -76,6 +82,7 @@ const VERBS = {
     pastAr: { '1s': 'لعبت', '3ms': 'لعب', '3fs': 'لعبات' },
   },
   courir: {
+    cardId: 'c-actions-courir',
     infFr: 'courir', ppFr: 'couru', auxFr: 'avoir',
     presFr: { '1s': 'cours', '3ms': 'court', '3fs': 'court' },
     subDr: { '1s': 'njri', '3ms': 'yjri', '3fs': 'tjri' },
@@ -86,6 +93,7 @@ const VERBS = {
     pastAr: { '1s': 'جريت', '3ms': 'جرى', '3fs': 'جرات' },
   },
   donner: {
+    cardId: 'c-actions-donner',
     infFr: 'donner', ppFr: 'donné', auxFr: 'avoir',
     presFr: { '1s': 'donne', '3ms': 'donne', '3fs': 'donne' },
     subDr: { '1s': 'n3ti', '3ms': 'y3ti', '3fs': 't3ti' },
@@ -96,6 +104,7 @@ const VERBS = {
     pastAr: { '1s': 'عطيت', '3ms': 'عطى', '3fs': 'عطات' },
   },
   couper: {
+    cardId: 'c-actions-couper',
     infFr: 'couper', ppFr: 'coupé', auxFr: 'avoir',
     presFr: { '1s': 'coupe', '3ms': 'coupe', '3fs': 'coupe' },
     subDr: { '1s': 'n9te3', '3ms': 'y9te3', '3fs': 't9te3' },
@@ -106,6 +115,7 @@ const VERBS = {
     pastAr: { '1s': 'قطعت', '3ms': 'قطع', '3fs': 'قطعات' },
   },
   sauter: {
+    cardId: 'c-actions-sauter',
     infFr: 'sauter', ppFr: 'sauté', auxFr: 'avoir',
     presFr: { '1s': 'saute', '3ms': 'saute', '3fs': 'saute' },
     subDr: { '1s': 'n9fez', '3ms': 'y9fez', '3fs': 't9fez' },
@@ -116,6 +126,7 @@ const VERBS = {
     pastAr: { '1s': 'قفزت', '3ms': 'قفز', '3fs': 'قفزات' },
   },
   laver: {
+    cardId: 'c-actions-laver',
     infFr: 'laver', ppFr: 'lavé', auxFr: 'avoir',
     presFr: { '1s': 'lave', '3ms': 'lave', '3fs': 'lave' },
     subDr: { '1s': 'nghsel', '3ms': 'yghsel', '3fs': 'tghsel' },
@@ -126,6 +137,7 @@ const VERBS = {
     pastAr: { '1s': 'غسلت', '3ms': 'غسل', '3fs': 'غسلات' },
   },
   dessiner: {
+    cardId: 'c-actions-dessiner',
     infFr: 'dessiner', ppFr: 'dessiné', auxFr: 'avoir',
     presFr: { '1s': 'dessine', '3ms': 'dessine', '3fs': 'dessine' },
     subDr: { '1s': 'nrsem', '3ms': 'yrsem', '3fs': 'trsem' },
@@ -136,6 +148,7 @@ const VERBS = {
     pastAr: { '1s': 'رسمت', '3ms': 'رسم', '3fs': 'رسمات' },
   },
   ouvrir: {
+    cardId: 'c-actions-ouvrir',
     infFr: 'ouvrir', ppFr: 'ouvert', auxFr: 'avoir',
     presFr: { '1s': 'ouvre', '3ms': 'ouvre', '3fs': 'ouvre' },
     subDr: { '1s': 'n7el', '3ms': 'y7el', '3fs': 't7el' },
@@ -146,6 +159,7 @@ const VERBS = {
     pastAr: { '1s': 'حليت', '3ms': 'حل', '3fs': 'حلات' },
   },
   dormir: {
+    cardId: 'c-actions-dormir',
     infFr: 'dormir', ppFr: 'dormi', auxFr: 'avoir',
     presFr: { '1s': 'dors', '3ms': 'dort', '3fs': 'dort' },
     subDr: { '1s': 'n3es', '3ms': 'yn3es', '3fs': 'tn3es' },
@@ -156,6 +170,7 @@ const VERBS = {
     pastAr: { '1s': 'نعست', '3ms': 'نعس', '3fs': 'نعسات' },
   },
   changer: {
+    cardId: 'c-besoins-changer',
     infFr: 'me changer', ppFr: 'changé', auxFr: 'avoir',
     presFr: { '1s': 'me change', '3ms': 'se change', '3fs': 'se change' },
     subDr: { '1s': 'nbeddel', '3ms': 'ybeddel', '3fs': 'tbeddel' },
@@ -166,6 +181,7 @@ const VERBS = {
     pastAr: { '1s': 'بدلت', '3ms': 'بدل', '3fs': 'بدلات' },
   },
   lire: {
+    cardId: 'c-actions-lire',
     infFr: 'lire', ppFr: 'lu', auxFr: 'avoir',
     presFr: { '1s': 'lis', '3ms': 'lit', '3fs': 'lit' },
     subDr: { '1s': 'n9ra', '3ms': 'y9ra', '3fs': 't9ra' },
@@ -176,6 +192,7 @@ const VERBS = {
     pastAr: { '1s': 'قريت', '3ms': 'قرا', '3fs': 'قرات' },
   },
   ecrire: {
+    cardId: 'c-actions-ecrire',
     infFr: 'écrire', ppFr: 'écrit', auxFr: 'avoir',
     presFr: { '1s': 'écris', '3ms': 'écrit', '3fs': 'écrit' },
     subDr: { '1s': 'nkteb', '3ms': 'ykteb', '3fs': 'tkteb' },
@@ -186,6 +203,7 @@ const VERBS = {
     pastAr: { '1s': 'كتبت', '3ms': 'كتب', '3fs': 'كتبات' },
   },
   regarder: {
+    cardId: 'c-actions-regarder',
     infFr: 'regarder', ppFr: 'regardé', auxFr: 'avoir',
     presFr: { '1s': 'regarde', '3ms': 'regarde', '3fs': 'regarde' },
     subDr: { '1s': 'nchouf', '3ms': 'ychouf', '3fs': 'tchouf' },
@@ -196,6 +214,7 @@ const VERBS = {
     pastAr: { '1s': 'شفت', '3ms': 'شاف', '3fs': 'شافت' },
   },
   ecouter: {
+    cardId: 'c-actions-ecouter',
     infFr: 'écouter', ppFr: 'écouté', auxFr: 'avoir',
     presFr: { '1s': 'écoute', '3ms': 'écoute', '3fs': 'écoute' },
     subDr: { '1s': 'nsme3', '3ms': 'ysme3', '3fs': 'tsme3' },
@@ -205,78 +224,86 @@ const VERBS = {
     pastDr: { '1s': 'sme3t', '3ms': 'sme3', '3fs': 'sem3at' },
     pastAr: { '1s': 'سمعت', '3ms': 'سمع', '3fs': 'سمعات' },
   },
+  aller: {
+    cardId: null,
+    infFr: 'aller', ppFr: 'allé', auxFr: 'être',
+    presFr: { '1s': 'vais', '3ms': 'va', '3fs': 'va' },
+    subDr: { '1s': 'nmchi', '3ms': 'ymchi', '3fs': 'tmchi' },
+    subAr: { '1s': 'نمشي', '3ms': 'يمشي', '3fs': 'تمشي' },
+    presDr: { '1s': 'kanmchi', '3ms': 'kaymchi', '3fs': 'katmchi' },
+    presAr: { '1s': 'كنمشي', '3ms': 'كيمشي', '3fs': 'كتمشي' },
+    pastDr: { '1s': 'mchit', '3ms': 'mcha', '3fs': 'mchat' },
+    pastAr: { '1s': 'مشيت', '3ms': 'مشى', '3fs': 'مشات' },
+  },
 };
 
-// v9.16 : « aller » (pas de carte, sert au verbe sous-entendu devant un lieu : « Je veux aller au parc »).
-VERBS.aller = {
-  infFr: 'aller', ppFr: 'allé', auxFr: 'être',
-  presFr: { '1s': 'vais', '3ms': 'va', '3fs': 'va' },
-  subDr: { '1s': 'nmchi', '3ms': 'ymchi', '3fs': 'tmchi' },
-  subAr: { '1s': 'نمشي', '3ms': 'يمشي', '3fs': 'تمشي' },
-  presDr: { '1s': 'kanmchi', '3ms': 'kaymchi', '3fs': 'katmchi' },
-  presAr: { '1s': 'كنمشي', '3ms': 'كيمشي', '3fs': 'كتمشي' },
-  pastDr: { '1s': 'mchit', '3ms': 'mcha', '3fs': 'mchat' },
-  pastAr: { '1s': 'مشيت', '3ms': 'مشى', '3fs': 'مشات' },
+// ---------- 3. Accord en genre ET en temps des émotions & adjectifs (Français + Darija) ----------
+const COPULA_ETRE_FR = {
+  present: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+  past: { '1s': 'étais', '3ms': 'était', '3fs': 'était' },
+  future: { '1s': 'serai', '3ms': 'sera', '3fs': 'sera' },
 };
 
-// v9.16 : verbe sous-entendu quand l'enfant pose « Je veux » + un nom sans verbe.
-// « Je veux » + Pain -> « Je veux manger du pain » ; + Ballon -> « Je veux jouer au ballon » ; + Parc -> « Je veux aller au parc ».
-const IMPLIED_BY_NOUN = { 'dessin-anime': 'regarder', musique: 'ecouter', bain: null };
-const IMPLIED_BY_CAT = { manger: 'manger', boire: 'boire', jouer: 'jouer', lieux: 'aller' };
-const VERB_CARD_IDS = { manger: 'c-actions-manger', boire: 'c-actions-boire', jouer: 'c-actions-jouer', regarder: 'c-actions-regarder', ecouter: 'c-actions-ecouter' };
-function impliedVerbFor(card, key) {
-  if (Object.prototype.hasOwnProperty.call(IMPLIED_BY_NOUN, key)) return IMPLIED_BY_NOUN[key];
-  return IMPLIED_BY_CAT[card && card.cat] || null;
+const COPULA_AVOIR_FR = {
+  present: { '1s': 'ai', '3ms': 'a', '3fs': 'a' },
+  past: { '1s': 'avais', '3ms': 'avait', '3fs': 'avait' },
+  future: { '1s': 'aurai', '3ms': 'aura', '3fs': 'aura' },
+};
+
+// Auxiliaires de temps pour les adjectifs / états en Darija (« Kount fer7ana » / « Ghadi nkoun fer7ana »)
+function copulaDrForState(person, gender, tense, isAr = false) {
+  if (tense === 'past') {
+    if (isAr) return person === '1s' ? 'كنت' : person === '3ms' ? 'كان' : 'كانت';
+    return person === '1s' ? 'kount' : person === '3ms' ? 'kan' : 'kanet';
+  }
+  if (tense === 'future') {
+    if (isAr) {
+      return person === '1s' ? 'غادي نكون' : person === '3ms' ? 'غادي يكون' : 'غادة تكون';
+    }
+    return person === '1s' ? 'ghadi nkoun' : person === '3ms' ? 'ghadi ykoun' : 'ghada tkoun';
+  }
+  return '';
 }
 
-// ---------- 3. Accord en genre des émotions & adjectifs (Français + Darija latine + Darija arabe) ----------
 const ADJECTIVES = {
   content: {
     fr: { m: 'content', f: 'contente' },
-    copulaFr: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+    auxType: 'etre',
     dr: { m: 'fer7an', f: 'fer7ana' },
     ar: { m: 'فرحان', f: 'فرحانة' },
   },
   triste: {
     fr: { m: 'triste', f: 'triste' },
-    copulaFr: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+    auxType: 'etre',
     dr: { m: '7zin', f: '7zina' },
     ar: { m: 'حزين', f: 'حزينة' },
   },
   'en-colere': {
     fr: { m: 'en colère', f: 'en colère' },
-    copulaFr: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+    auxType: 'etre',
     dr: { m: 'mqelle9', f: 'mqell9a' },
     ar: { m: 'مقلق', f: 'مقلقة' },
   },
   peur: {
     fr: { m: 'peur', f: 'peur' },
-    copulaFr: { '1s': 'ai', '3ms': 'a', '3fs': 'a' },
+    auxType: 'avoir',
     dr: { m: 'khayef', f: 'khayfa' },
     ar: { m: 'خايف', f: 'خايفة' },
   },
   fatigue: {
     fr: { m: 'fatigué', f: 'fatiguée' },
-    copulaFr: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+    auxType: 'etre',
     dr: { m: '3eyyan', f: '3eyyana' },
     ar: { m: 'عيان', f: 'عيانة' },
   },
   fier: {
     fr: { m: 'fier', f: 'fière' },
-    copulaFr: { '1s': 'suis', '3ms': 'est', '3fs': 'est' },
+    auxType: 'etre',
     dr: { m: 'fkhour', f: 'fkhoura' },
     ar: { m: 'فخور', f: 'فخورة' },
   },
-  grand: {
-    fr: { m: 'grand', f: 'grande' },
-    dr: { m: 'kbir', f: 'kbira' },
-    ar: { m: 'كبير', f: 'كبيرة' },
-  },
-  petit: {
-    fr: { m: 'petit', f: 'petite' },
-    dr: { m: 'sghir', f: 'sghira' },
-    ar: { m: 'صغير', f: 'صغيرة' },
-  },
+  grand: { fr: { m: 'grand', f: 'grande' }, dr: { m: 'kbir', f: 'kbira' }, ar: { m: 'كبير', f: 'كبيرة' } },
+  petit: { fr: { m: 'petit', f: 'petite' }, dr: { m: 'sghir', f: 'sghira' }, ar: { m: 'صغير', f: 'صغيرة' } },
   rouge: { fr: { m: 'rouge', f: 'rouge' }, dr: { m: '7mer', f: '7emra' }, ar: { m: 'حمر', f: 'حمرا' } },
   bleu: { fr: { m: 'bleu', f: 'bleue' }, dr: { m: 'zre9', f: 'zer9a' }, ar: { m: 'زرق', f: 'زرقا' } },
   jaune: { fr: { m: 'jaune', f: 'jaune' }, dr: { m: 'sfer', f: 'sefra' }, ar: { m: 'صفر', f: 'صفرا' } },
@@ -288,37 +315,47 @@ const ADJECTIVES = {
 
 // ---------- 4. Genre et déterminants des noms (Aliments, Boissons, Jouets, Lieux) ----------
 const NOUNS = {
-  pain: { gender: 'm', partFr: 'du pain', defFr: 'le pain', dr: 'l-khobz', ar: 'الخبز' },
-  pomme: { gender: 'f', partFr: 'une pomme', defFr: 'la pomme', dr: 'teffa7a', ar: 'تفاحة' },
-  banane: { gender: 'f', partFr: 'une banane', defFr: 'la banane', dr: 'banana', ar: 'بنانة' },
-  gateau: { gender: 'm', partFr: 'du gâteau', defFr: 'le gâteau', dr: 'l-gato', ar: 'الگاطو' },
-  yaourt: { gender: 'm', partFr: 'un yaourt', defFr: 'le yaourt', dr: 'danone', ar: 'دانون' },
-  riz: { gender: 'm', partFr: 'du riz', defFr: 'le riz', dr: 'r-rouz', ar: 'الروز' },
-  biscuit: { gender: 'm', partFr: 'un biscuit', defFr: 'le biscuit', dr: 'biskwi', ar: 'بيسكوي' },
-  '-uf': { gender: 'm', partFr: 'un œuf', defFr: "l'œuf", dr: 'bida', ar: 'بيضة' },
-  oeuf: { gender: 'm', partFr: 'un œuf', defFr: "l'œuf", dr: 'bida', ar: 'بيضة' },
-  chips: { gender: 'f', partFr: 'des chips', defFr: 'les chips', dr: 'chips', ar: 'شيبس' },
-  fromage: { gender: 'm', partFr: 'du fromage', defFr: 'le fromage', dr: 'l-frmaj', ar: 'الفرماج' },
-  pancake: { gender: 'm', partFr: 'un pancake', defFr: 'le pancake', dr: 'pancake', ar: 'بانكيك' },
-  mcdo: { gender: 'm', partFr: 'McDo', defFr: 'McDo', dr: 'makdo', ar: 'ماكدو' },
-  eau: { gender: 'f', partFr: "de l'eau", defFr: "l'eau", dr: 'l-ma', ar: 'الما' },
-  lait: { gender: 'm', partFr: 'du lait', defFr: 'le lait', dr: 'l-7lib', ar: 'الحليب' },
-  jus: { gender: 'm', partFr: 'du jus', defFr: 'le jus', dr: 'l-3assir', ar: 'العصير' },
-  'coca-cola': { gender: 'm', partFr: 'du Coca', defFr: 'le Coca', dr: 'koka', ar: 'كوكا' },
-  trampoline: { gender: 'm', partFr: 'du trampoline', locFr: 'au trampoline', dr: 'f trampoline', ar: 'ف الترامبولين' },
-  ballon: { gender: 'm', partFr: 'le ballon', locFr: 'au ballon', dr: 'b l-kora', ar: 'بالكورة' },
-  tablette: { gender: 'f', partFr: 'la tablette', locFr: 'à la tablette', dr: 'f t-tablette', ar: 'ف الطابليط' },
-  'dessin-anime': { gender: 'm', partFr: 'un dessin animé', defFr: 'le dessin animé', dr: 'r-rassoum', ar: 'الرسوم' },
-  poupee: { gender: 'f', partFr: 'la poupée', locFr: 'à la poupée', dr: 'b l-mouna', ar: 'بالمونة' },
-  musique: { gender: 'f', partFr: 'de la musique', defFr: 'la musique', dr: 'l-mousi9a', ar: 'الموسيقى' },
-  balancoire: { gender: 'f', partFr: 'de la balançoire', locFr: 'à la balançoire', dr: 'f j-jelloula', ar: 'ف الجلولة' },
-  dehors: { gender: 'm', partFr: 'dehors', locFr: 'dehors', dr: 'berra', ar: 'برا' },
-  maison: { gender: 'f', partFr: 'la maison', locFr: 'à la maison', dr: 'f d-dar', ar: 'ف الدار' },
-  voiture: { gender: 'f', partFr: 'la voiture', locFr: 'en voiture', dr: 'f t-tomobil', ar: 'ف الطوموبيل' },
-  parc: { gender: 'm', partFr: 'le parc', locFr: 'au parc', dr: 'f l-jarda', ar: 'ف الجردة' },
-  ecole: { gender: 'f', partFr: "l'école", locFr: "à l'école", dr: 'f l-madrasa', ar: 'ف المدرسة' },
-  bain: { gender: 'm', partFr: 'un bain', locFr: 'au bain', dr: 'l-7ammam', ar: 'الحمام' },
+  pain: { gender: 'm', partFr: 'du pain', defFr: 'le pain', dr: 'l-khobz', ar: 'الخبز', impliedVerb: 'manger' },
+  pomme: { gender: 'f', partFr: 'une pomme', defFr: 'la pomme', dr: 'teffa7a', ar: 'تفاحة', impliedVerb: 'manger' },
+  banane: { gender: 'f', partFr: 'une banane', defFr: 'la banane', dr: 'banana', ar: 'بنانة', impliedVerb: 'manger' },
+  gateau: { gender: 'm', partFr: 'du gâteau', defFr: 'le gâteau', dr: 'l-gato', ar: 'الگاطو', impliedVerb: 'manger' },
+  yaourt: { gender: 'm', partFr: 'un yaourt', defFr: 'le yaourt', dr: 'danone', ar: 'دانون', impliedVerb: 'manger' },
+  riz: { gender: 'm', partFr: 'du riz', defFr: 'le riz', dr: 'r-rouz', ar: 'الروز', impliedVerb: 'manger' },
+  biscuit: { gender: 'm', partFr: 'un biscuit', defFr: 'le biscuit', dr: 'biskwi', ar: 'بيسكوي', impliedVerb: 'manger' },
+  '-uf': { gender: 'm', partFr: 'un œuf', defFr: "l'œuf", dr: 'bida', ar: 'بيضة', impliedVerb: 'manger' },
+  oeuf: { gender: 'm', partFr: 'un œuf', defFr: "l'œuf", dr: 'bida', ar: 'بيضة', impliedVerb: 'manger' },
+  chips: { gender: 'f', partFr: 'des chips', defFr: 'les chips', dr: 'chips', ar: 'شيبس', impliedVerb: 'manger' },
+  fromage: { gender: 'm', partFr: 'du fromage', defFr: 'le fromage', dr: 'l-frmaj', ar: 'الفرماج', impliedVerb: 'manger' },
+  pancake: { gender: 'm', partFr: 'un pancake', defFr: 'le pancake', dr: 'pancake', ar: 'بانكيك', impliedVerb: 'manger' },
+  mcdo: { gender: 'm', partFr: 'McDo', defFr: 'McDo', dr: 'makdo', ar: 'ماكدو', impliedVerb: 'manger' },
+  eau: { gender: 'f', partFr: "de l'eau", defFr: "l'eau", dr: 'l-ma', ar: 'الما', impliedVerb: 'boire' },
+  lait: { gender: 'm', partFr: 'du lait', defFr: 'le lait', dr: 'l-7lib', ar: 'الحليب', impliedVerb: 'boire' },
+  jus: { gender: 'm', partFr: 'du jus', defFr: 'le jus', dr: 'l-3assir', ar: 'العصير', impliedVerb: 'boire' },
+  'coca-cola': { gender: 'm', partFr: 'du Coca', defFr: 'le Coca', dr: 'koka', ar: 'كوكا', impliedVerb: 'boire' },
+  trampoline: { gender: 'm', partFr: 'du trampoline', locFr: 'au trampoline', dr: 'f trampoline', ar: 'ف الترامبولين', impliedVerb: 'jouer' },
+  ballon: { gender: 'm', partFr: 'le ballon', locFr: 'au ballon', dr: 'b l-kora', ar: 'بالكورة', impliedVerb: 'jouer' },
+  tablette: { gender: 'f', partFr: 'la tablette', locFr: 'à la tablette', dr: 'f t-tablette', ar: 'ف الطابليط', impliedVerb: 'jouer' },
+  'dessin-anime': { gender: 'm', partFr: 'le dessin animé', defFr: 'le dessin animé', dr: 'r-rassoum', ar: 'الرسوم', impliedVerb: 'regarder' },
+  poupee: { gender: 'f', partFr: 'la poupée', locFr: 'à la poupée', dr: 'b l-mouna', ar: 'بالمونة', impliedVerb: 'jouer' },
+  musique: { gender: 'f', partFr: 'de la musique', defFr: 'la musique', dr: 'l-mousi9a', ar: 'الموسيقى', impliedVerb: 'ecouter' },
+  balancoire: { gender: 'f', partFr: 'de la balançoire', locFr: 'à la balançoire', dr: 'f j-jelloula', ar: 'ف الجلولة', impliedVerb: 'jouer' },
+  dehors: { gender: 'm', partFr: 'dehors', locFr: 'dehors', dr: 'berra', ar: 'برا', impliedVerb: 'aller' },
+  maison: { gender: 'f', partFr: 'la maison', locFr: 'à la maison', dr: 'l-dar', ar: 'لدار', impliedVerb: 'aller' },
+  voiture: { gender: 'f', partFr: 'la voiture', locFr: 'en voiture', dr: 'f t-tomobil', ar: 'ف الطوموبيل', impliedVerb: 'aller' },
+  parc: { gender: 'm', partFr: 'le parc', locFr: 'au parc', dr: 'l-jarda', ar: 'للجردة', impliedVerb: 'aller' },
+  ecole: { gender: 'f', partFr: "l'école", locFr: "à l'école", dr: 'l-madrasa', ar: 'للمدرسة', impliedVerb: 'aller' },
+  bain: { gender: 'm', partFr: 'un bain', locFr: 'au bain', dr: 'l-7ammam', ar: 'للحمام', impliedVerb: 'aller' },
 };
+
+function inferImpliedVerbKey(card, key) {
+  if (NOUNS[key]?.impliedVerb) return NOUNS[key].impliedVerb;
+  if (!card) return null;
+  if (card.cat === 'manger') return 'manger';
+  if (card.cat === 'boire') return 'boire';
+  if (card.cat === 'jouer') return 'jouer';
+  if (card.cat === 'lieux') return 'aller';
+  return null;
+}
 
 const normSlug = (str) => String(str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
@@ -331,7 +368,6 @@ function cardSlugKey(card) {
   return normSlug(card.fr);
 }
 
-// Règle de repli pour conjuguer n'importe quel verbe régulier français en -er qui serait ajouté par le parent
 function fallbackConjugateFr(infinitive, person, tense) {
   const inf = String(infinitive || '').trim().toLowerCase();
   if (tense === 'future') {
@@ -383,14 +419,9 @@ function conjugateVerbDr(vEntry, drFallback, person, tense, afterModal, subjectG
 }
 
 // ---------- 5. Moteur principal d'inflexion contextuelle de la bande de phrase ----------
-// Prend state.strip = [{ card, lang }] et renvoie :
-// - tokens : tableau de même longueur avec { displayLabel, spokenFr, spokenDr, spokenAr } pour chaque carte posée
-// - sentenceFr : phrase complète naturelle en français (avec élision J'ai, J'écoute, etc.)
-// - sentenceDr : phrase complète naturelle en darija latine
-// - sentenceAr : phrase complète naturelle en darija arabe (pour le moteur vocal arabe / OpenAI)
 export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
   if (!Array.isArray(stripItems) || !stripItems.length) {
-    return { tokens: [], sentenceFr: '', sentenceDr: '', sentenceAr: '' };
+    return { tokens: [], sentenceFr: '', sentenceDr: '', sentenceAr: '', displayText: '', speechText: '' };
   }
 
   let activePerson = '1s';
@@ -406,23 +437,25 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
   const arParts = [];
 
   for (let i = 0; i < stripItems.length; i += 1) {
-    const { card, lang } = stripItems[i];
+    const item = stripItems[i];
+    const card = item?.card || item;
+    const lang = item?.lang || 'fr';
     const key = cardSlugKey(card);
-    const nextCard = stripItems[i + 1]?.card || null;
-    const nextKey = cardSlugKey(nextCard);
+    const nextItem = stripItems[i + 1];
+    const nextCard = nextItem?.card || nextItem || null;
 
     // Cas 1 : Carte Sujet / Personne (Abir/Moi, Papa, Maman, Ghita...)
     if (SUBJECTS[card.id]) {
       const subj = SUBJECTS[card.id];
-      // Si "Moi" est immédiatement suivi de "Je veux", on évite le doublon "Je Je veux" en français
-      const nextIsJeVeux = subj.person === '1s' && nextCard && nextCard.id === 'c-base-je-veux'; // v9.16 : seulement « Moi » (sinon « Maman » disparaissait)
+      const nextIsJeVeux = nextCard && (nextCard.id === 'c-base-je-veux' || cardSlugKey(nextCard) === 'je-veux');
       activePerson = subj.person;
       activeGender = subj.gender();
       hasExplicitSubject = true;
       afterModalWant = false;
       lastNounGender = null;
 
-      const frWord = nextIsJeVeux ? '' : subj.fr;
+      // Conserve le sujet tiers (« Maman » + « Je veux » -> « Maman veut... ») ; évite seulement le doublon « Je Je veux »
+      const frWord = (nextIsJeVeux && activePerson === '1s') ? '' : subj.fr;
       const drWord = subj.dr;
       const arWord = subj.ar;
 
@@ -438,19 +471,24 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       continue;
     }
 
-    // Cas 2 : Carte modale « Je veux / Bghit »
+    // Cas 2 : Carte modale « Je veux / Bghit » (avec support complet Hier / Maintenant / Après en FR et Darija)
     if (card.id === 'c-base-je-veux' || key === 'je-veux') {
       afterModalWant = true;
       lastActionVerb = 'want';
       const isThird = hasExplicitSubject && activePerson !== '1s';
+
       let frModal = isThird ? 'veut' : 'Je veux';
       let drModal = activePerson === '3ms' ? 'bgha' : activePerson === '3fs' ? 'bghat' : 'bghit';
       let arModal = activePerson === '3ms' ? 'بغى' : activePerson === '3fs' ? 'بغات' : 'بغيت';
 
       if (tense === 'past') {
         frModal = isThird ? 'voulait' : 'Je voulais';
+        drModal = activePerson === '3ms' ? 'kan bgha' : activePerson === '3fs' ? 'kanet bghat' : 'kount bghit';
+        arModal = activePerson === '3ms' ? 'كان بغى' : activePerson === '3fs' ? 'كانت بغات' : 'كنت بغيت';
       } else if (tense === 'future') {
         frModal = isThird ? 'voudra' : 'Je voudrais';
+        drModal = activePerson === '3ms' ? 'ghadi ybghi' : activePerson === '3fs' ? 'ghada tbghi' : 'ghadi nbghi';
+        arModal = activePerson === '3ms' ? 'غادي يبغي' : activePerson === '3fs' ? 'غادة تبغي' : 'غادي نبغي';
       }
 
       hasExplicitSubject = true;
@@ -479,7 +517,6 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
         hasExplicitSubject = true;
       }
 
-      // Après un premier verbe conjugué, un éventuel 2e verbe qui suit sera à l'infinitif (ex. "Je vais jouer")
       afterModalWant = true;
       lastActionVerb = key;
       lastNounGender = null;
@@ -496,95 +533,95 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       continue;
     }
 
-    // Cas 4 : Émotion ou Adjectif (Content, Fatigué, Triste, Grand, Chaud...)
+    // Cas 4 : Émotion ou Adjectif (avec support complet Hier « J'étais contente / Kount fer7ana » et Après « Je serai contente / Ghadi nkoun fer7ana »)
     if (card.cat === 'emotions' || ADJECTIVES[key]) {
       const adj = ADJECTIVES[key];
       const targetGender = lastNounGender || activeGender;
       if (adj) {
         const adjFr = adj.fr[targetGender] || adj.fr.m;
-        const adjDr = adj.dr[targetGender] || adj.dr.m;
-        const adjAr = adj.ar[targetGender] || adj.ar.m;
+        const adjDrBase = adj.dr[targetGender] || adj.dr.m;
+        const adjArBase = adj.ar[targetGender] || adj.ar.m;
 
         let phraseFr = adjFr;
-        if (adj.copulaFr && !lastNounGender && !afterModalWant) {
-          const cop = adj.copulaFr[activePerson] || 'suis';
-          phraseFr = hasExplicitSubject ? `${cop} ${adjFr}` : `Je ${cop} ${adjFr}`;
+        let phraseDr = adjDrBase;
+        let phraseAr = adjArBase;
+
+        if (adj.auxType && !lastNounGender && !afterModalWant) {
+          const tableFr = adj.auxType === 'avoir' ? COPULA_AVOIR_FR : COPULA_ETRE_FR;
+          const copFr = (tableFr[tense] || tableFr.present)[activePerson] || 'suis';
+          phraseFr = hasExplicitSubject ? `${copFr} ${adjFr}` : `Je ${copFr} ${adjFr}`;
+
+          const copDr = copulaDrForState(activePerson, targetGender, tense, false);
+          const copAr = copulaDrForState(activePerson, targetGender, tense, true);
+          const needSubjDr = !hasExplicitSubject && activePerson === '1s' && tense === 'present';
+          phraseDr = [needSubjDr ? 'Ana' : '', copDr, adjDrBase].filter(Boolean).join(' ');
+          phraseAr = [needSubjDr ? 'أنا' : '', copAr, adjArBase].filter(Boolean).join(' ');
           hasExplicitSubject = true;
         }
 
         frParts.push(phraseFr);
-        drParts.push(adjDr);
-        arParts.push(adjAr);
+        drParts.push(phraseDr);
+        arParts.push(phraseAr);
 
         tokens.push({
           card,
           lang,
-          displayLabel: lang === 'dr' ? adjDr : phraseFr,
+          displayLabel: lang === 'dr' ? phraseDr : phraseFr,
         });
         continue;
       }
     }
 
-    // Cas 5 : Nom (Aliment, Boisson, Jouet, Lieu)
-    // v9.16 : « Je veux » suivi directement d'un nom : on ajoute le verbe sous-entendu (manger, boire, jouer, aller...).
-    const implied = lastActionVerb === 'want' ? impliedVerbFor(card, key) : null;
-    if (implied && VERBS[implied]) {
-      const vEntry = VERBS[implied];
-      const nEntry = NOUNS[key] || null;
-      const vFr = vEntry.infFr;
-      const vDr = conjugateVerbDr(vEntry, '', activePerson, tense, true, activeGender, 'dr');
-      const vAr = conjugateVerbDr(vEntry, '', activePerson, tense, true, activeGender, 'ar');
-      const word = (card.fr || '').toLowerCase();
-      let nFr = word;
-      if (nEntry) {
-        if (implied === 'jouer' || implied === 'aller') nFr = nEntry.locFr || nEntry.partFr || word;
-        else if (implied === 'regarder') nFr = nEntry.defFr || nEntry.partFr || word;
-        else nFr = nEntry.partFr || nEntry.defFr || word;
+    // Cas 5 : Nom (Aliment, Boisson, Jouet, Lieu) + Insertion automatique du verbe sous-entendu après « Je veux »
+    if (card.gram === 'noun' || NOUNS[key]) {
+      const nEntry = NOUNS[key] || {};
+      lastNounGender = nEntry.gender || 'm';
+
+      let impliedVerbCardId = null;
+      let impLabelFr = '';
+      let impLabelDr = '';
+      if (lastActionVerb === 'want') {
+        const impliedKey = inferImpliedVerbKey(card, key);
+        const impliedVerb = impliedKey ? VERBS[impliedKey] : null;
+        if (impliedVerb) {
+          const impFr = impliedVerb.infFr;
+          const impDr = impliedVerb.subDr[activePerson] || impliedVerb.subDr['1s'];
+          const impAr = impliedVerb.subAr[activePerson] || impliedVerb.subAr['1s'];
+          frParts.push(impFr);
+          drParts.push(impDr);
+          arParts.push(impAr);
+          lastActionVerb = impliedKey;
+          impliedVerbCardId = impliedVerb.cardId || null;
+          impLabelFr = `${impFr} `; // v10.0 : l'étiquette sous la carte montre aussi le verbe ajouté (« manger du pain »)
+          impLabelDr = `${impDr} `;
+        }
       }
-      let nDr = (nEntry && nEntry.dr) || card.dr || '';
-      let nAr = (nEntry && nEntry.ar) || card.ar || card.dr || '';
-      if (implied === 'aller') { nDr = nDr.replace(/^f /, ''); nAr = nAr.replace(/^ف /, ''); }
-      lastActionVerb = implied;
-      lastNounGender = nEntry ? nEntry.gender : null;
-      afterModalWant = true;
-      const phraseFr = `${vFr} ${nFr}`.trim();
-      const phraseDr = `${vDr} ${nDr}`.trim();
-      frParts.push(phraseFr);
-      drParts.push(phraseDr);
-      arParts.push(`${vAr} ${nAr}`.trim());
-      tokens.push({ card, lang, displayLabel: lang === 'dr' ? phraseDr : phraseFr, impliedVerb: implied, impliedVerbCardId: VERB_CARD_IDS[implied] || null });
+
+      const isLocativeContext = ['jouer', 'courir', 'sauter', 'dormir', 'aller'].includes(lastActionVerb) && nEntry.locFr;
+      const isPartitiveContext = ['want', 'manger', 'boire', 'donner', 'couper', 'ecouter'].includes(lastActionVerb);
+
+      const frNoun = isLocativeContext
+        ? nEntry.locFr
+        : isPartitiveContext
+          ? (nEntry.partFr || nEntry.defFr || card.fr.toLowerCase())
+          : (nEntry.defFr || card.fr.toLowerCase());
+      const drNoun = nEntry.dr || card.dr;
+      const arNoun = nEntry.ar || card.ar || card.dr;
+
+      frParts.push(frNoun);
+      drParts.push(drNoun);
+      arParts.push(arNoun);
+
+      tokens.push({
+        card,
+        lang,
+        impliedVerbCardId,
+        displayLabel: lang === 'dr' ? `${impLabelDr}${drNoun}` : `${impLabelFr}${frNoun}`,
+      });
       continue;
     }
 
-    if (card.gram === 'noun' || NOUNS[key]) {
-      const nEntry = NOUNS[key];
-      if (nEntry) {
-        lastNounGender = nEntry.gender;
-        const isLocativeContext = ['jouer', 'courir', 'sauter', 'dormir'].includes(lastActionVerb) && nEntry.locFr;
-        const isPartitiveContext = ['want', 'manger', 'boire', 'donner', 'couper'].includes(lastActionVerb);
-
-        const frNoun = isLocativeContext
-          ? nEntry.locFr
-          : isPartitiveContext
-            ? nEntry.partFr
-            : (nEntry.defFr || card.fr.toLowerCase());
-        const drNoun = nEntry.dr || card.dr;
-        const arNoun = nEntry.ar || card.ar || card.dr;
-
-        frParts.push(frNoun);
-        drParts.push(drNoun);
-        arParts.push(arNoun);
-
-        tokens.push({
-          card,
-          lang,
-          displayLabel: lang === 'dr' ? drNoun : frNoun,
-        });
-        continue;
-      }
-    }
-
-    // Cas 6 : Mots sociaux / outils (Merci, S'il te plaît, Toilettes, Avec...)
+    // Cas 6 : Mots sociaux / outils
     const fallbackFr = (card.sayFr || card.fr || '').trim();
     const fallbackDr = (card.dr || card.fr || '').trim();
     const fallbackAr = (card.sayAr || card.ar || card.dr || card.fr || '').trim();
@@ -598,7 +635,6 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
     });
   }
 
-  // Élisions phonétiques françaises ("Je ai" -> "J'ai", "Je écoute" -> "J'écoute", "Je ouvre" -> "J'ouvre")
   const sentenceFr = frParts
     .join(' ')
     .replace(/\bJe\s+([aàeéèêiîoôuùûh])/gi, "J'$1")
@@ -608,8 +644,18 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
   const sentenceDr = drParts.join(' ').replace(/\s+/g, ' ').trim();
   const sentenceAr = arParts.join(' ').replace(/\s+/g, ' ').trim();
 
-  return { tokens, sentenceFr, sentenceDr, sentenceAr };
+  return {
+    tokens,
+    sentenceFr,
+    sentenceDr,
+    sentenceAr,
+    displayText: sentenceFr,
+    speechText: sentenceFr,
+  };
 }
+
+// Alias de compatibilité
+export const inflectSentenceStrip = inflectStrip;
 
 // ---------- 6. Barre de temps & Aperçu de phrase conjuguée sous la bande de phrase ----------
 export function renderMorphologyBar(stripItems, { lang = 'fr', onTenseChange, onSpeakNatural } = {}) {
