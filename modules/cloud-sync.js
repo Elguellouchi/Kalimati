@@ -408,11 +408,21 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
 
   let mergeReport = { cardsChanged: 0, trialsAdded: 0, abcAdded: 0, orthoAdded: 0, scheduleAdded: 0 };
 
-  const getRes = await supabaseFetch(
-    `${baseUrl}/rest/v1/kalimati_encrypted_relay?room_hash=eq.${encodeURIComponent(roomHash)}&select=*`,
-    cfg.supabaseAnonKey,
-    { method: 'GET' },
-  );
+  // v10.3 : passage par les « portes » sécurisées (fonctions RPC) ; ancien accès direct seulement si le SQL v10.3 n'est pas encore installé.
+  const writeToken = await sha256Hex(`kalimati-relay-write-v1:${cfg.familyKey.trim()}`);
+  let rpcReady = true;
+  let getRes = await supabaseFetch(`${baseUrl}/rest/v1/rpc/kalimati_relay_get`, cfg.supabaseAnonKey, {
+    method: 'POST',
+    body: JSON.stringify({ p_room_hash: roomHash }),
+  });
+  if (getRes.status === 404) {
+    rpcReady = false;
+    getRes = await supabaseFetch(
+      `${baseUrl}/rest/v1/kalimati_encrypted_relay?room_hash=eq.${encodeURIComponent(roomHash)}&select=*`,
+      cfg.supabaseAnonKey,
+      { method: 'GET' },
+    );
+  }
   if (getRes.ok) {
     const rows = await getRes.json();
     if (Array.isArray(rows) && rows[0]?.cipher_bundle) {
@@ -424,20 +434,30 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
   const mergedLocalPayload = await buildLocalSyncPayload({ includeMedia });
   const encryptedBundle = await encryptSyncBundle(mergedLocalPayload, cfg.familyKey);
 
-  const postRes = await supabaseFetch(
-    `${baseUrl}/rest/v1/kalimati_encrypted_relay`,
-    cfg.supabaseAnonKey,
-    {
+  const postRes = rpcReady
+    ? await supabaseFetch(`${baseUrl}/rest/v1/rpc/kalimati_relay_put`, cfg.supabaseAnonKey, {
       method: 'POST',
-      headers: { Prefer: 'resolution=merge-duplicates' },
       body: JSON.stringify({
-        room_hash: roomHash,
-        cipher_bundle: encryptedBundle,
-        author_role: clinic?.intervenant || 'Parent',
-        updated_at: new Date().toISOString(),
+        p_room_hash: roomHash,
+        p_bundle: encryptedBundle,
+        p_write_token: writeToken,
+        p_role: clinic?.intervenant || 'Parent',
       }),
-    },
-  );
+    })
+    : await supabaseFetch(
+      `${baseUrl}/rest/v1/kalimati_encrypted_relay`,
+      cfg.supabaseAnonKey,
+      {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          room_hash: roomHash,
+          cipher_bundle: encryptedBundle,
+          author_role: clinic?.intervenant || 'Parent',
+          updated_at: new Date().toISOString(),
+        }),
+      },
+    );
 
   if (!postRes.ok) {
     const errText = (await postRes.text()).slice(0, 160);
@@ -447,18 +467,25 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
   const cohortOptIn = await db.getSetting(COHORT_OPTIN_KEY);
   if (cohortOptIn) {
     const metrics = await computeClinicalCohortMetrics();
-    await supabaseFetch(
-      `${baseUrl}/rest/v1/kalimati_clinical_cohort`,
-      cfg.supabaseAnonKey,
-      {
+    const cohortToken = await sha256Hex(`kalimati-cohort-write-v1:${cfg.familyKey.trim()}`);
+    await (rpcReady
+      ? supabaseFetch(`${baseUrl}/rest/v1/rpc/kalimati_cohort_put`, cfg.supabaseAnonKey, {
         method: 'POST',
-        headers: { Prefer: 'resolution=merge-duplicates' },
-        body: JSON.stringify({
-          cohort_id: metrics.cohortId,
-          metrics,
-          updated_at: new Date().toISOString(),
-        }),
-      },
+        body: JSON.stringify({ p_cohort_id: metrics.cohortId, p_metrics: metrics, p_write_token: cohortToken }),
+      })
+      : supabaseFetch(
+        `${baseUrl}/rest/v1/kalimati_clinical_cohort`,
+        cfg.supabaseAnonKey,
+        {
+          method: 'POST',
+          headers: { Prefer: 'resolution=merge-duplicates' },
+          body: JSON.stringify({
+            cohort_id: metrics.cohortId,
+            metrics,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+      )
     ).catch(() => {});
   }
 
