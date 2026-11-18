@@ -8,7 +8,7 @@ import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 import { setChildGender } from './morphology.js';
 
-export const APP_VERSION = 'v9.16.2';
+export const APP_VERSION = 'v9.16.3';
 export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
 // v9.11 : la clé maître d'Aziz n'est jamais écrite dans le code, seulement son empreinte SHA-256.
 // La clé tapée est transformée en empreinte puis comparée. Aucun mot de passe en clair.

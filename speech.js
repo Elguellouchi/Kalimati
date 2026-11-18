@@ -186,8 +186,6 @@ export const sayDefault = (card, lang) => sayCard({ ...card, audioFr: null, audi
 let cardCatalog = [];
 export function setCardCatalog(cards) { cardCatalog = Array.isArray(cards) ? cards : []; }
 
-const plainWords = (items) => items.map((x) => (x.card.sayFr || x.card.fr || '')).join(' ');
-const sameText = (a, b) => String(a).toLowerCase().replace(/[^a-zà-ÿ0-9]+/g, ' ').trim() === String(b).toLowerCase().replace(/[^a-zà-ÿ0-9]+/g, ' ').trim();
 
 // items : [{ card, lang }] — chaque mot garde sa langue (code-switching).
 export async function sayCards(items, { onStep } = {}) {
@@ -196,16 +194,9 @@ export async function sayCards(items, { onStep } = {}) {
   const morphOk = items.length > 1 && items.every((x) => x.lang === 'fr' || x.lang === 'dr');
   let inflected = null;
   if (morphOk) { try { inflected = inflectStrip(items); } catch { inflected = null; } }
-  const anyParentVoice = items.some((x) => recordingFor(x.card, x.lang));
-  const allFr = items.every((x) => x.lang === 'fr');
-  // v9.16 : en français, la phrase corrigée (verbe ajouté, conjugaison, « du pain ») est dite d'un seul tenant
-  // dès qu'elle diffère des mots posés. La voix enregistrée du parent reste prioritaire.
-  if (allFr && !anyParentVoice && inflected && inflected.sentenceFr && !sameText(inflected.sentenceFr, plainWords(items))) {
-    if (onStep) onStep(0);
-    await speak(inflected.sentenceFr, { lang: 'fr' });
-    if (onStep && token === queueToken) onStep(-1);
-    return;
-  }
+  // v9.16.3 : sur iPhone en mode silencieux, la voix du téléphone est coupée (les fichiers sons, eux, passent).
+  // Donc ▶ joue toujours les sons des cartes, et glisse le verbe sous-entendu (« je veux » + « manger » + « pain »).
+  // La phrase entière bien accordée reste sur le bouton ✨ sous la bande (voix du téléphone).
   const anyRecording = items.some((x) => recordingFor(x.card, x.lang) || defaultVoiceUrl(x.card, x.lang));
   const sameLang = items.length > 1 && items.every((x) => x.lang === items[0].lang);
   if (!anyRecording && sameLang && items[0].lang === 'fr') {
