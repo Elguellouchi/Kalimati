@@ -22,11 +22,20 @@ let headStream = null;
 let headLoopId = 0;
 let cursorEl = null;
 
+// iPhone / iPad : le navigateur ne peut pas suivre les yeux. Seul le « Suivi des yeux » d'Apple le peut.
+export const IS_IOS = typeof navigator !== 'undefined'
+  && (/iPhone|iPad|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+
 // ---------- 1. Mode Regard (Dwell Tap compatible Eye Tracking natif iOS 18 / iPadOS 18 & Android) ----------
 export async function loadEyeTracking() {
   const saved = await db.getSetting(EYE_KEY);
   if (saved && typeof saved === 'object') {
     eyeCfg = { ...eyeCfg, ...saved };
+  }
+  if (IS_IOS && eyeCfg.headCamera) {
+    // Sur iPhone, la caméra ne guide pas le curseur de façon fiable : on l'éteint.
+    eyeCfg.headCamera = false;
+    await db.setSetting(EYE_KEY, eyeCfg);
   }
   applyEyeTrackingStyles();
   initDwellListener();
@@ -53,6 +62,10 @@ function applyEyeTrackingStyles() {
         background: linear-gradient(90deg, #1F6F5C, #FFD54F);
         border-radius: 0 0 18px 18px; width: 0%;
       }
+      .eye-field { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+      .eye-field select { width: 100%; max-width: 100%; box-sizing: border-box; font-size: 16px; }
+      .eye-ios-help ol { margin: 6px 0 0; padding-left: 20px; }
+      .eye-ios-help li { margin: 4px 0; }
       #kalimati-head-cursor {
         position: fixed; width: 28px; height: 28px; border-radius: 50%;
         background: rgba(255, 213, 79, 0.75); border: 3px solid #1F6F5C;
@@ -360,8 +373,17 @@ export function eyeTrackingAndPacksBox({ onCardsAdded } = {}) {
 
   async function render() {
     const installed = (await db.getSetting(INSTALLED_PACKS_KEY)) || [];
-    const statusNote = h('p', { class: 'note' },
-      'Compatible avec le suivi oculaire natif iOS 18 / iPadOS 18 (Réglages > Accessibilité > Suivi des yeux) et le suivi de tête par caméra locale.');
+    const statusNote = h('p', { class: 'note' }, IS_IOS
+      ? 'Sur iPhone, Kalimati ne peut pas voir les yeux. Seul Apple le peut.'
+      : 'Le mode Regard choisit une carte quand le curseur reste dessus.');
+    const iosHelp = IS_IOS ? h('div', { class: 'note eye-ios-help' },
+      h('strong', {}, '📱 Sur iPhone, comment faire :'),
+      h('ol', {},
+        h('li', {}, 'Ouvrez Réglages > Accessibilité > Suivi des yeux.'),
+        h('li', {}, 'Activez-le et suivez le calibrage d’Apple (iPhone 12 ou plus récent, iOS 18).'),
+        h('li', {}, 'Apple choisit alors la carte regardée, dans Kalimati comme ailleurs.'),
+        h('li', {}, 'Laissez ici « Désactivé » pour éviter qu’une carte soit choisie deux fois.')),
+    ) : null;
 
     const dwellSelect = h('select', {
       onchange: async (e) => {
@@ -369,7 +391,9 @@ export function eyeTrackingAndPacksBox({ onCardsAdded } = {}) {
         await db.setSetting(EYE_KEY, eyeCfg);
         clearDwell();
         statusNote.textContent = eyeCfg.dwellMs
-          ? `✅ Mode Regard activé : fixer une carte pendant ${eyeCfg.dwellMs / 1000} s la sélectionne automatiquement.`
+          ? (IS_IOS
+            ? `Activé (${eyeCfg.dwellMs / 1000} s). Sur iPhone, cela ne marche qu’avec le Suivi des yeux d’Apple allumé.`
+            : `✅ Mode Regard activé : fixer une carte pendant ${eyeCfg.dwellMs / 1000} s la sélectionne automatiquement.`)
           : 'Mode Regard (Dwell) désactivé.';
       },
     }, [
@@ -441,9 +465,10 @@ export function eyeTrackingAndPacksBox({ onCardsAdded } = {}) {
     body.replaceChildren(
       statusNote,
       h('h3', {}, '👁️ 1. Suivi Oculaire (Eye-Tracking) & Suivi de Tête'),
-      h('label', { class: 'check' }, 'Validation par fixation du regard (Dwell Tap) : ', dwellSelect),
+      ...(iosHelp ? [iosHelp] : []),
+      h('label', { class: 'eye-field' }, h('span', {}, 'Choisir une carte en la fixant :'), dwellSelect),
       h('label', { class: 'check' }, gapChk, ' Espacement élargi (18 px) et grandes cibles anti-erreur de regard'),
-      h('label', { class: 'check' }, camChk, ' Activer le curseur de suivi de la tête par caméra frontale (100 % local, Android / PC / iPad)'),
+      ...(IS_IOS ? [] : [h('label', { class: 'check' }, camChk, ' Curseur guidé par la tête avec la caméra avant (essai, 100 % dans l’appareil, Android / PC)')]),
       h('h3', {}, '📦 2. Packs Thématiques à la demande (ARASAAC + Darija)'),
       h('p', { class: 'note' }, 'Téléchargez un pack thématique en 1 clic : ses cartes bilingues (FR + Darija) et leurs pictogrammes ARASAAC sont rangés dans le téléphone pour marcher ensuite sans internet.'),
       h('div', { class: 'stack' }, ...packRows),
