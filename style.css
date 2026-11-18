@@ -45,7 +45,7 @@ details summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
   background: var(--surface); border-radius: var(--radius); padding: 6px; box-shadow: 0 1px 3px rgb(0 0 0 / .12);
 }
 .strip-cards { flex: 1; display: flex; gap: 6px; overflow-x: auto; }
-.strip.empty .strip-btn:not(.lang) { opacity: .35; pointer-events: none; }
+.strip.empty .strip-btn:not(.lang):not(.undo) { opacity: .35; pointer-events: none; }
 .strip-btn { flex: none; width: 52px; height: 52px; border: 0; border-radius: 14px; background: var(--bg); font-size: 22px; }
 .strip-btn.play { background: var(--brand); color: #fff; }
 .strip-btn.lang { font-size: 15px; font-weight: 800; color: var(--brand); border: 2px solid var(--brand); background: transparent; }
@@ -979,7 +979,8 @@ dialog::backdrop { background: rgb(255 248 240 / .25); backdrop-filter: blur(2px
 .step.done { animation: kid-pop .3s ease-out; }
 
 /* « Tout effacer » : appui long 0,8 s, en ambre. */
-#btn-clear { background: #FBE6DA; color: var(--terracotta); position: relative; overflow: hidden; touch-action: none; }
+#btn-clear { background: #FBE6DA; color: var(--terracotta); position: relative; overflow: hidden; touch-action: manipulation; }
+#btn-clear.undo { background: #E3F1EC; color: var(--brand-dark, #1F6F5C); }
 #btn-clear.holding::after { content: ""; position: absolute; inset: 0; background: rgb(217 125 84 / .35); transform-origin: left; animation: clear-hold .8s linear forwards; }
 @keyframes clear-hold { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 

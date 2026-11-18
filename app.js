@@ -1,4 +1,4 @@
-// Kalimati v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -209,14 +209,26 @@ function setupStrip() {
     if (state.strip.length >= 2 && !state.parent) unlockFriendSticker('nour').catch(() => {});
     noteUtterance(); sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } }); };
   $('#btn-back').onclick = () => { state.strip = state.strip.slice(0, -1); renderStrip(); };
-  // v9.9 : « Tout effacer » demande un appui long de 0,8 s (évite d'effacer la phrase par erreur).
-  const clear = () => { stopSpeaking(); state.strip = []; state.playing = -1; renderStrip(); };
+  // v10.1.3 : « Tout effacer » marche d'un simple toucher (l'appui long de la v9.9 ne marchait pas bien sur iPhone).
+  // Pour une erreur, le bouton devient « ↩ » pendant 4 s : le toucher remet la phrase.
   const clearBtn = $('#btn-clear');
-  let clearTimer = null;
-  const stopHold = () => { clearTimeout(clearTimer); clearTimer = null; clearBtn.classList.remove('holding'); };
-  clearBtn.onpointerdown = () => { stopHold(); clearBtn.classList.add('holding'); clearTimer = setTimeout(() => { stopHold(); clear(); }, 800); };
-  clearBtn.onpointerup = stopHold; clearBtn.onpointerleave = stopHold; clearBtn.onpointercancel = stopHold;
-  clearBtn.onclick = (e) => { if (e.detail === 0) clear(); }; // clavier : Entrée / Espace
+  let undoStrip = null;
+  let undoTimer = null;
+  const endUndo = () => {
+    clearTimeout(undoTimer); undoTimer = null; undoStrip = null;
+    clearBtn.textContent = '✕'; clearBtn.classList.remove('undo');
+    clearBtn.setAttribute('aria-label', 'Tout effacer');
+  };
+  clearBtn.setAttribute('aria-label', 'Tout effacer'); clearBtn.removeAttribute('title');
+  clearBtn.onclick = () => {
+    if (undoStrip) { state.strip = undoStrip; endUndo(); renderStrip(); return; }
+    if (!state.strip.length) return;
+    stopSpeaking();
+    undoStrip = state.strip; state.strip = []; state.playing = -1; renderStrip();
+    clearBtn.textContent = '↩'; clearBtn.classList.add('undo');
+    clearBtn.setAttribute('aria-label', 'Remettre la phrase');
+    undoTimer = setTimeout(endUndo, 4000);
+  };
   $('#btn-lang').onclick = openLangPicker;
 }
 
