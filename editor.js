@@ -21,10 +21,10 @@ function template(draft) {
         <label class="btn">🤳 Visage<input type="file" accept="image/*" capture="user" id="ed-selfie" hidden></label>
         <label class="btn">🖼️ Galerie<input type="file" accept="image/*" id="ed-gallery" hidden></label>
         <button type="button" class="btn" id="ed-arasaac-open">🔍 Pictogramme (ARASAAC)</button>
-        <button type="button" class="btn ghost" id="ed-nophoto">Retirer l'image</button>
+        <button type="button" class="btn ghost" id="ed-nophoto" aria-label="Retirer l’image de la carte">Retirer l'image</button>
       </div>
       <div class="ed-arasaac" id="ed-arasaac" hidden>
-        <div class="ed-row"><input id="ed-arasaac-q" placeholder="Mot à chercher"><button type="button" class="btn primary" id="ed-arasaac-go">Chercher</button></div>
+        <div class="ed-row"><input id="ed-arasaac-q" placeholder="Mot à chercher" aria-label="Mot à chercher dans les pictogrammes ARASAAC"><button type="button" class="btn primary" id="ed-arasaac-go">Chercher</button></div>
         <p class="hint-muted">Seul le mot est envoyé à ARASAAC. ${ARASAAC_CREDIT}</p>
         <div class="ed-picto-grid" id="ed-arasaac-results"></div>
       </div>
@@ -32,7 +32,7 @@ function template(draft) {
         <div class="ed-row">
           <label class="btn">🎬 Filmer<input type="file" accept="video/*" capture="environment" id="ed-video-cam" hidden></label>
           <label class="btn">📁 Importer<input type="file" accept="video/mp4,video/webm,video/*" id="ed-video-file" hidden></label>
-          <button type="button" class="btn ghost" id="ed-novideo">Retirer</button>
+          <button type="button" class="btn ghost" id="ed-novideo" aria-label="Retirer la vidéo de la carte">Retirer</button>
           <span id="ed-video-state"></span>
         </div>
       </fieldset>
@@ -57,9 +57,9 @@ function template(draft) {
       </fieldset>
       <p class="hint" id="ed-error" role="alert"></p>
       <div class="ed-row end">
-        ${draft.isNew ? '' : '<button type="button" class="btn danger" id="ed-delete">Supprimer</button>'}
-        <button type="button" class="btn ghost" id="ed-cancel">Annuler</button>
-        <button type="button" class="btn primary" id="ed-save">Enregistrer</button>
+        ${draft.isNew ? '' : '<button type="button" class="btn danger" id="ed-delete" aria-label="Supprimer cette carte">Supprimer</button>'}
+        <button type="button" class="btn ghost" id="ed-cancel" aria-label="Annuler les changements">Annuler</button>
+        <button type="button" class="btn primary" id="ed-save" aria-label="Enregistrer la carte">Enregistrer</button>
       </div>
     </form>`;
 }
@@ -224,8 +224,20 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
   $('#ed-cancel').onclick = close;
   const deleteButton = $('#ed-delete');
   if (deleteButton) {
+    // v10.4 : plus de fenêtre du téléphone. 1er toucher = « Confirmer la suppression ? » pendant 4 s, 2e toucher = suppression.
+    let armedTimer = null;
     deleteButton.onclick = async () => {
-      if (!window.confirm('Supprimer cette carte ?')) return;
+      if (!armedTimer) {
+        deleteButton.textContent = 'Confirmer la suppression ?';
+        deleteButton.setAttribute('aria-label', 'Toucher encore pour confirmer la suppression');
+        armedTimer = setTimeout(() => {
+          armedTimer = null;
+          deleteButton.textContent = 'Supprimer';
+          deleteButton.setAttribute('aria-label', 'Supprimer cette carte');
+        }, 4000);
+        return;
+      }
+      clearTimeout(armedTimer); armedTimer = null;
       await close();
       onDelete(draft.id);
     };

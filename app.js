@@ -1,4 +1,4 @@
-// Kalimati v10.3.2 (restauration par fusion : rien n'est effacé, bilans ATEC inclus dans la sauvegarde). Avant, v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.4 (plus de rechargement après un pack ou une synchro, balayage et cadenas plus sûrs, éditeur sans fenêtre de confirmation). Avant, v10.3.2 (restauration par fusion : rien n'est effacé, bilans ATEC inclus dans la sauvegarde). Avant, v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -335,7 +335,8 @@ function renderTalk() {
         targets[idx].classList.add('scan-active');
       }, ms);
       view.addEventListener('click', (e) => {
-        if (e.target.closest('.model-toggle') || e.target.closest('.cat')) return;
+        // v10.4 : un onglet, un mot essentiel ou une suggestion se touchent normalement pendant le balayage.
+        if (e.target.closest('.model-toggle, .tab, .tabs, .core, .suggest-row')) return;
         const activeEl = targets[idx];
         if (activeEl && e.target.closest('.card') !== activeEl) {
           e.preventDefault();
@@ -518,17 +519,20 @@ function setupParentPanel() {
 function setupLock() {
   const lock = $('#lock');
   lock.innerHTML = `<span class="lock-off">${uiIcon('lock', 26)}</span><span class="lock-on">${uiIcon('unlock', 26)}</span>`;
+  lock.style.touchAction = 'none'; // v10.4 : un léger glissement du doigt n'annule plus l'appui sur iPhone
   let timer = null;
-  let justUnlocked = false;
+  let unlockedAt = 0;
+  const RELOCK_GUARD_MS = 1500; // v10.4 : pas de reverrouillage accidentel juste après l'ouverture
   const cancel = () => { clearTimeout(timer); timer = null; lock.classList.remove('holding'); };
-  lock.addEventListener('pointerdown', () => {
+  lock.addEventListener('pointerdown', (e) => {
     if (state.parent) return;
+    try { lock.setPointerCapture(e.pointerId); } catch { /* ancien navigateur */ }
     lock.classList.add('holding');
-    timer = setTimeout(() => { cancel(); justUnlocked = true; state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+    timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
   });
-  ['pointerup', 'pointerleave', 'pointercancel'].forEach((type) => lock.addEventListener(type, cancel));
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => lock.addEventListener(type, cancel));
   lock.addEventListener('click', () => {
-    if (justUnlocked) { justUnlocked = false; return; }
+    if (Date.now() - unlockedAt < RELOCK_GUARD_MS) return;
     if (state.parent) { state.parent = false; renderAll(); }
   });
   lock.addEventListener('contextmenu', (e) => e.preventDefault());
@@ -810,6 +814,24 @@ async function init() {
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
   ['touchend', 'click'].forEach((type) => { document.addEventListener(type, unlockAudio); document.addEventListener(type, unlockSounds); });
   // Une photo changée dans un exercice se met aussi à jour sur les cartes de l'espace Parler.
+  // v10.4 : après un pack de cartes ou une synchro, on relit les données sans recharger la page
+  // (la phrase en cours et le son ne sont pas coupés).
+  document.addEventListener('kalimati-data-updated', async () => {
+    try {
+      await loadContext();
+      await loadFriendsState().catch(() => {});
+      await loadMorphologyState().catch(() => {});
+      await loadVisuals().catch(() => {});
+      await loadLevels();
+      state.lang = langInfo((await db.getSetting('lang')) || state.lang).code;
+      state.cards = await loadCards();
+      const ids = new Set(state.cards.map((c) => c.id));
+      state.strip = state.strip.filter((item) => ids.has(item.card.id));
+      renderAll();
+    } catch (err) {
+      console.error('[Kalimati] mise à jour des données', err);
+    }
+  });
   document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
   // Détection automatique de ?invite=KALI-XXX, ?team=KALI-XXX ou ?admin=1

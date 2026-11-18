@@ -185,9 +185,9 @@ export function dashboardScreen(nav) {
       safePart('Images', () => visualStyleBox()),
       safePart('Amis', () => friendsSettingsBox()),
       // v10.1 : mode regard (dwell), suivi de tête par caméra locale, packs de cartes ARASAAC.
-      safePart('Mode Regard', () => eyeTrackingAndPacksBox({ onCardsAdded: () => location.reload() })),
+      safePart('Mode Regard', () => eyeTrackingAndPacksBox({ onCardsAdded: () => document.dispatchEvent(new CustomEvent('kalimati-data-updated')) })),
       // v9.15 : synchro équipe chiffrée (Supabase) + suivi clinique. Rien ne part sans le bouton « Synchroniser ».
-      safePart('Synchronisation', () => cloudSyncAndCohortBox({ onMerged: () => location.reload() })),
+      safePart('Synchronisation', () => cloudSyncAndCohortBox({ onMerged: () => document.dispatchEvent(new CustomEvent('kalimati-data-updated')) })),
       safePart('Profil', () => profileForm()),
       safePart('À propos', () => aboutBox()),
     ];
