@@ -91,13 +91,24 @@ function playCardVideo(card) {
   document.body.append(overlay);
 }
 
+// Filtre anti-rebond : ignore un second toucher involontaire (< 450 ms) sur la même carte, tout en laissant enchaîner deux cartes différentes sans délai.
+const SAME_CARD_COOLDOWN_MS = 450;
+let lastCardTap = { key: null, at: 0 };
+
 // pressMs : durée d'appui (option « toucher adapté »). Mode « Je montre » : l'adulte montre les mots sans remplir la phrase d'Abir.
 function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
   if (state.parent) { editCard(card); return; }
   if (!touchAllowed(pressMs)) return;
+  const now = performance.now();
+  // Identité de la carte : son id, sinon l'élément affiché (évite de bloquer deux cartes différentes sans id).
+  const tapKey = (card && card.id != null) ? card.id : element;
+  if (tapKey === lastCardTap.key && now - lastCardTap.at < SAME_CARD_COOLDOWN_MS) return;
+  lastCardTap = { key: tapKey, at: now };
   element.classList.remove('pressed');
   void element.offsetWidth;
-  element.classList.add('pressed');
+  element.classList.add('pressed', 'card-just-tapped');
+  clearTimeout(element._tapFeedbackTimer);
+  element._tapFeedbackTimer = setTimeout(() => element.classList.remove('card-just-tapped'), SAME_CARD_COOLDOWN_MS);
   stopSpeaking();
   sayCard(card, state.lang);
   if (state.modeling) {

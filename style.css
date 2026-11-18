@@ -1119,6 +1119,14 @@ body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-b
     inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
 }
 
+/* Rétroaction visuelle douce pendant le filtre anti-rebond (450 ms) : contour apaisant indiquant que le toucher a été pris en compte */
+.card.card-just-tapped {
+  box-shadow:
+    0 0 0 4px rgba(31, 111, 92, 0.26),
+    0 2px 6px rgba(31, 111, 92, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
 /* Anneau de focus Soft Warm Sunshine (#FFD54F) pour contacteur & suivi oculaire */
 .card:focus-visible,
 .card.scan-active {
