@@ -1,4 +1,4 @@
-// Kalimati v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -728,8 +728,11 @@ async function init() {
   await loadMorphologyState().catch(() => {});
   await loadEyeTracking().catch(() => {}); // v10.1 : mode regard (désactivé par défaut)
   document.addEventListener('kalimati-friends-changed', () => { if (state.space === 'talk') renderView(); });
-  await loadVisuals();
-  await loadDefaultVoices();
+  // v10.1.2 : les listes d'images et de voix ne bloquent plus l'ouverture plus de 2,5 s (réseau lent = écran vide avant).
+  const visualsReady = loadVisuals().catch(() => {});
+  const visualsInTime = await Promise.race([visualsReady.then(() => true), new Promise((r) => setTimeout(() => r(false), 2500))]);
+  if (!visualsInTime) visualsReady.then(() => { try { if (['home', 'talk'].includes(state.space)) renderView(); renderStrip(); } catch { /* écran déjà affiché */ } });
+  loadDefaultVoices().catch(() => {});
   setCloudSpeechAllowed((await db.getSetting(SPEECH_SETTING_KEY)) === true);
   await loadLevels();
   state.cards = await loadCards();
@@ -766,10 +769,15 @@ async function init() {
   if ('serviceWorker' in navigator) {
     const hadController = Boolean(navigator.serviceWorker.controller);
     let reloaded = false;
+    // v10.1.2 : plus de rechargement brutal pendant que l'enfant utilise l'appli.
+    // La nouvelle version s'installe quand l'appli passe en arrière-plan (ou au prochain lancement).
+    let pending = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
       if (!hadController || reloaded) return;
-      reloaded = true;
-      location.reload();
+      pending = true;
+    });
+    document.addEventListener('visibilitychange', () => {
+      if (pending && !reloaded && document.visibilityState === 'hidden') { reloaded = true; location.reload(); }
     });
     navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
   }

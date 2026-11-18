@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-1-1';
+const CACHE = 'kalimati-v10-1-2';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -50,8 +50,15 @@ self.addEventListener('install', (event) => {
     const cache = await caches.open(CACHE);
     await cache.addAll(FILES);
     // Une voix manquante ne doit pas empêcher l'installation.
-    await Promise.all((await voiceFiles()).map((file) => cache.add(file).catch(() => {})));
-    await Promise.all((await assetFiles()).map((file) => cache.add(file).catch(() => {})));
+    // v10.1.2 : les voix et images déjà gardées sont recopiées de l'ancienne version
+    // (avant, ~780 fichiers étaient retéléchargés à chaque mise à jour, ce qui saturait le téléphone).
+    const reuse = async (file) => {
+      const old = await caches.match(file).catch(() => null);
+      if (old) return cache.put(file, old).catch(() => {});
+      return cache.add(file).catch(() => {});
+    };
+    await Promise.all((await voiceFiles()).map(reuse));
+    await Promise.all((await assetFiles()).map(reuse));
     await self.skipWaiting();
   })());
 });
@@ -64,21 +71,43 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Réseau d'abord (pour recevoir les mises à jour), cache si pas de réseau.
+// v10.1.2 :
+// - code de l'appli (html, js, css) : réseau d'abord, mais 3 s maximum, sinon la copie gardée ;
+// - voix, images, polices, listes : la copie gardée tout de suite, mise à jour en arrière-plan.
+// Avant, un réseau lent pouvait laisser l'écran vide sans limite de temps.
 // Seuls les fichiers de l'application sont mis en cache (pas les recherches ARASAAC).
+const NETWORK_WAIT_MS = 3000;
+const isStatic = (url) => /\/(voix|assets|icons)\//.test(url.pathname) || /\.(mp3|png|jpe?g|svg|webp|woff2?|json)$/.test(url.pathname);
+
+function saveCopy(request, response) {
+  if (response && response.ok) {
+    const copy = response.clone();
+    caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
+  }
+  return response;
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
-  // v9.16.1 : « no-cache » = on redemande toujours au serveur s'il y a du nouveau (sinon le téléphone gardait l'ancien code 10 minutes).
-  event.respondWith(
-    fetch(request, { cache: 'no-cache' })
-      .then((response) => {
-        if (response.ok) {
-          const copy = response.clone();
-          caches.open(CACHE).then((cache) => cache.put(request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request).then((hit) => hit || caches.match('./index.html'))),
-  );
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (request.headers.has('range')) return; // lecture audio partielle : on laisse le navigateur faire
+  if (isStatic(url)) {
+    event.respondWith((async () => {
+      const hit = await caches.match(request);
+      const fresh = fetch(request, { cache: 'no-cache' }).then((r) => saveCopy(request, r));
+      if (hit) { event.waitUntil(fresh.catch(() => {})); return hit; }
+      return fresh.catch(() => caches.match('./index.html'));
+    })());
+    return;
+  }
+  event.respondWith((async () => {
+    const network = fetch(request, { cache: 'no-cache' }).then((r) => saveCopy(request, r));
+    const timeout = new Promise((resolve) => setTimeout(() => resolve(null), NETWORK_WAIT_MS));
+    const first = await Promise.race([network.catch(() => null), timeout]);
+    if (first) return first;
+    const hit = await caches.match(request);
+    if (hit) { event.waitUntil(network.catch(() => {})); return hit; }
+    return network.catch(() => caches.match('./index.html'));
+  })());
 });
