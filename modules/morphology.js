@@ -207,6 +207,28 @@ const VERBS = {
   },
 };
 
+// v9.16 : « aller » (pas de carte, sert au verbe sous-entendu devant un lieu : « Je veux aller au parc »).
+VERBS.aller = {
+  infFr: 'aller', ppFr: 'allé', auxFr: 'être',
+  presFr: { '1s': 'vais', '3ms': 'va', '3fs': 'va' },
+  subDr: { '1s': 'nmchi', '3ms': 'ymchi', '3fs': 'tmchi' },
+  subAr: { '1s': 'نمشي', '3ms': 'يمشي', '3fs': 'تمشي' },
+  presDr: { '1s': 'kanmchi', '3ms': 'kaymchi', '3fs': 'katmchi' },
+  presAr: { '1s': 'كنمشي', '3ms': 'كيمشي', '3fs': 'كتمشي' },
+  pastDr: { '1s': 'mchit', '3ms': 'mcha', '3fs': 'mchat' },
+  pastAr: { '1s': 'مشيت', '3ms': 'مشى', '3fs': 'مشات' },
+};
+
+// v9.16 : verbe sous-entendu quand l'enfant pose « Je veux » + un nom sans verbe.
+// « Je veux » + Pain -> « Je veux manger du pain » ; + Ballon -> « Je veux jouer au ballon » ; + Parc -> « Je veux aller au parc ».
+const IMPLIED_BY_NOUN = { 'dessin-anime': 'regarder', musique: 'ecouter', bain: null };
+const IMPLIED_BY_CAT = { manger: 'manger', boire: 'boire', jouer: 'jouer', lieux: 'aller' };
+const VERB_CARD_IDS = { manger: 'c-actions-manger', boire: 'c-actions-boire', jouer: 'c-actions-jouer', regarder: 'c-actions-regarder', ecouter: 'c-actions-ecouter' };
+function impliedVerbFor(card, key) {
+  if (Object.prototype.hasOwnProperty.call(IMPLIED_BY_NOUN, key)) return IMPLIED_BY_NOUN[key];
+  return IMPLIED_BY_CAT[card && card.cat] || null;
+}
+
 // ---------- 3. Accord en genre des émotions & adjectifs (Français + Darija latine + Darija arabe) ----------
 const ADJECTIVES = {
   content: {
@@ -393,7 +415,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
     if (SUBJECTS[card.id]) {
       const subj = SUBJECTS[card.id];
       // Si "Moi" est immédiatement suivi de "Je veux", on évite le doublon "Je Je veux" en français
-      const nextIsJeVeux = nextCard && nextCard.id === 'c-base-je-veux';
+      const nextIsJeVeux = subj.person === '1s' && nextCard && nextCard.id === 'c-base-je-veux'; // v9.16 : seulement « Moi » (sinon « Maman » disparaissait)
       activePerson = subj.person;
       activeGender = subj.gender();
       hasExplicitSubject = true;
@@ -504,6 +526,36 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
     }
 
     // Cas 5 : Nom (Aliment, Boisson, Jouet, Lieu)
+    // v9.16 : « Je veux » suivi directement d'un nom : on ajoute le verbe sous-entendu (manger, boire, jouer, aller...).
+    const implied = lastActionVerb === 'want' ? impliedVerbFor(card, key) : null;
+    if (implied && VERBS[implied]) {
+      const vEntry = VERBS[implied];
+      const nEntry = NOUNS[key] || null;
+      const vFr = vEntry.infFr;
+      const vDr = conjugateVerbDr(vEntry, '', activePerson, tense, true, activeGender, 'dr');
+      const vAr = conjugateVerbDr(vEntry, '', activePerson, tense, true, activeGender, 'ar');
+      const word = (card.fr || '').toLowerCase();
+      let nFr = word;
+      if (nEntry) {
+        if (implied === 'jouer' || implied === 'aller') nFr = nEntry.locFr || nEntry.partFr || word;
+        else if (implied === 'regarder') nFr = nEntry.defFr || nEntry.partFr || word;
+        else nFr = nEntry.partFr || nEntry.defFr || word;
+      }
+      let nDr = (nEntry && nEntry.dr) || card.dr || '';
+      let nAr = (nEntry && nEntry.ar) || card.ar || card.dr || '';
+      if (implied === 'aller') { nDr = nDr.replace(/^f /, ''); nAr = nAr.replace(/^ف /, ''); }
+      lastActionVerb = implied;
+      lastNounGender = nEntry ? nEntry.gender : null;
+      afterModalWant = true;
+      const phraseFr = `${vFr} ${nFr}`.trim();
+      const phraseDr = `${vDr} ${nDr}`.trim();
+      frParts.push(phraseFr);
+      drParts.push(phraseDr);
+      arParts.push(`${vAr} ${nAr}`.trim());
+      tokens.push({ card, lang, displayLabel: lang === 'dr' ? phraseDr : phraseFr, impliedVerb: implied, impliedVerbCardId: VERB_CARD_IDS[implied] || null });
+      continue;
+    }
+
     if (card.gram === 'noun' || NOUNS[key]) {
       const nEntry = NOUNS[key];
       if (nEntry) {
