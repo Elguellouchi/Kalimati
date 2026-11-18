@@ -120,50 +120,80 @@ function kpiBlock(title, goals, results, today = null) {
     h('div', { class: 'progress-bar big' }, h('span', { style: { width: `${percent(done, goals.length)}%` } })));
 }
 
+// v10.3.1 : la page Progrès s'affiche toujours. Une partie en panne affiche un petit message au lieu de tout bloquer.
+const safePart = (label, build) => {
+  try { return build(); } catch (err) {
+    console.error(`[Progrès] ${label}`, err);
+    return h('p', { class: 'note' }, `⚠️ ${label} : indisponible pour le moment (${String(err?.message || err).slice(0, 80)}).`);
+  }
+};
+const safeAsync = async (promise, fallback, ms = 8000) => {
+  try {
+    return await Promise.race([promise, new Promise((_, rej) => setTimeout(() => rej(new Error('trop long')), ms))]);
+  } catch (err) { console.error('[Progrès]', err); return fallback; }
+};
+
 export function dashboardScreen(nav) {
   const body = h('div', { class: 'stack' }, h('p', { class: 'note' }, 'Calcul en cours…'));
   const self = () => dashboardScreen(nav);
-  evaluateAll().then(async ({ all, results }) => {
+  (async () => {
+    const evaluated = await safeAsync(evaluateAll(), null);
+    const all = evaluated?.all || [];
+    const results = evaluated?.results || new Map();
     const today = all.filter((t) => t.day === dayKey() && t.result !== 'log').length;
-    await Promise.all(GOALS.map((g) => db.putGoal({ ...g, status: results.get(g.id).status, pct: results.get(g.id).pct, updatedAt: Date.now() })));
-    const reinforcers = reinforcerStats(all).filter((r) => r.trials);
-    const accidents = accidentStats(all.filter((t) => t.goalId === 'X.3'));
-    const abcLogs = await db.getAllAbcLogs();
-    const orthoLogs = await db.getAllOrthoLogs();
-    const atecHistory = await getAtecHistory();
-    body.replaceChildren(
-      kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today),
-      kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results),
-      parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) }),
-      abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self)),
-      orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self)),
-      atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self)),
-      weeklyTrendChart(all),
-      ...SECTIONS.map((s) => h('section', { class: 'card-box' },
+    if (evaluated) {
+      safeAsync(Promise.all(GOALS.filter((g) => results.get(g.id)).map((g) => db.putGoal({ ...g, status: results.get(g.id).status, pct: results.get(g.id).pct, updatedAt: Date.now() }))), null);
+    }
+    const [abcLogs, orthoLogs, atecHistory] = await Promise.all([
+      safeAsync(db.getAllAbcLogs(), []),
+      safeAsync(db.getAllOrthoLogs(), []),
+      safeAsync(getAtecHistory(), []),
+    ]);
+    const parts = [
+      evaluated ? null : h('p', { class: 'note' }, '⚠️ Le calcul des objectifs n’a pas abouti. Les réglages restent disponibles ci-dessous.'),
+      evaluated && safePart('Objectifs PEI', () => kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today)),
+      evaluated && safePart('Parcours ABLLS-R', () => kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results)),
+      safePart('Réglages parent', () => parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) })),
+      safePart('Journal ABC', () => abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self))),
+      safePart('Orthophonie', () => orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self))),
+      safePart('Bilan ATEC', () => atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self))),
+      safePart('Courbe de la semaine', () => weeklyTrendChart(all)),
+      ...(evaluated ? SECTIONS.map((s) => safePart(`Section ${s.id}`, () => h('section', { class: 'card-box' },
         h('h3', {}, `${s.emoji} ${s.id}. ${s.name}`),
         goalsOf(s.id).map((g, i, list) => {
           const r = results.get(g.id);
+          if (!r) return null;
           const divider = g.phase === 'next' && (i === 0 || list[i - 1].phase !== 'next') ? h('p', { class: 'phase-title small' }, '🚀 Prochains niveaux') : null;
           return [divider, h('button', { type: 'button', class: 'dash-row', onclick: () => nav.openGoal(g.id, self) },
             h('strong', {}, g.id), h('span', { class: 'goal-title' }, g.title, h('small', {}, `${r.detail} · ${r.count} essai(s) · 🌟 niveau ${levelOf(g.id).currentLevel}`)),
             statusChip(r), h('div', { class: 'progress-bar' }, h('span', { style: { width: `${r.pct}%` } })))];
-        }))),
-      h('section', { class: 'card-box' }, h('h3', {}, '🌍 P.3 Lieu × intervenant (taux de réussite)'), matrixTable(all)),
-      h('section', { class: 'card-box' }, h('h3', {}, '🚽 X.3 Accidents'),
-        h('p', {}, accidents.weeks ? `Semaine 1 : ${accidents.baseline.toFixed(1)}/jour · cette semaine : ${accidents.current.toFixed(1)}/jour · baisse ${Math.round(accidents.reduction)} %` : 'Pas encore de journal.')),
-      h('section', { class: 'card-box' }, h('h3', {}, '🎁 A.2 Renforçateurs'),
-        reinforcers.length ? reinforcers.map((r) => h('div', { class: `eff-row${r.effective ? ' ok' : ''}` }, h('span', {}, `${r.emoji} ${r.fr}`), h('span', {}, `${Math.round(r.rate * 100)} % · ${r.trials} essais`))) : h('p', { class: 'note' }, 'Choisissez un renforçateur en A.2 pendant les séances.')),
+        })))) : []),
+      safePart('Lieu × intervenant', () => h('section', { class: 'card-box' }, h('h3', {}, '🌍 P.3 Lieu × intervenant (taux de réussite)'), matrixTable(all))),
+      safePart('Accidents', () => {
+        const accidents = accidentStats(all.filter((t) => t.goalId === 'X.3'));
+        return h('section', { class: 'card-box' }, h('h3', {}, '🚽 X.3 Accidents'),
+          h('p', {}, accidents.weeks ? `Semaine 1 : ${accidents.baseline.toFixed(1)}/jour · cette semaine : ${accidents.current.toFixed(1)}/jour · baisse ${Math.round(accidents.reduction)} %` : 'Pas encore de journal.'));
+      }),
+      safePart('Renforçateurs', () => {
+        const reinforcers = reinforcerStats(all).filter((r) => r.trials);
+        return h('section', { class: 'card-box' }, h('h3', {}, '🎁 A.2 Renforçateurs'),
+          reinforcers.length ? reinforcers.map((r) => h('div', { class: `eff-row${r.effective ? ' ok' : ''}` }, h('span', {}, `${r.emoji} ${r.fr}`), h('span', {}, `${Math.round(r.rate * 100)} % · ${r.trials} essais`))) : h('p', { class: 'note' }, 'Choisissez un renforçateur en A.2 pendant les séances.'));
+      }),
       h('div', { class: 'row' }, btn(iconLabel('download', 'Exporter les essais (CSV pour la psychologue)'), exportCsv, 'ghost')),
-      voiceSettingsBox(),
-      speechCloudBox(),
-      visualStyleBox(),
-      friendsSettingsBox(),
+      safePart('Voix', () => voiceSettingsBox()),
+      safePart('Voix en ligne', () => speechCloudBox()),
+      safePart('Images', () => visualStyleBox()),
+      safePart('Amis', () => friendsSettingsBox()),
       // v10.1 : mode regard (dwell), suivi de tête par caméra locale, packs de cartes ARASAAC.
-      eyeTrackingAndPacksBox({ onCardsAdded: () => location.reload() }),
+      safePart('Mode Regard', () => eyeTrackingAndPacksBox({ onCardsAdded: () => location.reload() })),
       // v9.15 : synchro équipe chiffrée (Supabase) + suivi clinique. Rien ne part sans le bouton « Synchroniser ».
-      cloudSyncAndCohortBox({ onMerged: () => location.reload() }),
-      profileForm(),
-      aboutBox());
+      safePart('Synchronisation', () => cloudSyncAndCohortBox({ onMerged: () => location.reload() })),
+      safePart('Profil', () => profileForm()),
+      safePart('À propos', () => aboutBox()),
+    ];
+    body.replaceChildren(...parts.filter(Boolean));
+  })().catch((err) => {
+    body.replaceChildren(h('p', { class: 'note' }, `⚠️ La page Progrès n’a pas pu s’afficher (${String(err?.message || err).slice(0, 80)}). Rouvrez Kalimati.`));
   });
   return h('div', { class: 'screen' }, h('h2', {}, '📊 Progrès PEI & Réglages Adultes'), body);
 }

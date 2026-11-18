@@ -135,7 +135,12 @@ export const ATEC_SECTIONS = [
 
 export async function getAtecHistory() {
   const saved = await db.getSetting(ATEC_KEY);
-  return Array.isArray(saved) ? saved.sort((a, b) => a.ts - b.ts) : [];
+  // v10.3.1 : on écarte les bilans abîmés (vides ou sans score) au lieu de bloquer la page Progrès.
+  return Array.isArray(saved)
+    ? saved.filter((e) => e && typeof e === 'object' && Number.isFinite(Number(e.total)))
+      .map((e) => ({ ...e, total: Number(e.total), ts: Number(e.ts) || Date.parse(e.day || '') || 0 }))
+      .sort((a, b) => a.ts - b.ts)
+    : [];
 }
 
 export function atecSummaryCard(history, onOpen) {

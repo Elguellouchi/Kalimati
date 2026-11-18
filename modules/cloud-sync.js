@@ -112,12 +112,27 @@ function buildSupabaseHeaders(apiKey, extra = {}) {
 }
 
 // Requête fetch résiliente (teste d'abord sans Bearer pour sb_publishable_, puis avec Bearer en secours si 401)
+// v10.3.1 : chaque appel Supabase s'arrête au bout de 10 s (avant, un réseau lent pouvait bloquer sans fin).
+const SUPABASE_TIMEOUT_MS = 10000;
+async function fetchWithTimeout(url, options) {
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => ctrl?.abort(), SUPABASE_TIMEOUT_MS);
+  try {
+    return await fetch(url, { ...options, ...(ctrl ? { signal: ctrl.signal } : {}) });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new Error('Le serveur Supabase ne répond pas (délai dépassé). Réessayez plus tard.');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function supabaseFetch(url, apiKey, options = {}) {
   const headers1 = buildSupabaseHeaders(apiKey, options.headers || {});
-  const res1 = await fetch(url, { ...options, headers: headers1 });
+  const res1 = await fetchWithTimeout(url, { ...options, headers: headers1 });
   if (res1.status === 401 && !headers1.Authorization) {
     const headers2 = { ...headers1, Authorization: `Bearer ${String(apiKey || '').trim()}` };
-    return fetch(url, { ...options, headers: headers2 });
+    return fetchWithTimeout(url, { ...options, headers: headers2 });
   }
   return res1;
 }
@@ -573,6 +588,12 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
   wrap.append(body);
 
   async function render() {
+    try { await renderInner(); } catch (err) {
+      body.replaceChildren(h('p', { class: 'note' }, `⚠️ Réglages de synchro indisponibles : ${String(err?.message || err).slice(0, 100)}`));
+    }
+  }
+
+  async function renderInner() {
     const [cfg, lastSync, metrics, cohortOptIn] = await Promise.all([
       getCloudSyncConfig(),
       db.getSetting(LAST_SYNC_KEY),
