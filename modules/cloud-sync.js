@@ -1,15 +1,19 @@
 // ☁️ Synchronisation Cloud Zero-Knowledge (AES-256-GCM) entre Papa, Maman, AVS et Orthophoniste / Psy (Hosna Mehri)
 // + 📊 Cohorte Clinique Longitudinale Anonymisée (T0, T+90, T+180 — ATEC, LME/MLU, autonomie ABA & réduction des crises ABC).
 //
-// Version v10.1 Finale :
-// 1. Astuce cryptographique `#key=KALI-SYNC-...` dans le fragment d'URL (jamais transmis au serveur HTTP) :
-//    dès que l'AVS ou l'orthophoniste ouvre le lien magique une fois, la clé AES-256 est enregistrée et nettoyée de l'URL.
-// 2. Synchronisation automatique en arrière-plan (Wi-Fi / réseau) + fusion CRDT sans perte.
-// 3. Collecte longitudinale automatisée T0 / T+90 / T+180 vers `kalimati_clinical_cohort` (avec opt-in Loi 09-08 CNDP) + export CSV de cohorte.
+// Version v10.2 Finale (pré-configurée avec le projet Supabase public de Kalimati) :
+// 1. URL Supabase et clé publique `sb_publishable_...` pré-remplies par défaut : aucun réglage technique à taper sur les téléphones
+//    de Papa, Maman, l'AVS ou Hosna Mehri (seule la clé secrète familiale AES-256 `KALI-SYNC-...` ou le lien `#key=` est nécessaire).
+// 2. Support natif des nouvelles clés Supabase `sb_publishable_...` (en-tête `apikey` sans erreur JWT) et des clés JWT `eyJ...`.
+// 3. Synchronisation automatique en arrière-plan (Wi-Fi / réseau) + fusion CRDT sans perte.
+// 4. Collecte longitudinale automatisée T0 / T+90 / T+180 vers `kalimati_clinical_cohort` (avec opt-in Loi 09-08 CNDP).
 import * as db from '../db.js';
 import { h, btn, dayKey, percent } from './util.js';
 import { profile, clinic } from './aba.js';
 import { blobToDataUrl, dataUrlToBlob } from '../media.js';
+
+export const DEFAULT_SUPABASE_URL = 'https://ytemnsbigymgvogarzzp.supabase.co';
+export const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8jLXfni_FP6x_NAqGKiRMQ_E3aOkKSV';
 
 const SYNC_SETTINGS_KEY = 'cloudSyncConfig';
 const LAST_SYNC_KEY = 'cloudSyncLastState';
@@ -93,6 +97,31 @@ export function generateSyncPassphrase() {
   return `KALI-SYNC-${seg(0, 4)}-${seg(4, 4)}-${seg(8, 4)}`;
 }
 
+// Construit les en-têtes REST Supabase compatibles avec `sb_publishable_...` et les clés JWT `eyJ...`
+function buildSupabaseHeaders(apiKey, extra = {}) {
+  const cleanKey = String(apiKey || '').trim();
+  const headers = {
+    apikey: cleanKey,
+    'Content-Type': 'application/json',
+    ...extra,
+  };
+  if (cleanKey.startsWith('eyJ')) {
+    headers.Authorization = `Bearer ${cleanKey}`;
+  }
+  return headers;
+}
+
+// Requête fetch résiliente (teste d'abord sans Bearer pour sb_publishable_, puis avec Bearer en secours si 401)
+async function supabaseFetch(url, apiKey, options = {}) {
+  const headers1 = buildSupabaseHeaders(apiKey, options.headers || {});
+  const res1 = await fetch(url, { ...options, headers: headers1 });
+  if (res1.status === 401 && !headers1.Authorization) {
+    const headers2 = { ...headers1, Authorization: `Bearer ${String(apiKey || '').trim()}` };
+    return fetch(url, { ...options, headers: headers2 });
+  }
+  return res1;
+}
+
 // Lecture et fusion unifiée des bilans ATEC (`atec_history` et `atecHistory`)
 export async function getUnifiedAtecList() {
   const [a, b] = await Promise.all([
@@ -118,7 +147,6 @@ async function saveUnifiedAtecList(list) {
 }
 
 // ---------- Astuce cryptographique du fragment d'URL (#key=KALI-SYNC-...) ----------
-// Tout ce qui suit '#' dans l'URL ne quitte jamais le navigateur vers le serveur.
 export async function initCloudSyncFromUrlAndAuto() {
   if (typeof window === 'undefined') return;
   const hash = window.location.hash || '';
@@ -126,7 +154,6 @@ export async function initCloudSyncFromUrlAndAuto() {
   if (match && match[1]) {
     const importedKey = match[1].toUpperCase();
     await saveCloudSyncConfig({ familyKey: importedKey, autoSyncWifi: true });
-    // Nettoie immédiatement le fragment #key= de la barre d'adresse
     const cleanHash = hash.replace(/([#&])key=KALI-[A-Z0-9-]{8,40}/i, '').replace(/^#&/, '#');
     window.history.replaceState(null, '', window.location.pathname + window.location.search + (cleanHash === '#' ? '' : cleanHash));
   }
@@ -348,8 +375,8 @@ export async function getCloudSyncConfig() {
     await db.setSetting('familyAesKey', familyKey);
   }
   return {
-    supabaseUrl: saved?.supabaseUrl || supa?.url || '',
-    supabaseAnonKey: saved?.supabaseAnonKey || supa?.anonKey || '',
+    supabaseUrl: saved?.supabaseUrl || supa?.url || DEFAULT_SUPABASE_URL,
+    supabaseAnonKey: saved?.supabaseAnonKey || supa?.anonKey || DEFAULT_SUPABASE_PUBLISHABLE_KEY,
     familyKey: saved?.familyKey || familyKey,
     autoSyncWifi: Boolean(saved?.autoSyncWifi),
     includeMedia: false,
@@ -370,7 +397,7 @@ export async function saveCloudSyncConfig(nextCfg) {
 export async function syncNowWithTeam({ includeMedia = false } = {}) {
   const cfg = await getCloudSyncConfig();
   if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
-    throw new Error('Configurez d’abord l’URL et la clé publique (anon key) Supabase dans l’encadré ci-dessous.');
+    throw new Error('Configurez d’abord l’URL et la clé publique Supabase.');
   }
   if (!cfg.familyKey || cfg.familyKey.length < 8) {
     throw new Error('Clé familiale AES-256 manquante.');
@@ -378,17 +405,13 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
 
   const roomHash = await sha256Hex(`kalimati-room-v1:${cfg.familyKey.trim()}`);
   const baseUrl = cfg.supabaseUrl.replace(/\/$/, '');
-  const headers = {
-    apikey: cfg.supabaseAnonKey,
-    Authorization: `Bearer ${cfg.supabaseAnonKey}`,
-    'Content-Type': 'application/json',
-  };
 
   let mergeReport = { cardsChanged: 0, trialsAdded: 0, abcAdded: 0, orthoAdded: 0, scheduleAdded: 0 };
 
-  const getRes = await fetch(
+  const getRes = await supabaseFetch(
     `${baseUrl}/rest/v1/kalimati_encrypted_relay?room_hash=eq.${encodeURIComponent(roomHash)}&select=*`,
-    { method: 'GET', headers },
+    cfg.supabaseAnonKey,
+    { method: 'GET' },
   );
   if (getRes.ok) {
     const rows = await getRes.json();
@@ -401,35 +424,42 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
   const mergedLocalPayload = await buildLocalSyncPayload({ includeMedia });
   const encryptedBundle = await encryptSyncBundle(mergedLocalPayload, cfg.familyKey);
 
-  const postRes = await fetch(`${baseUrl}/rest/v1/kalimati_encrypted_relay`, {
-    method: 'POST',
-    headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-    body: JSON.stringify({
-      room_hash: roomHash,
-      cipher_bundle: encryptedBundle,
-      author_role: clinic?.intervenant || 'Parent',
-      updated_at: new Date().toISOString(),
-    }),
-  });
+  const postRes = await supabaseFetch(
+    `${baseUrl}/rest/v1/kalimati_encrypted_relay`,
+    cfg.supabaseAnonKey,
+    {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates' },
+      body: JSON.stringify({
+        room_hash: roomHash,
+        cipher_bundle: encryptedBundle,
+        author_role: clinic?.intervenant || 'Parent',
+        updated_at: new Date().toISOString(),
+      }),
+    },
+  );
 
   if (!postRes.ok) {
     const errText = (await postRes.text()).slice(0, 160);
     throw new Error(`Erreur serveur relai Supabase (${postRes.status}) : ${errText}`);
   }
 
-  // Si le parent a activé le partage anonyme d'étude clinique (Loi 09-08), on met aussi à jour les métriques anonymisées T0/T90/T180
   const cohortOptIn = await db.getSetting(COHORT_OPTIN_KEY);
   if (cohortOptIn) {
     const metrics = await computeClinicalCohortMetrics();
-    await fetch(`${baseUrl}/rest/v1/kalimati_clinical_cohort`, {
-      method: 'POST',
-      headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
-      body: JSON.stringify({
-        cohort_id: metrics.cohortId,
-        metrics,
-        updated_at: new Date().toISOString(),
-      }),
-    }).catch(() => {});
+    await supabaseFetch(
+      `${baseUrl}/rest/v1/kalimati_clinical_cohort`,
+      cfg.supabaseAnonKey,
+      {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates' },
+        body: JSON.stringify({
+          cohort_id: metrics.cohortId,
+          metrics,
+          updated_at: new Date().toISOString(),
+        }),
+      },
+    ).catch(() => {});
   }
 
   const syncMeta = {
@@ -508,7 +538,6 @@ export async function exportClinicalCohortReportJson() {
   return report;
 }
 
-// ---------- Interface Parent & Orthophoniste : Boîte de Synchronisation Cloud & Cohorte Clinique ----------
 export function cloudSyncAndCohortBox({ onMerged } = {}) {
   const wrap = h('details', { class: 'card-box' },
     h('summary', {}, '☁️ Synchronisation Équipe Zero-Knowledge (Papa · Maman · AVS · Hosna) & Étude Clinique'));
@@ -527,7 +556,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     const statusMsg = h('p', { class: 'note' },
       lastSync?.lastSyncAt
         ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
-        : '🔒 Chiffrement AES-256 de bout en bout actif. Vos essais ABA, bilans ATEC et journaux ortho sont chiffrés sur votre téléphone avant d’être partagés avec l’équipe.');
+        : '🔒 Serveur relai Supabase Kalimati pré-configuré et chiffrement AES-256 actif. Touchez simplement « Synchroniser maintenant » !');
 
     const keyInput = h('input', {
       value: cfg.familyKey,
@@ -536,12 +565,12 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     });
     const urlInput = h('input', {
       value: cfg.supabaseUrl,
-      placeholder: 'https://votre-projet.supabase.co',
+      placeholder: DEFAULT_SUPABASE_URL,
     });
     const anonInput = h('input', {
       type: 'password',
       value: cfg.supabaseAnonKey,
-      placeholder: 'Clé publique Supabase (anon public key)',
+      placeholder: 'Clé publique Supabase (sb_publishable_...)',
     });
     const mediaChk = h('input', { type: 'checkbox' });
     const autoWifiChk = h('input', {
@@ -557,8 +586,8 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
         statusMsg.textContent = '🔄 Chiffrement AES-256 et synchronisation avec l’équipe en cours…';
         await saveCloudSyncConfig({
           familyKey: keyInput.value.trim(),
-          supabaseUrl: urlInput.value.trim(),
-          supabaseAnonKey: anonInput.value.trim(),
+          supabaseUrl: urlInput.value.trim() || DEFAULT_SUPABASE_URL,
+          supabaseAnonKey: anonInput.value.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY,
           autoSyncWifi: autoWifiChk.checked,
         });
         const res = await syncNowWithTeam({ includeMedia: mediaChk.checked });
@@ -584,7 +613,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       const magicUrl = `https://elguellouchi.github.io/Kalimati/#key=${encodeURIComponent(k)}`;
       try {
         await navigator.clipboard.writeText(magicUrl);
-        statusMsg.textContent = '🔗 Lien magique #key= copié (le fragment après # ne transite jamais par le serveur web et enregistre la clé automatiquement à l’ouverture).';
+        statusMsg.textContent = '🔗 Lien magique #key= copié (enregistre la clé automatiquement à l’ouverture sans jamais l’envoyer au serveur web).';
       } catch {
         statusMsg.textContent = `🔗 Lien magique : ${magicUrl}`;
       }
@@ -625,17 +654,17 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       h('label', { class: 'check' }, autoWifiChk, ' Synchroniser automatiquement en arrière-plan à l’ouverture quand le Wi-Fi est actif'),
       h('label', { class: 'check' }, mediaChk, ' Inclure exceptionnellement les photos et voix parentales chiffrées dans cet envoi (par défaut : textes et journaux uniquement)'),
       h('details', {},
-        h('summary', {}, '⚙️ Paramètres de connexion Cloud Zero-Knowledge ( Clé AES-256 & Supabase )'),
+        h('summary', {}, '⚙️ Paramètres de connexion Cloud Zero-Knowledge ( Clé AES-256 & Supabase pré-rempli )'),
         h('div', { class: 'stack' },
           h('label', { class: 'field' }, '🔑 Clé secrète familiale AES-256 (identique sur le téléphone de Papa, Maman, l’AVS et Hosna)', keyInput),
-          h('label', { class: 'field' }, '🌐 URL du projet Supabase', urlInput),
-          h('label', { class: 'field' }, '🛡️ Clé publique Supabase (anon key)', anonInput),
+          h('label', { class: 'field' }, '🌐 URL du projet Supabase (pré-configurée)', urlInput),
+          h('label', { class: 'field' }, '🛡️ Clé publique Supabase (publishable key pré-configurée)', anonInput),
           h('div', { class: 'row' },
             btn('Enregistrer la configuration Cloud', async () => {
               await saveCloudSyncConfig({
                 familyKey: keyInput.value.trim(),
-                supabaseUrl: urlInput.value.trim(),
-                supabaseAnonKey: anonInput.value.trim(),
+                supabaseUrl: urlInput.value.trim() || DEFAULT_SUPABASE_URL,
+                supabaseAnonKey: anonInput.value.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY,
                 autoSyncWifi: autoWifiChk.checked,
               });
               statusMsg.textContent = 'Configuration Cloud enregistrée ✅';
