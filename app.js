@@ -755,7 +755,17 @@ async function init() {
   }
   checkReminder();
   setInterval(checkReminder, REMINDER_CHECK_MS);
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(() => {});
+  // v9.16.1 : on vérifie toujours le service worker sur le serveur, et on recharge une fois quand une nouvelle version prend la main.
+  if ('serviceWorker' in navigator) {
+    const hadController = Boolean(navigator.serviceWorker.controller);
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (!hadController || reloaded) return;
+      reloaded = true;
+      location.reload();
+    });
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch(() => {});
+  }
 }
 
 init().catch((error) => {
