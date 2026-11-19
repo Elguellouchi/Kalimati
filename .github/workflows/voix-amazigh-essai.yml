@@ -23,13 +23,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Outils (ffmpeg, torch CPU, transformers)
+      - name: Outils (torch CPU, transformers, lameenc)
         run: |
-          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
           pip install -q --index-url https://download.pytorch.org/whl/cpu torch
-          pip install -q transformers scipy uroman
+          pip install -q transformers scipy uroman lameenc
       - name: Fabriquer les 4 packs
         run: |
+          # Les anciens sons partent : seuls les sons de ce passage restent.
+          rm -rf voix/shi voix/tzm voix/rif voix/zgh voix/amz-*-index.json voix/amz-*-rapport.json
           for lang in shi tzm rif zgh; do
             python3 tools/generate-amazigh-voices.py --lang "$lang" --out "voix/$lang"
           done
@@ -41,5 +42,5 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add voix/shi voix/tzm voix/rif voix/zgh voix/amz-*-index.json voix/amz-*-rapport.json voix/LICENCE-voix-amazighes.txt
+          git add -A voix/
           git commit -q -m "voix amazighes d'essai (synthèse MMS, à faire écouter par un natif)" && git push -q origin HEAD:voix-amazigh-essai
