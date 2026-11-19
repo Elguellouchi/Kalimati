@@ -1,0 +1,583 @@
+{
+  "lang": "zgh",
+  "humains": [],
+  "modele": "facebook/mms-tts-shi",
+  "ecriture_lue": "latin",
+  "modeles_essayes": [
+    {
+      "modele": "facebook/mms-tts-zgh",
+      "erreur": "facebook/mms-tts-zgh is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'"
+    },
+    {
+      "modele": "facebook/mms-tts-zgh-script_tifinagh",
+      "erreur": "facebook/mms-tts-zgh-script_tifinagh is not a local folder and is not a valid model identifier listed on 'https://huggingface.co/models'"
+    },
+    {
+      "modele": "facebook/mms-tts-shi",
+      "latin": 0.997,
+      "tifinagh": 0.0
+    }
+  ],
+  "repli_tachelhit": true,
+  "licence": "CC-BY-NC 4.0 (Meta MMS-TTS), usage non commercial",
+  "mots": {
+    "c-base-je-veux": {
+      "ecrit": "Riɣ",
+      "lu": "riġ",
+      "secondes": 0.28
+    },
+    "c-base-oui": {
+      "ecrit": "Yah",
+      "lu": "yah",
+      "secondes": 0.28
+    },
+    "c-base-non": {
+      "ecrit": "Uhu",
+      "lu": "uhu",
+      "secondes": 0.32
+    },
+    "c-base-encore": {
+      "ecrit": "Rnu",
+      "lu": "rnu",
+      "secondes": 0.29
+    },
+    "c-base-fini": {
+      "ecrit": "Imda",
+      "lu": "imda",
+      "secondes": 0.55
+    },
+    "c-base-aide-moi": {
+      "ecrit": "Aws-iyi",
+      "lu": "aws iyi",
+      "secondes": 0.73
+    },
+    "c-base-attends": {
+      "ecrit": "Ggan",
+      "lu": "ggan",
+      "secondes": 0.43
+    },
+    "c-base-j-ai-mal": {
+      "ecrit": "Iḍur-iyi",
+      "lu": "iḍur iyi",
+      "secondes": 0.83
+    },
+    "c-base-bonjour": {
+      "ecrit": "Azul",
+      "lu": "azul",
+      "secondes": 0.46
+    },
+    "c-base-au-revoir": {
+      "ecrit": "Ar tufat",
+      "lu": "ar tufat",
+      "secondes": 0.72
+    },
+    "c-base-viens-jouer": {
+      "ecrit": "As-d ad nurar",
+      "lu": "as d ad nurar",
+      "secondes": 1.05
+    },
+    "c-manger-pain": {
+      "ecrit": "Aɣrum",
+      "lu": "aġrum",
+      "secondes": 0.65
+    },
+    "c-manger-pomme": {
+      "ecrit": "Tadeffuḥt",
+      "lu": "tadeffuḥt",
+      "secondes": 0.65
+    },
+    "c-manger-banane": {
+      "ecrit": "Tabanant",
+      "lu": "tabanant",
+      "secondes": 0.64
+    },
+    "c-manger-gateau": {
+      "ecrit": "Taḥlawat",
+      "lu": "taḥlawat",
+      "secondes": 0.7
+    },
+    "c-manger-yaourt": {
+      "ecrit": "Aɣu yersen",
+      "lu": "aġu yersen",
+      "secondes": 0.92
+    },
+    "c-manger-riz": {
+      "ecrit": "Rruz",
+      "lu": "rruz",
+      "secondes": 0.42
+    },
+    "c-manger-biscuit": {
+      "ecrit": "Biskwi",
+      "lu": "biskwi",
+      "secondes": 0.57
+    },
+    "c-manger--uf": {
+      "ecrit": "Taglayt",
+      "lu": "taglayt",
+      "secondes": 0.61
+    },
+    "c-boire-eau": {
+      "ecrit": "Aman",
+      "lu": "aman",
+      "secondes": 0.51
+    },
+    "c-boire-lait": {
+      "ecrit": "Akfay",
+      "lu": "akfay",
+      "secondes": 0.59
+    },
+    "c-boire-jus": {
+      "ecrit": "Aẓemmi",
+      "lu": "aẓemmi",
+      "secondes": 0.6
+    },
+    "c-manger-chips": {
+      "ecrit": "Cibs",
+      "lu": "shibs",
+      "secondes": 0.61
+    },
+    "c-manger-fromage": {
+      "ecrit": "Aguglu",
+      "lu": "aguglu",
+      "secondes": 0.66
+    },
+    "c-manger-pancake": {
+      "ecrit": "Taɣrift",
+      "lu": "taġrift",
+      "secondes": 0.56
+    },
+    "c-manger-mcdo": {
+      "ecrit": "Makdu",
+      "lu": "makdu",
+      "secondes": 0.42
+    },
+    "c-boire-coca-cola": {
+      "ecrit": "Kuka",
+      "lu": "kuka",
+      "secondes": 0.35
+    },
+    "c-jouer-trampoline": {
+      "ecrit": "Trambulin",
+      "lu": "trambulin",
+      "secondes": 0.79
+    },
+    "c-jouer-ballon": {
+      "ecrit": "Takurt",
+      "lu": "takurt",
+      "secondes": 0.49
+    },
+    "c-jouer-tablette": {
+      "ecrit": "Taflwit",
+      "lu": "taflwit",
+      "secondes": 0.59
+    },
+    "c-jouer-dessin-anime": {
+      "ecrit": "Unuɣen ittmussun",
+      "lu": "unuġen ittmussun",
+      "secondes": 1.55
+    },
+    "c-jouer-poupee": {
+      "ecrit": "Taslit",
+      "lu": "taslit",
+      "secondes": 0.63
+    },
+    "c-jouer-musique": {
+      "ecrit": "Aẓawan",
+      "lu": "aẓawan",
+      "secondes": 0.67
+    },
+    "c-jouer-balancoire": {
+      "ecrit": "Tazellula",
+      "lu": "tazellula",
+      "secondes": 0.82
+    },
+    "c-actions-boire": {
+      "ecrit": "Su",
+      "lu": "su",
+      "secondes": 0.0
+    },
+    "c-actions-jouer": {
+      "ecrit": "Urar",
+      "lu": "urar",
+      "secondes": 0.48
+    },
+    "c-actions-courir": {
+      "ecrit": "Azzel",
+      "lu": "azzel",
+      "secondes": 0.54
+    },
+    "c-actions-donner": {
+      "ecrit": "Fk",
+      "lu": "fk",
+      "secondes": 0.0
+    },
+    "c-actions-couper": {
+      "ecrit": "Bbi",
+      "lu": "bbi",
+      "secondes": 0.29
+    },
+    "c-actions-sauter": {
+      "ecrit": "Nḍu",
+      "lu": "nḍu",
+      "secondes": 0.3
+    },
+    "c-actions-laver": {
+      "ecrit": "Ssird",
+      "lu": "ssird",
+      "secondes": 0.64
+    },
+    "c-actions-dessiner": {
+      "ecrit": "Ssunɣ",
+      "lu": "ssunġ",
+      "secondes": 0.55
+    },
+    "c-actions-ouvrir": {
+      "ecrit": "Rzem",
+      "lu": "rzem",
+      "secondes": 0.46
+    },
+    "c-personnes-papa": {
+      "ecrit": "Baba",
+      "lu": "baba",
+      "secondes": 0.38
+    },
+    "c-personnes-maman": {
+      "ecrit": "Imma",
+      "lu": "imma",
+      "secondes": 0.48
+    },
+    "c-personnes-maitresse": {
+      "ecrit": "Taselmadt",
+      "lu": "taselmadt",
+      "secondes": 0.75
+    },
+    "c-personnes-mamie": {
+      "ecrit": "Jdda",
+      "lu": "jdda",
+      "secondes": 0.45
+    },
+    "c-personnes-papi": {
+      "ecrit": "Jddi",
+      "lu": "jddi",
+      "secondes": 0.44
+    },
+    "c-besoins-toilettes": {
+      "ecrit": "Asirid",
+      "lu": "asirid",
+      "secondes": 0.72
+    },
+    "c-besoins-dormir": {
+      "ecrit": "Gen",
+      "lu": "gen",
+      "secondes": 0.35
+    },
+    "c-besoins-calin": {
+      "ecrit": "Asmun",
+      "lu": "asmun",
+      "secondes": 0.59
+    },
+    "c-besoins-bain": {
+      "ecrit": "Asirid",
+      "lu": "asirid",
+      "secondes": 0.7
+    },
+    "c-besoins-changer": {
+      "ecrit": "Senfel",
+      "lu": "senfel",
+      "secondes": 0.59
+    },
+    "c-besoins-calme": {
+      "ecrit": "Afsus",
+      "lu": "afsus",
+      "secondes": 0.53
+    },
+    "c-emotions-content": {
+      "ecrit": "Ferḥeɣ",
+      "lu": "ferḥeġ",
+      "secondes": 0.62
+    },
+    "c-emotions-triste": {
+      "ecrit": "Ḥzeneɣ",
+      "lu": "ḥzeneġ",
+      "secondes": 0.65
+    },
+    "c-emotions-en-colere": {
+      "ecrit": "Zɛfeɣ",
+      "lu": "zεfeġ",
+      "secondes": 0.67
+    },
+    "c-emotions-peur": {
+      "ecrit": "Kṣuḍeɣ",
+      "lu": "kṣuḍeġ",
+      "secondes": 0.54
+    },
+    "c-emotions-fatigue": {
+      "ecrit": "Rmmiɣ",
+      "lu": "rmmiġ",
+      "secondes": 0.54
+    },
+    "c-emotions-fier": {
+      "ecrit": "Zuxxeɣ",
+      "lu": "zukhkheġ",
+      "secondes": 0.71
+    },
+    "c-decrire-grand": {
+      "ecrit": "Ameqqran",
+      "lu": "ameqqran",
+      "secondes": 0.82
+    },
+    "c-decrire-petit": {
+      "ecrit": "Ameẓyan",
+      "lu": "ameẓyan",
+      "secondes": 0.68
+    },
+    "c-decrire-rouge": {
+      "ecrit": "Azeggʷaɣ",
+      "lu": "azeggwaġ",
+      "secondes": 0.7
+    },
+    "c-decrire-bleu": {
+      "ecrit": "Anili",
+      "lu": "anili",
+      "secondes": 0.56
+    },
+    "c-decrire-jaune": {
+      "ecrit": "Awraɣ",
+      "lu": "awraġ",
+      "secondes": 0.56
+    },
+    "c-decrire-vert": {
+      "ecrit": "Azegzaw",
+      "lu": "azegzaw",
+      "secondes": 0.69
+    },
+    "c-decrire-chaud": {
+      "ecrit": "Irɣa",
+      "lu": "irġa",
+      "secondes": 0.35
+    },
+    "c-decrire-froid": {
+      "ecrit": "Iṣemmiḍ",
+      "lu": "iṣemmiḍ",
+      "secondes": 0.71
+    },
+    "c-decrire-rond": {
+      "ecrit": "Amdewwer",
+      "lu": "amdewwer",
+      "secondes": 0.8
+    },
+    "c-lieux-dehors": {
+      "ecrit": "Berra",
+      "lu": "berra",
+      "secondes": 0.52
+    },
+    "c-lieux-maison": {
+      "ecrit": "Taddart",
+      "lu": "taddart",
+      "secondes": 0.61
+    },
+    "c-lieux-voiture": {
+      "ecrit": "Tasḥerrakt",
+      "lu": "tasḥerrakt",
+      "secondes": 0.69
+    },
+    "c-lieux-parc": {
+      "ecrit": "Urti",
+      "lu": "urti",
+      "secondes": 0.34
+    },
+    "c-lieux-ecole": {
+      "ecrit": "Tinmel",
+      "lu": "tinmel",
+      "secondes": 0.64
+    },
+    "c-base-s-il-te-plait": {
+      "ecrit": "Mk tufit",
+      "lu": "mk tufit",
+      "secondes": 0.6
+    },
+    "c-base-merci": {
+      "ecrit": "Tanemmirt",
+      "lu": "tanemmirt",
+      "secondes": 0.81
+    },
+    "c-base-c-est-quoi-": {
+      "ecrit": "Ma yga wa ?",
+      "lu": "ma yga wa ?",
+      "secondes": 0.66
+    },
+    "c-base-ou-est-": {
+      "ecrit": "Mani ?",
+      "lu": "mani ?",
+      "secondes": 0.43
+    },
+    "c-base-avec": {
+      "ecrit": "D",
+      "lu": "d",
+      "secondes": 0.0
+    },
+    "c-actions-lire": {
+      "ecrit": "Ɣer",
+      "lu": "ġer",
+      "secondes": 0.31
+    },
+    "c-actions-ecrire": {
+      "ecrit": "Ara",
+      "lu": "ara",
+      "secondes": 0.34
+    },
+    "c-actions-regarder": {
+      "ecrit": "Smmeqel",
+      "lu": "smmeqel",
+      "secondes": 0.75
+    },
+    "c-actions-ecouter": {
+      "ecrit": "Sfled",
+      "lu": "sfled",
+      "secondes": 0.67
+    },
+    "c-actions-dormir": {
+      "ecrit": "Gen",
+      "lu": "gen",
+      "secondes": 0.31
+    },
+    "c-decrire-dans": {
+      "ecrit": "G",
+      "lu": "g",
+      "secondes": 0.0
+    },
+    "c-decrire-sur": {
+      "ecrit": "F",
+      "lu": "f",
+      "secondes": 0.0
+    },
+    "c-decrire-sous": {
+      "ecrit": "Ddaw",
+      "lu": "ddaw",
+      "secondes": 0.38
+    },
+    "c-decrire-beaucoup": {
+      "ecrit": "Kigan",
+      "lu": "kigan",
+      "secondes": 0.54
+    },
+    "c-decrire-un-peu": {
+      "ecrit": "Imik",
+      "lu": "imik",
+      "secondes": 0.48
+    },
+    "c-pack-the-menthe": {
+      "ecrit": "Atay",
+      "lu": "atay",
+      "secondes": 0.54
+    },
+    "c-rural-atay": {
+      "ecrit": "Atay",
+      "lu": "atay",
+      "secondes": 0.5
+    },
+    "c-rural-aghrum": {
+      "ecrit": "Aɣrum n tferrant",
+      "lu": "aġrum n tferrant",
+      "secondes": 1.03
+    },
+    "c-rural-zzit": {
+      "ecrit": "Zzit n uzemmur",
+      "lu": "zzit n uzemmur",
+      "secondes": 1.16
+    },
+    "c-rural-tamment": {
+      "ecrit": "Tamment",
+      "lu": "tamment",
+      "secondes": 0.52
+    },
+    "c-rural-aghi": {
+      "ecrit": "Aɣi",
+      "lu": "aġi",
+      "secondes": 0.33
+    },
+    "c-rural-tazart": {
+      "ecrit": "Tazart",
+      "lu": "tazart",
+      "secondes": 0.57
+    },
+    "c-rural-lluz": {
+      "ecrit": "Lluz",
+      "lu": "lluz",
+      "secondes": 0.42
+    },
+    "c-rural-tala": {
+      "ecrit": "Aɣbalu",
+      "lu": "aġbalu",
+      "secondes": 0.66
+    },
+    "c-rural-anu": {
+      "ecrit": "Anu",
+      "lu": "anu",
+      "secondes": 0.36
+    },
+    "c-rural-ikerri": {
+      "ecrit": "Ikerri",
+      "lu": "ikerri",
+      "secondes": 0.63
+    },
+    "c-rural-taghatt": {
+      "ecrit": "Taɣaṭṭ",
+      "lu": "taġaṭṭ",
+      "secondes": 0.43
+    },
+    "c-rural-aghyul": {
+      "ecrit": "Aɣyul",
+      "lu": "aġyul",
+      "secondes": 0.61
+    },
+    "c-rural-tafunast": {
+      "ecrit": "Tafunast",
+      "lu": "tafunast",
+      "secondes": 0.7
+    },
+    "c-rural-tayazidt": {
+      "ecrit": "Tayaziḍt",
+      "lu": "tayaziḍt",
+      "secondes": 0.58
+    },
+    "c-rural-azemmur": {
+      "ecrit": "Azemmur",
+      "lu": "azemmur",
+      "secondes": 0.7
+    },
+    "c-rural-adrar": {
+      "ecrit": "Adrar",
+      "lu": "adrar",
+      "secondes": 0.6
+    },
+    "c-rural-iger": {
+      "ecrit": "Iger",
+      "lu": "iger",
+      "secondes": 0.52
+    },
+    "c-rural-ssug": {
+      "ecrit": "Agadaz",
+      "lu": "agadaz",
+      "secondes": 0.7
+    },
+    "c-rural-tamzgida": {
+      "ecrit": "Tamzgida",
+      "lu": "tamzgida",
+      "secondes": 0.76
+    },
+    "c-rural-aferran": {
+      "ecrit": "Aferran",
+      "lu": "aferran",
+      "secondes": 0.71
+    }
+  },
+  "lettres_remplacees": {
+    "ɣ": "ġ",
+    "c": "sh",
+    "č": "(ignorée)",
+    "ɛ": "ε",
+    "x": "kh",
+    "ʷ": "w"
+  }
+}
