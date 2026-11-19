@@ -1,0 +1,45 @@
+# Voix amazighes d'essai (synthèse Meta MMS-TTS, licence CC-BY-NC 4.0, usage non commercial).
+# Tourne seulement sur la branche voix-amazigh-essai : le site en ligne (main) n'est pas touché.
+# Les sons sont à faire écouter par un locuteur natif avant de les montrer aux familles.
+name: Voix amazighes d'essai
+on:
+  push:
+    branches: [voix-amazigh-essai]
+    paths:
+      - .github/workflows/voix-amazigh-essai.yml
+      - tools/generate-amazigh-voices.py
+      - tools/amazigh-cards.json
+permissions:
+  contents: write
+concurrency:
+  group: voix-amazigh-essai
+  cancel-in-progress: true
+jobs:
+  voix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Outils (ffmpeg, torch CPU, transformers)
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+          pip install -q --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -q transformers scipy uroman
+      - name: Fabriquer les 4 packs
+        run: |
+          for lang in shi tzm rif zgh; do
+            python3 tools/generate-amazigh-voices.py --lang "$lang" --out "voix/$lang"
+          done
+          printf '%s\n' \
+            "Voix amazighes d'essai de Kalimati : synthèse Meta MMS-TTS (facebook/mms-tts-*)." \
+            "Licence CC-BY-NC 4.0 : usage non commercial seulement. https://creativecommons.org/licenses/by-nc/4.0/" \
+            "À faire écouter par un locuteur natif. À remplacer par des voix humaines." > voix/LICENCE-voix-amazighes.txt
+      - name: Enregistrer sur la branche
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add voix/shi voix/tzm voix/rif voix/zgh voix/amz-*-index.json voix/amz-*-rapport.json voix/LICENCE-voix-amazighes.txt
+          git commit -q -m "voix amazighes d'essai (synthèse MMS, à faire écouter par un natif)" && git push -q origin HEAD:voix-amazigh-essai
