@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Packs vocaux amazighs pour Kalimati (v10.7) : outil à lancer sur un ordinateur, jamais dans le téléphone.
-Fabrique un MP3 par carte (24 kbit/s mono, silences coupés) pour une variété : shi (tachelhit),
+Packs vocaux amazighs pour Kalimati (v10.7.1) : outil à lancer sur un ordinateur, jamais dans le téléphone.
+Fabrique un MP3 par carte (mono 24 kHz, silences coupés, volume égalisé) pour une variété : shi (tachelhit),
 tzm (tamazight du centre), rif (tarifit) ou zgh (tamazight standard IRCAM).
 
 À faire écouter par des locuteurs natifs avant de présenter les voix aux familles.
@@ -15,6 +15,11 @@ Ordre des sources pour chaque carte :
 
 Les lettres du mot sont adaptées à celles que le modèle connaît (ex. « ɣ » -> « gh » si besoin).
 Chaque remplacement est noté dans le rapport voix/amz-<variété>-rapport.json.
+v10.7.1 : voix un peu plus lente (plus claire pour l'enfant). Un mot sans voyelle se dit avec le « e » muet
+devant (D -> ed, Fk -> efk). Un son trop court ou trop faible est refait (autre essai, plus lent) ; s'il reste
+douteux, il est noté dans le rapport (« a_ecouter_d_abord »). Un souffle ou un bruit (pas de vraie voix) n'est
+jamais gardé : la carte reste sans son et attend la voix du parent (« sans_son_bruit »). MP3 fabriqués avec lameenc (pip install lameenc),
+sinon ffmpeg. ffmpeg reste nécessaire pour les enregistrements humains (--human-dir).
 
 Les identifiants viennent de tools/amazigh-cards.json (fabriqué par : node tools/export-amazigh-cards.mjs).
 Ce sont les vrais identifiants des cartes : sinon l'appli ne retrouve pas les sons.
@@ -32,7 +37,9 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unicodedata
+from math import gcd
 from pathlib import Path
 
 VARIETIES = ("shi", "tzm", "rif", "zgh")
@@ -48,11 +55,19 @@ MMS_CANDIDATES = {
 # Lettre absente du modèle : équivalents essayés dans l'ordre ("" = lettre muette).
 FALLBACKS = {
     "ɣ": ["ɣ", "ġ", "gh", "g"], "ḍ": ["ḍ", "d"], "ṭ": ["ṭ", "t"], "ṛ": ["ṛ", "r"], "ẓ": ["ẓ", "z"],
-    "ṣ": ["ṣ", "s"], "ḥ": ["ḥ", "h"], "ɛ": ["ɛ", "ε", "ʕ", "ʿ", "3", ""], "č": ["č", "ch", "tc", "c"],
-    "š": ["š", "ch", "sh", "c"], "ʷ": ["ʷ", "w", ""], "x": ["x", "kh"], "q": ["q", "k"], "e": ["e", "ə", ""],
+    "ṣ": ["ṣ", "s"], "ḥ": ["ḥ", "h"], "ɛ": ["ɛ", "ε", "ʕ", "ʿ", "3", ""],
+    "š": ["š", "ch", "sh", "c"], "ʷ": ["ʷ", "w", ""], "č": ["č", "ch", "tš", "tsh", "c"], "x": ["x", "kh"], "q": ["q", "k"], "e": ["e", "ə", ""],
     "o": ["o", "u"], "c": ["c", "ch", "sh"], "j": ["j", "dj", "ž"], "y": ["y", "i"], "w": ["w", "u"],
 }
 MIN_COVERAGE = 0.9  # part des lettres que le modèle doit connaître pour être choisi
+TARGET_RATE = 24000  # comme les voix darija et françaises de l'appli
+MP3_KBPS = 32
+BASE_SPEAKING_RATE = 0.85  # un peu plus lent que la voix d'origine : plus clair pour l'enfant
+# Son trop court ou trop faible (mots très courts) : nouvel essai (graine, vitesse).
+ATTEMPTS = [(1234, BASE_SPEAKING_RATE), (1234, 0.7), (7, 0.7), (42, 0.6), (99, 0.75), (2024, 0.6)]
+MIN_PEAK_DB = -30.0  # en dessous, le modèle a presque rien dit
+MIN_VOICED = 0.2  # part des moments avec une vraie voix (hauteur nette) ; en dessous : souffle ou bruit, pas un mot
+VOWELS = set("aeiouə")
 
 
 def load_cards(cards_path: Path, lang: str) -> dict:
@@ -99,19 +114,105 @@ def letters(text: str) -> list:
 def adapt_to_vocab(text: str, vocab: set, replaced: dict) -> str:
     """Remplace chaque lettre inconnue du modèle par un équivalent connu. Note les remplacements."""
     out = []
+    previous = None
     for ch in unicodedata.normalize("NFC", text.lower()):
         if ch in vocab or not (ch.isalpha() or ch == "ʷ"):
             out.append(" " if ch in "-’'" else ch)
+            previous = None
             continue
         for option in FALLBACKS.get(ch, []):
             if option == "" or all(part in vocab for part in option):
-                out.append(option)
+                # Lettre doublée remplacée par plusieurs lettres (čč -> tš) : dite une seule fois.
+                if not (previous == ch and len(option) > 1):
+                    out.append(option)
                 if option != ch:
                     replaced[ch] = option
                 break
         else:
             replaced[ch] = "(ignorée)"
+        previous = ch
     return re.sub(r"\s+", " ", "".join(out)).strip()
+
+
+def speakable(word: str) -> str:
+    """Mot sans voyelle : on le dit avec le « e » muet (schwa) devant, comme quand on le dit seul (D -> ed, Fk -> efk)."""
+    low = unicodedata.normalize("NFC", word).lower()
+    if any(ch in VOWELS for ch in low) or not any(ch.isalpha() for ch in low):
+        return word
+    return "e" + low
+
+
+def clean_wave(wave, rate):
+    """Coupe les silences (seuil relatif au pic du mot) et égalise le volume.
+    Renvoie (onde, secondes parlées, pic d'origine en dB) ; onde = None si le modèle n'a rien dit."""
+    import numpy as np
+    w = np.asarray(wave, dtype=np.float32).reshape(-1)
+    peak = float(np.max(np.abs(w))) if w.size else 0.0
+    if peak < 1e-4:
+        return None, 0.0, -100.0
+    peak_db = round(float(20 * np.log10(peak)), 1)
+    win = max(1, int(rate * 0.01))
+    energy = np.sqrt(np.convolve(w * w, np.ones(win, dtype=np.float32) / win, mode="same"))
+    active = np.flatnonzero(energy > peak * 10 ** (-40 / 20))
+    if active.size == 0:
+        return None, 0.0, peak_db
+    seconds = round((int(active[-1]) - int(active[0])) / rate, 2)
+    w = w[max(0, int(active[0]) - int(rate * 0.04)):min(w.size, int(active[-1]) + int(rate * 0.08))]
+    rms = float(np.sqrt(np.mean(w * w))) + 1e-9
+    w = w * min(10 ** (-21 / 20) / rms, 10 ** (-1 / 20) / float(np.max(np.abs(w))))  # moyenne -21 dB, pic -1 dB au plus
+    silence = lambda s: np.zeros(int(rate * s), dtype=np.float32)  # noqa: E731
+    return np.concatenate([silence(0.05), w, silence(0.08)]), seconds, peak_db
+
+
+def voiced_ratio(wave, rate) -> float:
+    """Part des moments où l'on entend une vraie voix (hauteur nette). Un souffle ou un bruit donne presque 0."""
+    import numpy as np
+    w = np.asarray(wave, dtype=np.float32).reshape(-1)
+    frame, hop = int(0.03 * rate), int(0.01 * rate)
+    lo, hi = int(rate / 400), int(rate / 75)
+    peak = float(np.max(np.abs(w))) + 1e-9 if w.size else 1e-9
+    active = voiced = 0
+    for i in range(0, max(0, w.size - frame), hop):
+        f = w[i:i + frame] - float(np.mean(w[i:i + frame]))
+        if float(np.sqrt(np.mean(f * f))) < peak * 0.05:
+            continue
+        active += 1
+        ac = np.correlate(f, f, "full")[frame - 1:]
+        voiced += float(np.max(ac[lo:hi])) / (float(ac[0]) + 1e-9) > 0.5
+    return round(voiced / active, 2) if active else 0.0
+
+
+def encode_wave_mp3(wave, rate, dst_mp3: Path) -> None:
+    """Onde nettoyée -> MP3 mono 24 kHz (lameenc, sinon ffmpeg)."""
+    import numpy as np
+    if rate != TARGET_RATE:
+        from scipy.signal import resample_poly
+        g = gcd(TARGET_RATE, rate)
+        wave = resample_poly(wave, TARGET_RATE // g, rate // g)
+    pcm = (np.clip(wave, -1.0, 1.0) * 32767).astype("<i2")
+    dst_mp3.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        import lameenc
+    except ImportError:
+        lameenc = None
+    if lameenc is not None:
+        encoder = lameenc.Encoder()
+        encoder.set_bit_rate(MP3_KBPS)
+        encoder.set_in_sample_rate(TARGET_RATE)
+        if hasattr(encoder, "set_out_sample_rate"):
+            encoder.set_out_sample_rate(TARGET_RATE)
+        encoder.set_channels(1)
+        encoder.set_quality(2)
+        dst_mp3.write_bytes(bytes(encoder.encode(pcm.tobytes())) + bytes(encoder.flush()))
+        return
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("Il faut lameenc (pip install lameenc) ou ffmpeg pour fabriquer les MP3.")
+    import scipy.io.wavfile as wavfile
+    with tempfile.TemporaryDirectory() as tmp:
+        wav_path = Path(tmp) / "mot.wav"
+        wavfile.write(str(wav_path), TARGET_RATE, pcm)
+        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav_path), "-ac", "1", "-ar", str(TARGET_RATE),
+                        "-b:a", f"{MP3_KBPS}k", str(dst_mp3)], check=True)
 
 
 def coverage(words: list, vocab: set) -> float:
@@ -144,13 +245,15 @@ def pick_model(lang: str, texts: dict):
     raise RuntimeError(f"Aucun modèle utilisable pour {lang} : {json.dumps(tried, ensure_ascii=False)}")
 
 
-def synthesize_with_mms(texts: dict, lang: str, work_dir: Path, report: dict) -> dict:
+def synthesize_with_mms(texts: dict, lang: str, out_dir: Path, report: dict) -> dict:
+    """Fabrique les MP3 de synthèse dans out_dir. Renvoie {id de carte: secondes parlées}."""
     try:
         from transformers import VitsModel
         import torch
-        import scipy.io.wavfile as wavfile
+        import numpy  # noqa: F401
+        import scipy  # noqa: F401
     except ImportError as exc:
-        raise RuntimeError("Outils manquants : pip install torch transformers scipy") from exc
+        raise RuntimeError("Outils manquants : pip install torch transformers scipy lameenc") from exc
 
     model_id, tokenizer, vocab, script, tried = pick_model(lang, texts)
     report.update({"modele": model_id, "ecriture_lue": "latin" if script == "lat" else "tifinagh", "modeles_essayes": tried,
@@ -169,23 +272,52 @@ def synthesize_with_mms(texts: dict, lang: str, work_dir: Path, report: dict) ->
         except ImportError:
             print("Attention : ce modèle attend uroman (pip install uroman) ; lettres adaptées à la main.")
     model = VitsModel.from_pretrained(model_id)
-    torch.manual_seed(1234)  # même voix à chaque lancement
+    rate = model.config.sampling_rate
+    report["vitesse"] = BASE_SPEAKING_RATE
     generated = {}
     replaced = {}
+    to_listen = []
     for card_id, entry in texts.items():
         source = entry[script] or entry["lat"]
-        phrase = adapt_to_vocab(romanize(source) if romanize else source, vocab, replaced)
+        said = speakable(source) if script == "lat" else source
+        phrase = adapt_to_vocab(romanize(said) if romanize else said, vocab, replaced)
         inputs = tokenizer(phrase, return_tensors="pt")
         if inputs["input_ids"].shape[-1] == 0:
             print(f"  ignoré (lettres inconnues du modèle) : {card_id} « {source} »")
             continue
-        with torch.no_grad():
-            waveform = model(**inputs).waveform[0].cpu().numpy()
-        wav_path = work_dir / f"{card_id}.wav"
-        wavfile.write(str(wav_path), rate=model.config.sampling_rate, data=waveform)
-        generated[card_id] = wav_path
-        report.setdefault("mots", {})[card_id] = {"ecrit": source, "lu": phrase}
+        need = max(0.2, 0.05 * len(letters(phrase)))
+        best = None
+        tries = 0
+        for seed, speed in ATTEMPTS:  # même voix à chaque lancement (graines fixes)
+            tries += 1
+            torch.manual_seed(seed)
+            model.speaking_rate = speed
+            with torch.no_grad():
+                raw = model(**inputs).waveform[0].cpu().numpy()
+            wave, seconds, peak_db = clean_wave(raw, rate)
+            voiced = voiced_ratio(wave, rate) if wave is not None else 0.0
+            good = wave is not None and seconds >= need and peak_db >= MIN_PEAK_DB and voiced >= MIN_VOICED
+            score = seconds * 10 ** (peak_db / 20) * voiced if wave is not None else 0.0
+            if best is None or good or score > best["score"]:
+                best = {"wave": wave, "seconds": seconds, "peak": peak_db, "speed": speed, "score": score, "good": good,
+                        "voiced": voiced}
+            if good:
+                break
+        # Souffle ou bruit au lieu d'un mot : pas de son (la carte attend la voix du parent).
+        if best["wave"] is None or best["voiced"] < MIN_VOICED:
+            print(f"  pas de vraie voix (souffle ou bruit), carte sans son : {card_id} « {source} »")
+            report.setdefault("sans_son_bruit", []).append(card_id)
+            continue
+        encode_wave_mp3(best["wave"], rate, out_dir / f"{card_id}.mp3")
+        generated[card_id] = best["seconds"]
+        report.setdefault("mots", {})[card_id] = {"ecrit": source, "lu": phrase, "secondes": best["seconds"],
+                                                  "pic_db": best["peak"], "voix": best["voiced"], "vitesse": best["speed"],
+                                                  "essais": tries}
+        if not best["good"]:
+            to_listen.append(card_id)
+            print(f"  à écouter d'abord : {card_id} « {source} » ({best['seconds']} s, pic {best['peak']} dB)")
     report["lettres_remplacees"] = replaced
+    report["a_ecouter_d_abord"] = to_listen
     return generated
 
 
@@ -207,13 +339,11 @@ def main() -> int:
         print(json.dumps({"lang": args.lang, "count": len(texts), "exemples": sample}, ensure_ascii=False, indent=2))
         return 0
 
-    if not shutil.which("ffmpeg"):
-        print("Erreur : ffmpeg est nécessaire (couper les silences, encoder en MP3).", file=sys.stderr)
+    if args.human_dir and not shutil.which("ffmpeg"):
+        print("Erreur : ffmpeg est nécessaire pour les enregistrements humains (couper les silences, encoder en MP3).", file=sys.stderr)
         return 1
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    work_dir = out_dir / "_wav_tmp"
-    work_dir.mkdir(parents=True, exist_ok=True)
     human_dir = Path(args.human_dir) if args.human_dir else None
     report = {"lang": args.lang, "humains": []}
 
@@ -232,15 +362,12 @@ def main() -> int:
             remaining[card_id] = entry
 
     if remaining and not args.no_tts:
-        wavs = synthesize_with_mms(remaining, args.lang, work_dir, report)
-        for card_id, wav_path in wavs.items():
-            encode_mp3_24k(wav_path, out_dir / f"{card_id}.mp3")
+        made = synthesize_with_mms(remaining, args.lang, out_dir, report)
+        for card_id in made:
             final_entries[card_id] = remaining[card_id]["lat"]
 
-    shutil.rmtree(work_dir, ignore_errors=True)
-    durations = {card_id: mp3_seconds(out_dir / f"{card_id}.mp3") for card_id in final_entries}
-    for card_id, seconds in durations.items():
-        report.setdefault("mots", {}).setdefault(card_id, {})["secondes"] = seconds
+    for card_id in report["humains"]:
+        report.setdefault("mots", {}).setdefault(card_id, {})["secondes"] = mp3_seconds(out_dir / f"{card_id}.mp3")
     total_bytes = sum((out_dir / f"{card_id}.mp3").stat().st_size for card_id in final_entries)
     index_path = out_dir.parent / f"amz-{args.lang}-index.json"
     index_data = {
@@ -249,6 +376,7 @@ def main() -> int:
         "count": len(final_entries),
         "totalBytes": total_bytes,
         "source": report.get("modele", "enregistrements humains"),
+        "trial": bool(report.get("modele")),  # voix de synthèse d'essai : à faire écouter par un natif
         "licence": report.get("licence", ""),
         "entries": final_entries,
     }
