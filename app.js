@@ -17,6 +17,7 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
+import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
@@ -346,7 +347,7 @@ function renderTalk() {
   const friend = state.parent ? null : friendCompanionBanner('talk', { lang: state.lang });
   const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}` }, friend, suggest, modelToggle, modelLine, core, tabs, personalise, grid,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
-    state.parent ? touchSettingsBox() : null, state.parent ? legend() : null);
+    state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
   const ms = scanSpeed();
   if (!state.parent && ms > 0) {
     const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');
@@ -484,6 +485,26 @@ async function showBackupAge() {
   span.classList.toggle('late', days === null || days >= BACKUP_REMIND_DAYS);
 }
 
+// v10.6 (P3.f) : vocabulaire de base dévoilé par paliers. Seulement sur demande de l'adulte.
+// Les cartes gardent leur place ; on masque ou montre seulement les 21 mots du plan.
+let motorPlanNote = '';
+function motorPlanBox() {
+  const status = h('p', { class: 'note', role: 'status' }, motorPlanNote);
+  return h('details', { class: 'card-box touch-box', open: motorPlanNote ? true : null },
+    h('summary', {}, '🧭 Mots de base par paliers (places fixes)'),
+    h('p', { class: 'note' }, 'Chaque mot garde sa place. Un palier masque les mots pas encore travaillés, sans bouger les autres.'),
+    ...MOTOR_STAGES.map((st) => h('div', { class: 'row spread wrap' },
+      h('div', {}, h('strong', {}, st.label), h('br'), h('small', { class: 'note' }, st.description)),
+      btn(`Palier ${st.stage}`, async () => {
+        const before = new Map(state.cards.map((c) => [c.id, c]));
+        const changed = applyProgressiveStage(state.cards, st.stage).filter((c) => before.get(c.id) !== c && Boolean(before.get(c.id).hidden) !== Boolean(c.hidden));
+        if (changed.length) await saveCards(changed);
+        motorPlanNote = changed.length ? `✅ Palier ${st.stage} appliqué (${changed.length} carte(s) changée(s)).` : `Palier ${st.stage} déjà en place.`;
+        renderView();
+      }, 'ghost tiny'))),
+    status);
+}
+
 function renderAll() {
   document.body.classList.toggle('parent', state.parent);
   // v10.5 (A06) : le cadenas dit son état aux lecteurs d'écran.
@@ -494,12 +515,18 @@ function renderAll() {
   }
   if (state.parent) showBackupAge();
   document.querySelectorAll('[data-lang-choice]').forEach((b) => b.classList.toggle('active', b.dataset.langChoice === state.lang));
-  $('#cols').value = String(state.cols);
-  renderStrip();
-  renderSpaces();
+  // v10.6 : chaque zone est protégée ; une erreur dans l'une ne bloque plus les autres (bouton de langue, onglets, écran).
+  const langBtn = $('#btn-lang');
+  if (langBtn) langBtn.textContent = langInfo(state.lang).short;
+  const colsEl = $('#cols');
+  if (colsEl) colsEl.value = String(state.cols);
+  try { renderStrip(); } catch (err) { console.error('renderStrip', err); }
+  try { renderSpaces(); } catch (err) { console.error('renderSpaces', err); }
   document.dispatchEvent(new CustomEvent('kalimati-parent', { detail: { parent: state.parent, lang: state.lang } }));
   // On ne coupe pas un exercice en cours quand le parent verrouille ou déverrouille.
-  if (['home', 'talk', 'progress'].includes(state.space) || !$('#view').firstChild) renderView();
+  try {
+    if (['home', 'talk', 'progress'].includes(state.space) || !$('#view').firstChild) renderView();
+  } catch (err) { console.error('renderView', err); }
   renderToiletCount();
 }
 

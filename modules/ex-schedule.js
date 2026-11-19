@@ -214,6 +214,11 @@ export function scheduleView(ctx) {
     await db.addScheduleLog(log);
     state = { ...state, logs: [...state.logs, log] };
     const done = doneIds(routine.id);
+    // v10.6 (G-01) : petit encouragement doux à la moitié de la routine.
+    const half = Math.max(1, Math.ceil(steps.length / 2));
+    if (steps.length >= 4 && done.size === half) {
+      speak(ctx.lang() === 'dr' ? 'برافو، نص الطريق!' : 'Bravo, tu es à la moitié !', { lang: voiceLang() });
+    }
     if (!steps.some((s) => !done.has(s.id))) await finishRoutine(routine, steps, done);
     rerender();
     const row = root.querySelector(`[data-step="${CSS.escape(step.id)}"]`);
@@ -541,11 +546,24 @@ export function scheduleView(ctx) {
         [steps[i], steps[j]] = [steps[j], steps[i]];
         update(steps);
       },
-      remove: (i) => { if (window.confirm(`Supprimer « ${routine.steps[i].fr} » ?`)) update(routine.steps.filter((_, j) => j !== i)); },
+      // v10.6 (C11) : 2 touchers au lieu d'une boîte système bloquante.
+      remove: (i, b) => {
+        if (b && !b.dataset.armed) {
+          b.dataset.armed = '1'; b.textContent = 'Confirmer 🗑 ?';
+          setTimeout(() => { if (b.dataset.armed) { delete b.dataset.armed; b.textContent = '🗑'; } }, 4000);
+          return;
+        }
+        update(routine.steps.filter((_, j) => j !== i));
+      },
     };
     const add = () => update([...routine.steps, S(uid('step'), 'Nouvelle étape', '', '', '⭐', 5)]);
-    const reset = async () => {
-      if (!window.confirm('Remettre toutes les routines comme au départ ? Les photos restent.')) return;
+    const reset = async (e) => {
+      const b = e && e.currentTarget;
+      if (b && !b.dataset.armed) {
+        b.dataset.armed = '1'; b.textContent = 'Toucher encore pour remettre (les photos restent)';
+        setTimeout(() => { if (b.dataset.armed) { delete b.dataset.armed; b.textContent = '↺ Remettre le tableau d’origine'; } }, 4000);
+        return;
+      }
       state = { ...state, routines: DEFAULT_ROUTINES() };
       await saveRoutines(state.routines);
       rerender();
@@ -566,7 +584,7 @@ export function scheduleView(ctx) {
         h('div', { class: 'row' },
           btn('🔄 Remplacer par…', () => replaceStepDialog(step, true), 'ghost tiny'),
           btn('↑', () => move(i, -1), 'ghost tiny'), btn('↓', () => move(i, 1), 'ghost tiny'),
-          btn(step.hidden ? '🙈 Masquée' : '👁 Visible', () => patch(i, { hidden: !step.hidden }), 'ghost tiny'), btn('🗑', () => remove(i), 'ghost tiny'))),
+          btn(step.hidden ? '🙈 Masquée' : '👁 Visible', () => patch(i, { hidden: !step.hidden }), 'ghost tiny'), btn('🗑', (e) => remove(i, e.currentTarget), 'ghost tiny'))),
       h('div', { class: 'ed-grid' }, field('emoji', 'Image', { maxlength: 8 }), field('fr', 'Français'), field('dr', 'Darija (lettres latines)'),
         field('ar', 'Darija (lettres arabes)', { dir: 'rtl' }), field('minutes', 'Durée (min)', { type: 'number', min: 1, max: 600 })),
       h('div', { class: 'row' }, voiceButtons(step, 'fr', (v) => patch(i, v)), voiceButtons(step, 'dr', (v) => patch(i, v))));

@@ -122,16 +122,31 @@ export function createNavigator(app) {
       const started = level > 1 || (result && result.count > 0);
       return h('button', { type: 'button', class: 'goal-row', onclick: () => go(() => exerciseScreen(g.id)) },
         app.state.parent ? h('strong', {}, g.id) : null, h('span', { class: 'goal-title' }, g.title),
-        started ? h('span', { class: 'level-badge' }, `Niv. ${level}/1000`) : null, statusChip(result));
+        app.state.parent && started ? h('span', { class: 'level-badge' }, `Niv. ${level}/1000`) : null, statusChip(result));
     };
-    const part = (title, goals, results) => (goals.length ? [h('h3', { class: 'phase-title' }, title), ...goals.map((g) => row(g, results))] : []);
-    evaluateAll().then(({ results }) => {
+    // v10.6 (F14) : filtre « jeux en cours » pour l'adulte, pour moins défiler sur téléphone.
+    let onlyInProgress = false;
+    let cached = null;
+    const part = (title, goals, results) => {
+      const shown = onlyInProgress ? goals.filter((g) => results.get(g.id)?.status === 'progress') : goals;
+      return shown.length ? [h('h3', { class: 'phase-title' }, title), ...shown.map((g) => row(g, results))] : [];
+    };
+    const renderList = () => {
+      if (!cached) return;
       const goals = goalsOf(sectionId);
-      list.replaceChildren(
-        ...part('🎯 PEI 3 mois (objectifs prioritaires)', goals.filter((g) => g.phase !== 'next'), results),
-        ...part('🚀 Prochains niveaux ABA (ABLLS-R complet)', goals.filter((g) => g.phase === 'next'), results));
-    });
-    return h('div', { class: 'screen' }, header(app.state.parent ? `${section.emoji} ${section.id}. ${section.name}` : `${section.emoji} ${section.name}`), list);
+      const children = [
+        ...part('🎯 PEI 3 mois (objectifs prioritaires)', goals.filter((g) => g.phase !== 'next'), cached),
+        ...part('🚀 Prochains niveaux ABA (ABLLS-R complet)', goals.filter((g) => g.phase === 'next'), cached)];
+      list.replaceChildren(...(children.length ? children : [h('p', { class: 'note' }, 'Aucun jeu en cours ici. Touchez « Voir tous les jeux ».')]));
+    };
+    const filterBtn = app.state.parent ? btn('🔄 Voir seulement les jeux en cours', () => {
+      onlyInProgress = !onlyInProgress;
+      filterBtn.textContent = onlyInProgress ? '📋 Voir tous les jeux' : '🔄 Voir seulement les jeux en cours';
+      renderList();
+    }, 'ghost tiny') : null;
+    evaluateAll().then(({ results }) => { cached = results; renderList(); });
+    return h('div', { class: 'screen' }, header(app.state.parent ? `${section.emoji} ${section.id}. ${section.name}` : `${section.emoji} ${section.name}`),
+      filterBtn ? h('div', { class: 'row' }, filterBtn) : null, list);
   }
 
   function sessionHome() {

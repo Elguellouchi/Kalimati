@@ -120,6 +120,35 @@ function kpiBlock(title, goals, results, today = null) {
     h('div', { class: 'progress-bar big' }, h('span', { style: { width: `${percent(done, goals.length)}%` } })));
 }
 
+// v10.6 (F18) : bilan PEI & ATEC imprimable pour l'orthophoniste. Tout reste sur le téléphone (impression locale).
+function printPeiReport(results, atecHistory, orthoLogs, abcLogs) {
+  const peiGoals = GOALS.filter((g) => g.phase !== 'next');
+  const worked = peiGoals.filter((g) => { const r = results.get(g.id); return r && (r.count > 0 || r.status !== 'todo'); });
+  const doneCount = peiGoals.filter((g) => results.get(g.id)?.status === 'done').length;
+  const progressCount = peiGoals.filter((g) => results.get(g.id)?.status === 'progress').length;
+  const latestAtec = atecHistory.length ? atecHistory[atecHistory.length - 1] : null;
+  document.querySelectorAll('.print-area.pei-print').forEach((n) => n.remove());
+  const area = h('div', { class: 'print-area pei-print' },
+    h('div', { class: 'print-sheet ortho-print' },
+      h('h1', {}, `Bilan de suivi PEI & ATEC · ${firstName()} (${dayKey()})`),
+      h('p', {}, `Objectifs PEI atteints : ${doneCount} / ${peiGoals.length} · En cours : ${progressCount} · Notes orthophonie : ${orthoLogs.length} · Journal ABC : ${abcLogs.length}`),
+      latestAtec ? h('p', {}, `Dernier bilan ATEC (${latestAtec.day || ''}) : score total ${latestAtec.total ?? '?'} / 179.`) : null,
+      h('h2', {}, 'Objectifs travaillés'),
+      worked.length ? h('table', {},
+        h('thead', {}, h('tr', {}, h('th', {}, 'Code'), h('th', {}, 'Objectif'), h('th', {}, 'Statut'), h('th', {}, 'Détail'))),
+        h('tbody', {}, worked.map((g) => {
+          const r = results.get(g.id);
+          return h('tr', {}, h('td', {}, g.id), h('td', {}, g.title),
+            h('td', {}, r.status === 'done' ? 'Atteint' : r.status === 'progress' ? `${r.pct} %` : 'À commencer'),
+            h('td', {}, `${r.detail} (${r.count} essais, niv. ${levelOf(g.id).currentLevel})`));
+        }))) : h('p', {}, 'Aucun essai noté pour le moment.'),
+      h('p', { class: 'print-note' }, 'Rapport créé sur le téléphone avec Kalimati. Rien n’a été envoyé sur internet.')));
+  document.body.append(area);
+  const cleanup = () => { area.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 250);
+}
+
 // v10.3.1 : la page Progrès s'affiche toujours. Une partie en panne affiche un petit message au lieu de tout bloquer.
 const safePart = (label, build) => {
   try { return build(); } catch (err) {
@@ -158,8 +187,11 @@ export function dashboardScreen(nav) {
       safePart('Orthophonie', () => orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self))),
       safePart('Bilan ATEC', () => atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self))),
       safePart('Courbe de la semaine', () => weeklyTrendChart(all)),
-      ...(evaluated ? SECTIONS.map((s) => safePart(`Section ${s.id}`, () => h('section', { class: 'card-box' },
-        h('h3', {}, `${s.emoji} ${s.id}. ${s.name}`),
+      // v10.6 (F18) : impression locale du bilan pour l'orthophoniste.
+      evaluated && h('div', { class: 'row' }, btn(iconLabel('printer', 'Imprimer le bilan PEI & ATEC (orthophoniste)'), () => printPeiReport(results, atecHistory, orthoLogs, abcLogs), 'ghost')),
+      // v10.6 (F14) : les 23 sections sont repliées ; on ouvre seulement celle qu'on veut.
+      ...(evaluated ? SECTIONS.map((s) => safePart(`Section ${s.id}`, () => h('details', { class: 'card-box dash-section' },
+        h('summary', {}, `${s.emoji} ${s.id}. ${s.name}`),
         goalsOf(s.id).map((g, i, list) => {
           const r = results.get(g.id);
           if (!r) return null;
