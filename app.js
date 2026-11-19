@@ -925,9 +925,14 @@ async function init() {
   }
 }
 
-init().catch((error) => {
+init().then(() => { window.__kalimatiStarted = true; document.getElementById('boot-help')?.remove(); }).catch((error) => {
+  window.__kalimatiStarted = true; // le message d'erreur ci-dessous remplace le filet de démarrage
   const message = document.createElement('p');
   message.className = 'fatal';
   message.textContent = `L'application n'a pas pu démarrer : ${String(error.message || error)}`;
-  document.body.replaceChildren(message);
+  // v10.5.3 : un bouton pour réessayer, au lieu d'un écran sans issue.
+  const retry = document.createElement('button');
+  retry.type = 'button'; retry.className = 'btn primary'; retry.textContent = '🔄 Réessayer';
+  retry.onclick = () => window.location.reload();
+  document.body.replaceChildren(message, retry);
 });

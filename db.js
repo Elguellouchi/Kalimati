@@ -60,22 +60,52 @@ function upgrade(db, transaction, oldVersion) {
   }
 }
 
+// v10.5.3 : sur iPhone, Safari laisse parfois la base « endormie » après un rechargement :
+// l'ouverture ne répond jamais et l'écran reste vide. Parade connue : réveiller la base
+// (indexedDB.databases) avant d'ouvrir, et ne jamais attendre plus de 4 s une ouverture.
+function wakeIndexedDb() {
+  if (typeof indexedDB === 'undefined' || typeof indexedDB.databases !== 'function') return Promise.resolve();
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = () => { if (!done) { done = true; clearInterval(timer); resolve(); } };
+    const poke = () => { try { indexedDB.databases().then(finish, finish); } catch { finish(); } };
+    const timer = setInterval(poke, 100);
+    poke();
+    setTimeout(finish, 3000);
+  });
+}
+
+function openOnce(timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => { if (!settled) { settled = true; reject(new Error('open-timeout')); } }, timeoutMs);
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (event) => upgrade(request.result, request.transaction, event.oldVersion);
+    request.onsuccess = () => {
+      const db = request.result;
+      if (settled) { try { db.close(); } catch { /* rien */ } return; }
+      settled = true; clearTimeout(timer);
+      // v10.5.2 : sur iPhone, la connexion peut se couper quand l'appli passe en arrière-plan.
+      // On l'oublie alors, et la prochaine lecture ou écriture la rouvre.
+      db.onclose = () => { dbPromise = null; };
+      db.onversionchange = () => { try { db.close(); } catch { /* rien */ } dbPromise = null; };
+      resolve(db);
+    };
+    request.onerror = () => { if (!settled) { settled = true; clearTimeout(timer); reject(request.error); } };
+    request.onblocked = () => { if (!settled) { settled = true; clearTimeout(timer); reject(new Error('Fermez les autres onglets de Kalimati puis rouvrez l\'application.')); } };
+  });
+}
+
 function openDb() {
   if (!dbPromise) {
-    dbPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-      request.onupgradeneeded = (event) => upgrade(request.result, request.transaction, event.oldVersion);
-      request.onsuccess = () => {
-        const db = request.result;
-        // v10.5.2 : sur iPhone, la connexion peut se couper quand l'appli passe en arrière-plan.
-        // On l'oublie alors, et la prochaine lecture ou écriture la rouvre.
-        db.onclose = () => { dbPromise = null; };
-        db.onversionchange = () => { try { db.close(); } catch { /* rien */ } dbPromise = null; };
-        resolve(db);
-      };
-      request.onerror = () => { dbPromise = null; reject(request.error); };
-      request.onblocked = () => reject(new Error('Fermez les autres onglets de Kalimati puis rouvrez l\'application.'));
-    });
+    dbPromise = wakeIndexedDb()
+      .then(() => openOnce(4000))
+      .catch((err) => (err && err.message === 'open-timeout' ? wakeIndexedDb().then(() => openOnce(6000)) : Promise.reject(err)))
+      .catch((err) => {
+        dbPromise = null;
+        if (err && err.message === 'open-timeout') throw new Error('La mémoire du téléphone ne répond pas. Fermez Safari complètement (balayer vers le haut), puis rouvrez Kalimati.');
+        throw err;
+      });
   }
   return dbPromise;
 }
