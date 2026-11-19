@@ -590,8 +590,9 @@ async function collectSettings() {
 async function setLang(code) {
   state.lang = langInfo(code).code;
   document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
-  await db.setSetting('lang', state.lang);
+  // v10.5.2 : l'écran change tout de suite ; l'enregistrement suit (avant, une écriture bloquée sur iPhone empêchait le changement).
   renderAll();
+  await db.setSetting('lang', state.lang).catch((err) => console.error('[Kalimati] langue non enregistrée', err));
 }
 
 function openLangPicker() {

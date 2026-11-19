@@ -65,15 +65,22 @@ function openDb() {
     dbPromise = new Promise((resolve, reject) => {
       const request = indexedDB.open(DB_NAME, DB_VERSION);
       request.onupgradeneeded = (event) => upgrade(request.result, request.transaction, event.oldVersion);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        // v10.5.2 : sur iPhone, la connexion peut se couper quand l'appli passe en arrière-plan.
+        // On l'oublie alors, et la prochaine lecture ou écriture la rouvre.
+        db.onclose = () => { dbPromise = null; };
+        db.onversionchange = () => { try { db.close(); } catch { /* rien */ } dbPromise = null; };
+        resolve(db);
+      };
+      request.onerror = () => { dbPromise = null; reject(request.error); };
       request.onblocked = () => reject(new Error('Fermez les autres onglets de Kalimati puis rouvrez l\'application.'));
     });
   }
   return dbPromise;
 }
 
-function run(storeName, mode, action) {
+function runOnce(storeName, mode, action) {
   return openDb().then((db) => new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const request = action(transaction.objectStore(storeName));
@@ -81,6 +88,16 @@ function run(storeName, mode, action) {
     transaction.onerror = () => reject(transaction.error);
     transaction.onabort = () => reject(transaction.error);
   }));
+}
+
+// v10.5.2 : si la connexion est perdue (bug connu de Safari sur iPhone), on la rouvre et on réessaie une fois.
+const lostConnection = (err) => /InvalidStateError|closing|closed|lost|UnknownError/i.test(`${err?.name || ''} ${err?.message || ''}`);
+function run(storeName, mode, action) {
+  return runOnce(storeName, mode, action).catch((err) => {
+    if (!lostConnection(err)) throw err;
+    dbPromise = null;
+    return runOnce(storeName, mode, action);
+  });
 }
 
 // Cartes
