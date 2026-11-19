@@ -56,7 +56,25 @@ const memory = { lang: null, parent: new Map(), pack: new Map() };
 let loadToken = 0;
 let loading = null;
 
-async function readCache(name) {
+// ---------- v10.7.2 : état des voix, montré sur l'Accueil (en cours, prêtes, raté) ----------
+const progress = new Map(); // variété -> { done, total } pendant un téléchargement
+const failures = new Map(); // variété -> raison du dernier échec (texte court)
+const arriving = new Map(); // variété -> Map(carte -> son) : voix arrivées pendant le téléchargement en cours
+const stopped = new Set(); // variétés dont le parent a supprimé le pack pendant le téléchargement
+const known = { packs: null, declined: null }; // dernier état lu ou écrit (pour l'Accueil, sans attendre la base)
+let lastEmit = 0;
+function emitProgress(force = false) {
+  const now = Date.now();
+  if (!force && now - lastEmit < 300) return;
+  lastEmit = now;
+  try { document.dispatchEvent(new CustomEvent('kalimati-amazigh-voices-progress')); } catch { /* hors navigateur */ }
+}
+
+// Un son de pack sans type est marqué « audio/mpeg » (Safari sur iPhone refuse parfois un son sans type).
+// Un son d'un autre type (voix « Voix du Douar » enregistrées sur un téléphone) garde le sien.
+const asMpeg = (blob) => (blob && !blob.type ? blob.slice(0, blob.size, 'audio/mpeg') : blob);
+
+async function readCache(name, { mpeg = false } = {}) {
   const out = new Map();
   if (!hasCaches()) return out;
   try {
@@ -68,7 +86,7 @@ async function readCache(name) {
       const response = await cache.match(request);
       if (!response) continue;
       const blob = await response.blob();
-      if (blob && blob.size) out.set(id, blob);
+      if (blob && blob.size) out.set(id, mpeg ? asMpeg(blob) : blob);
     }
   } catch { /* cache illisible : la carte reste muette */ }
   return out;
@@ -80,14 +98,39 @@ export function loadAmazighVoices(lang) {
   const token = ++loadToken;
   loading = (async () => {
     const [parent, pack] = code
-      ? await Promise.all([readCache(parentCacheName(code)), readCache(packCacheName(code))])
+      ? await Promise.all([readCache(parentCacheName(code)), readCache(packCacheName(code), { mpeg: true })])
       : [new Map(), new Map()];
     if (token !== loadToken) return;
+    // v10.7.2 : pendant un téléchargement, les voix déjà arrivées sont gardées (elles parlent tout de suite).
+    const extra = code ? arriving.get(code) : null;
+    if (extra) for (const [id, blob] of extra) pack.set(id, blob);
     memory.lang = code;
     memory.parent = parent;
     memory.pack = pack;
-  })().catch(() => {}).finally(() => { if (token === loadToken) loading = null; });
+  })().catch(() => {}).finally(() => { if (token === loadToken) { loading = null; emitProgress(true); } });
   return loading;
+}
+
+// État des voix d'une variété, pour l'Accueil :
+// { downloading, done, total, loaded, ready (cartes qui parlent), pack, expected, declined, trial, failed }
+export function amazighVoiceStatus(lang) {
+  const p = progress.get(lang);
+  const loaded = memory.lang === lang && !loading;
+  const info = known.packs ? known.packs[lang] : null;
+  return {
+    downloading: Boolean(p),
+    done: p ? p.done : 0,
+    total: p ? p.total : 0,
+    loaded,
+    ready: memory.lang === lang ? new Set([...memory.pack.keys(), ...memory.parent.keys()]).size : 0,
+    pack: memory.lang === lang ? memory.pack.size : 0,
+    expected: info ? Number(info.expected) || 0 : 0,
+    declined: Boolean(known.declined && known.declined[lang]),
+    trial: Boolean(info && info.trial),
+    failed: failures.get(lang) || null,
+    // pas encore essayé depuis l'ouverture (l'arrivée automatique part 1,5 s après), ou essai en cours :
+    waiting: (!autoState.has(lang) || autoState.get(lang).running) && !(typeof navigator !== 'undefined' && navigator.onLine === false),
+  };
 }
 
 function ensureLoaded(lang) {
@@ -133,12 +176,15 @@ export async function removeParentAmazighVoicesOfCard(cardId) {
 // ---------- Packs vocaux à la carte ----------
 export async function getInstalledVoicePacks() {
   const saved = await db.getSetting(PACK_STATE_KEY);
-  return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  const state = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  known.packs = state;
+  return state;
 }
 
 async function savePackState(lang, info) {
   const state = await getInstalledVoicePacks();
   if (info) state[lang] = info; else delete state[lang];
+  known.packs = state;
   await db.setSetting(PACK_STATE_KEY, state);
 }
 
@@ -153,17 +199,27 @@ async function countPackVoices(lang) {
 
 async function getDeclinedPacks() {
   const saved = await db.getSetting(PACK_DECLINED_KEY).catch(() => null);
-  return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  const state = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  known.declined = state;
+  return state;
 }
 
 async function setDeclined(lang, declined) {
   const state = await getDeclinedPacks();
   if (declined) state[lang] = true; else delete state[lang];
+  known.declined = state;
   await db.setSetting(PACK_DECLINED_KEY, state).catch(() => {});
+}
+
+// v10.7.2 : l'Accueil lit l'état des packs une fois au démarrage (sans bloquer l'écran).
+export function readAmazighPackState() {
+  return Promise.all([getInstalledVoicePacks().catch(() => ({})), getDeclinedPacks()]).then(() => emitProgress(true)).catch(() => {});
 }
 
 // Un fichier du site, 20 s au plus (un réseau bloqué ne laisse pas le téléchargement en attente sans fin).
 const FETCH_WAIT_MS = 20000;
+const PARALLEL_DOWNLOADS = 6;
+const PACK_VERSION_HEADER = 'X-Kalimati-Pack-Version'; // v10.7.2 : version du pack de chaque voix gardée
 async function fetchWithin(url) {
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = controller ? setTimeout(() => controller.abort(), FETCH_WAIT_MS) : null;
@@ -202,58 +258,109 @@ export async function downloadAmazighVoicePack(lang, { onProgress, index: knownI
   if (!ids.length) {
     throw new Error(`Pas encore de pack vocal ${name} (ou pas d’internet). En attendant : enregistrez votre voix sur les cartes, ou importez un fichier « Voix du Douar ».`);
   }
-  const cache = await caches.open(packCacheName(lang));
-  // v10.7.1 : des voix humaines importées (« Voix du Douar ») ne sont jamais remplacées par des voix d'essai.
-  const before = (await getInstalledVoicePacks().catch(() => ({})))[lang];
-  const keepHuman = Boolean(before && before.source === 'douar');
-  let saved = 0;
-  for (let i = 0; i < ids.length; i += 1) {
-    const key = packKey(lang, ids[i]);
-    try {
-      if (keepHuman && await cache.match(key)) { saved += 1; if (onProgress) onProgress(i + 1, ids.length); continue; }
-      const response = await fetchWithin(key);
-      if (response.ok) {
-        const blob = await response.blob();
-        if (blob.size && blob.size <= MAX_VOICE_BYTES) {
-          await cache.put(key, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } }));
-          saved += 1;
+  // v10.7.2 : un seul téléchargement à la fois par variété (bouton de Progrès et arrivée automatique).
+  if (progress.has(lang)) throw new Error(`Les voix ${name} arrivent déjà. Patientez un peu.`);
+  const got = new Map();
+  failures.delete(lang);
+  stopped.delete(lang);
+  arriving.set(lang, got);
+  progress.set(lang, { done: 0, total: ids.length });
+  emitProgress(true);
+  try {
+    const cache = await caches.open(packCacheName(lang));
+    // v10.7.1 : des voix humaines importées (« Voix du Douar ») ne sont jamais remplacées par des voix d'essai.
+    const before = (await getInstalledVoicePacks().catch(() => ({})))[lang];
+    const keepHuman = Boolean(before && before.source === 'douar');
+    const version = String(Number(index.version) || 1);
+    const sameVersion = Boolean(before && before.source === 'site' && String(Number(before.version) || 1) === version);
+    // v10.7.2 : plusieurs voix à la fois (avant : une par une, 20 s ou plus sur téléphone) ; chaque carte parle
+    // dès que sa voix est arrivée ; une voix déjà gardée (même version) n'est pas retéléchargée, donc un
+    // téléchargement coupé (appli fermée, réseau perdu) reprend là où il s'était arrêté.
+    const keep = (id, blob) => { if (stopped.has(lang)) return; got.set(id, blob); if (memory.lang === lang) memory.pack.set(id, blob); };
+    let saved = 0;
+    let done = 0;
+    let next = 0;
+    let full = false;
+    const fetchOne = async (id) => {
+      const key = packKey(lang, id);
+      try {
+        const old = await cache.match(key);
+        const oldVersion = old ? old.headers.get(PACK_VERSION_HEADER) : null;
+        if (old && (keepHuman || oldVersion === version || (!oldVersion && sameVersion))) {
+          const blob = await old.blob();
+          if (blob.size) { saved += 1; keep(id, keepHuman ? blob : asMpeg(blob)); return; }
         }
+        const response = await fetchWithin(key);
+        if (!response.ok) return;
+        const blob = asMpeg(await response.blob());
+        if (!blob.size || blob.size > MAX_VOICE_BYTES) return;
+        await cache.put(key, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg', [PACK_VERSION_HEADER]: version } }));
+        saved += 1;
+        keep(id, blob);
+      } catch (err) {
+        if (quotaError(err)) full = true;
+        // une voix manquante n'arrête pas le pack
       }
-    } catch (err) {
-      if (quotaError(err)) {
-        await caches.delete(packCacheName(lang)).catch(() => {});
-        await savePackState(lang, null).catch(() => {});
-        if (memory.lang === lang) memory.pack = new Map();
-        throw fullMemoryError();
+    };
+    const worker = async () => {
+      while (!full && !stopped.has(lang) && next < ids.length) {
+        const id = ids[next];
+        next += 1;
+        await fetchOne(id);
+        done += 1;
+        progress.set(lang, { done, total: ids.length });
+        emitProgress();
+        if (onProgress) onProgress(done, ids.length);
       }
-      // une voix manquante n'arrête pas le pack
+    };
+    await Promise.all(Array.from({ length: Math.min(PARALLEL_DOWNLOADS, ids.length) }, worker));
+    // Pack supprimé par le parent pendant le téléchargement : on s'arrête là, sans rien remettre.
+    if (stopped.has(lang)) {
+      await caches.delete(packCacheName(lang)).catch(() => {});
+      if (memory.lang === lang) memory.pack = new Map();
+      throw new Error('Téléchargement arrêté : pack supprimé.');
     }
-    if (onProgress) onProgress(i + 1, ids.length);
+    if (full) {
+      await caches.delete(packCacheName(lang)).catch(() => {});
+      await savePackState(lang, null).catch(() => {});
+      if (memory.lang === lang) memory.pack = new Map();
+      throw fullMemoryError();
+    }
+    if (!saved) {
+      if (!(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
+      throw new Error('Le téléchargement n’a pas marché (internet coupé ?). Réessayez plus tard.');
+    }
+    const info = {
+      version: Number(version),
+      count: await countPackVoices(lang),
+      expected: ids.length,
+      source: keepHuman ? 'douar' : 'site',
+      trial: isTrialIndex(index),
+      model: shortText(index.source),
+      licence: shortText(index.licence),
+      installedAt: new Date().toISOString(),
+    };
+    // v10.7.2 : même si la base du téléphone refuse de noter l'état, les voix gardées restent utilisables.
+    known.packs = { ...(known.packs || {}), [lang]: info };
+    try {
+      await savePackState(lang, info);
+      await setDeclined(lang, false);
+    } catch { /* l'état sera refait à la prochaine ouverture */ }
+    if (memory.lang === lang) await loadAmazighVoices(lang);
+    announce();
+    return info;
+  } finally {
+    progress.delete(lang);
+    if (arriving.get(lang) === got) arriving.delete(lang);
+    emitProgress(true);
   }
-  if (!saved) {
-    if (!(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
-    throw new Error('Le téléchargement n’a pas marché (internet coupé ?). Réessayez plus tard.');
-  }
-  const info = {
-    version: Number(index.version) || 1,
-    count: await countPackVoices(lang),
-    source: keepHuman ? 'douar' : 'site',
-    trial: isTrialIndex(index),
-    model: shortText(index.source),
-    licence: shortText(index.licence),
-    installedAt: new Date().toISOString(),
-  };
-  await savePackState(lang, info);
-  await setDeclined(lang, false);
-  if (memory.lang === lang) await loadAmazighVoices(lang);
-  announce();
-  return info;
 }
 
 // Supprime le pack d'une variété. Les voix enregistrées par le parent restent.
 // v10.7.1 : le pack supprimé ne revient pas tout seul (seulement avec le bouton « Télécharger »).
 export async function removeAmazighVoicePack(lang) {
   if (!isAmazighLang(lang)) return;
+  if (progress.has(lang)) stopped.add(lang); // v10.7.2 : arrête aussi un téléchargement en cours
   if (hasCaches()) await caches.delete(packCacheName(lang)).catch(() => {});
   await savePackState(lang, null);
   await setDeclined(lang, true);
@@ -261,27 +368,74 @@ export async function removeAmazighVoicePack(lang) {
   announce();
 }
 
-// v10.7.1 : sans pack dans le téléphone, celui de la variété choisie se télécharge tout seul, une fois par
-// ouverture de l'appli, en arrière-plan. Seulement des fichiers du site Kalimati (rien ne part du téléphone).
-// Jamais par-dessus un pack « Voix du Douar », ni après une suppression par le parent. Aucun message d'erreur.
-const autoTried = new Set();
+// v10.7.1 : sans pack dans le téléphone, celui de la variété choisie se télécharge tout seul, en arrière-plan.
+// Seulement des fichiers du site Kalimati (rien ne part du téléphone). Jamais par-dessus un pack
+// « Voix du Douar », ni après une suppression par le parent. Aucun message d'erreur (l'Accueil montre l'état).
+// v10.7.2 : un pack incomplet (téléchargement coupé) est complété ; nouvel essai au retour dans l'appli ou
+// d'internet (3 essais au plus par ouverture, 15 s d'écart au moins).
+const MAX_AUTO_TRIES = 3;
+const RETRY_AFTER_MS = 15000;
+const autoState = new Map(); // variété -> { tries, at, complete, running }
 let autoQueue = Promise.resolve(null);
 export function autoInstallAmazighVoicePack(lang) {
-  if (!isAmazighLang(lang) || !hasCaches() || autoTried.has(lang)) return Promise.resolve(null);
+  if (!isAmazighLang(lang) || !hasCaches()) return Promise.resolve(null);
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null);
-  autoTried.add(lang);
+  const state = autoState.get(lang) || { tries: 0, at: 0, complete: false, running: false };
+  if (state.complete || state.running || state.tries >= MAX_AUTO_TRIES || (state.at && Date.now() - state.at < RETRY_AFTER_MS)) return Promise.resolve(null);
+  state.tries += 1;
+  state.running = true;
+  state.at = Date.now();
+  autoState.set(lang, state);
   // Une variété après l'autre (si le parent change vite de langue).
   autoQueue = autoQueue.then(async () => {
-    const [installed, declined] = await Promise.all([getInstalledVoicePacks().catch(() => ({})), getDeclinedPacks()]);
-    const info = installed[lang];
-    if (declined[lang] || (info && info.source !== 'site')) return null;
-    const index = await fetchPackIndex(lang);
-    if (!index) return null;
-    const stillThere = info ? await countPackVoices(lang) : 0;
-    if (info && stillThere && (Number(info.version) || 1) >= (Number(index.version) || 1)) return null;
-    return downloadAmazighVoicePack(lang, { index });
+    try {
+      const [installed, declined] = await Promise.all([getInstalledVoicePacks().catch(() => ({})), getDeclinedPacks()]);
+      const info = installed[lang];
+      if (declined[lang] || (info && info.source !== 'site')) { state.complete = true; emitProgress(true); return null; }
+      const index = await fetchPackIndex(lang);
+      const stillThere = await countPackVoices(lang);
+      if (!index) {
+        if (!stillThere) { failures.set(lang, 'pas d’internet, ou site injoignable'); emitProgress(true); }
+        return null;
+      }
+      const expected = Object.keys(index.entries).filter((id) => CARD_ID_RE.test(id)).slice(0, MAX_VOICES).length;
+      const upToDate = info && (Number(info.version) || 1) >= (Number(index.version) || 1);
+      if (upToDate && stillThere >= expected) {
+        state.complete = true;
+        failures.delete(lang);
+        // v10.7.1 n'écrivait pas le nombre attendu : on le note pour l'Accueil.
+        if (!Number(info.expected)) await savePackState(lang, { ...info, expected }).catch(() => {});
+        emitProgress(true);
+        return null;
+      }
+      const done = await downloadAmazighVoicePack(lang, { index });
+      state.complete = Boolean(done && done.count >= expected);
+      return done;
+    } catch (err) {
+      failures.set(lang, String(err?.message || err).slice(0, 120));
+      emitProgress(true);
+      return null;
+    } finally {
+      state.running = false;
+      state.at = Date.now();
+    }
   }).catch(() => null);
   return autoQueue;
+}
+
+// v10.7.2 : bouton « Réessayer » de l'Accueil (même règles : jamais après une suppression par le parent).
+export function retryAmazighVoicePack(lang) {
+  const state = autoState.get(lang);
+  if (state && state.running) return autoQueue;
+  autoState.delete(lang);
+  failures.delete(lang);
+  emitProgress(true);
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    failures.set(lang, 'pas d’internet');
+    emitProgress(true);
+    return Promise.resolve(null);
+  }
+  return autoInstallAmazighVoicePack(lang);
 }
 
 // ---------- « Voix du Douar » : partage de voix d'adultes entre familles (fichier .json) ----------

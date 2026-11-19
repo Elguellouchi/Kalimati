@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-7-1';
+const CACHE = 'kalimati-v10-7-2';
 const FILES = [
   './', './index.html', './boot-guard.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -48,7 +48,9 @@ async function voiceFiles() {
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
-    await cache.addAll(FILES);
+    // v10.7.2 : fichiers de l'appli redemandés au site (pas la copie du navigateur, qui pouvait être
+    // l'ancienne version et mélanger deux versions du code).
+    await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
     // Une voix manquante ne doit pas empêcher l'installation.
     // v10.1.2 : les voix et images déjà gardées sont recopiées de l'ancienne version
     // (avant, ~780 fichiers étaient retéléchargés à chaque mise à jour, ce qui saturait le téléphone).

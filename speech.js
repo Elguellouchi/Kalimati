@@ -29,17 +29,41 @@ export function stopSpeaking() {
   }
 }
 
-export function playBlob(blob, { rate = 1 } = {}) {
+// onResult(ok, raison) : v10.7.2, pour dire sur l'Accueil pourquoi une carte amazighe est restée muette.
+export function playBlob(blob, { rate = 1, onResult = null } = {}) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
     audio.playbackRate = rate;
     currentAudio = audio;
-    const done = (ok = true) => { URL.revokeObjectURL(url); if (currentAudio === audio) currentAudio = null; resolve(ok); };
+    let settled = false;
+    const done = (ok = true, why = '') => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(url);
+      if (currentAudio === audio) currentAudio = null;
+      // Un son coupé par un autre toucher (AbortError) n'est pas un échec.
+      if (onResult && !ok && why !== 'AbortError') onResult(false, why);
+      resolve(ok);
+    };
     audio.onended = () => done(true);
-    audio.onerror = () => done(false);
-    audio.play().catch(() => done(false));
+    audio.onerror = () => done(false, `illisible ${audio.error ? audio.error.code : ''}`.trim());
+    let started;
+    try { started = audio.play(); } catch (err) { done(false, err && err.name ? err.name : 'play'); return; }
+    if (started && typeof started.then === 'function') {
+      started.then(() => { if (onResult) onResult(true, ''); }, (err) => done(false, err && err.name ? err.name : 'play'));
+    } else if (onResult) onResult(true, '');
   });
+}
+
+// v10.7.2 : dernier toucher d'une carte en amazigh (montré en petit sur l'Accueil).
+// ok : true (son parti), false (pas parti) ; why : 'sans voix', ou la raison donnée par le téléphone.
+export const lastAmazighPlay = { at: 0, ok: null, why: '', lang: null };
+function noteAmazighPlay(lang, ok, why) {
+  lastAmazighPlay.at = Date.now();
+  lastAmazighPlay.ok = ok;
+  lastAmazighPlay.why = why || '';
+  lastAmazighPlay.lang = lang;
 }
 
 // Sur Android, la liste des voix arrive en retard : on la garde à jour.
@@ -194,7 +218,8 @@ export async function sayCard(card, lang) {
   // (elle lirait l'amazigh avec un accent faux, et pas du tout le tifinagh). Rien ne part sur internet.
   if (isAmazighLang(lang)) {
     const voice = amazighVoiceFor(lang, card.id);
-    return voice ? playBlob(voice) : false;
+    if (!voice) { noteAmazighPlay(lang, false, 'sans voix'); return false; }
+    return playBlob(voice, { onResult: (ok, why) => noteAmazighPlay(lang, ok, why) });
   }
   // Langues ajoutées (v7.2) : le mot traduit, dit par la voix du téléphone ; un mot sans traduction est dit en français.
   if (isExtraLang(lang)) return speak(cardWord(card, lang), { lang: hasWord(card, lang) ? lang : 'fr' });

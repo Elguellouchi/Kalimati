@@ -2,7 +2,7 @@
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
-import { sayCard, sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY } from './speech.js';
+import { sayCard, sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY, lastAmazighPlay } from './speech.js';
 import { openEditor } from './editor.js';
 import { unlockSounds } from './media.js';
 import { buildBackupFile, deliverBackup, readBackup } from './backup.js';
@@ -17,7 +17,7 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isAmazighLang, isAmazighScript, cardWord, categoryName, ui, spokenUi } from './modules/languages.js';
-import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack } from './modules/voice-packs.js';
+import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
@@ -479,8 +479,52 @@ function homeScreen() {
       type: 'button', class: `home-tile ${cls}`, onclick: () => { sayMenu(titleKey); openSpace(id); },
     }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang))))),
     h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès & Console Bêta (adultes)' : '🔒 Progrès (adultes)'),
+    amazighVoiceLine(),
     // v9.16.2 : numéro de version visible, pour vérifier que le téléphone a bien la dernière mise à jour.
     h('p', { class: 'app-version' }, `Kalimati ${APP_VERSION}`));
+}
+
+// ---------- v10.7.2 : état des voix amazighes, en petit sur l'Accueil ----------
+// Dit au parent si les voix sont en train d'arriver, prêtes, ou pas arrivées (et pourquoi),
+// et ce qui s'est passé au dernier toucher d'une carte. Rien n'est envoyé : tout est lu dans le téléphone.
+function amazighVoiceLine() {
+  if (!isAmazighLang(state.lang)) return null;
+  const line = h('div', { class: 'amz-status', id: 'amz-status', role: 'status' });
+  fillAmazighVoiceLine(line);
+  return line;
+}
+
+function amazighPlayNote() {
+  const last = lastAmazighPlay;
+  if (!last.at || last.lang !== state.lang) return null;
+  if (last.ok) return '🔈 Dernier toucher : le son est parti.';
+  if (last.why === 'sans voix') return '🔈 Dernier toucher : cette carte n’a pas encore de voix.';
+  if (last.why === 'NotAllowedError') return '🔈 Dernier toucher : le téléphone a bloqué le son (NotAllowedError).';
+  return `🔈 Dernier toucher : le son n’est pas parti (${last.why || 'raison inconnue'}).`;
+}
+
+function fillAmazighVoiceLine(line) {
+  if (!line || !isAmazighLang(state.lang)) return;
+  const s = amazighVoiceStatus(state.lang);
+  const name = langInfo(state.lang).name;
+  const kind = s.trial ? ' (voix d’essai)' : '';
+  let text;
+  let retry = false;
+  if (s.downloading) text = `⏳ Voix ${name} : ${s.done} sur ${s.total} arrivées…`;
+  else if (!s.loaded) text = `⏳ Voix ${name} : lecture dans le téléphone…`;
+  else if (s.expected && s.pack && s.pack < s.expected) { text = `🔊 Voix ${name} : ${s.pack} cartes sur ${s.expected}${kind}.`; retry = !s.declined; }
+  else if (s.ready) text = `🔊 Voix ${name} prêtes : ${s.ready} cartes${kind}.`;
+  else if (s.declined) text = `🔇 Voix ${name} : pack supprimé. Pour le remettre : Progrès › Voix amazighes.`;
+  else if (s.waiting) text = `⏳ Voix ${name} : elles arrivent dans un instant…`;
+  else if (s.failed) { text = `⚠️ Voix ${name} pas encore arrivées : ${s.failed}.`; retry = true; }
+  else { text = `🔇 Voix ${name} pas encore dans le téléphone.`; retry = true; }
+  const note = amazighPlayNote();
+  line.replaceChildren(
+    h('p', {}, text, retry ? h('button', {
+      type: 'button', class: 'btn ghost amz-retry',
+      onclick: () => { retryAmazighVoicePack(state.lang); fillAmazighVoiceLine(line); },
+    }, '🔄 Réessayer') : null),
+    note ? h('p', {}, note) : null);
 }
 
 function renderView() {
@@ -918,6 +962,8 @@ async function init() {
   const savedScript = await db.getSetting('amazighScript').catch(() => null);
   state.amazighScript = isAmazighScript(savedScript) ? savedScript : 'both';
   loadAmazighVoices(state.lang).catch(() => {});
+  readAmazighPackState(); // v10.7.2 : pour la ligne « voix » de l'Accueil (ne bloque pas l'ouverture)
+  document.addEventListener('kalimati-amazigh-voices-progress', () => fillAmazighVoiceLine(document.getElementById('amz-status')));
   document.addEventListener('kalimati-amazigh-script', (e) => {
     state.amazighScript = isAmazighScript(e?.detail) ? e.detail : 'both';
     if (!isAmazighLang(state.lang)) return;
@@ -997,6 +1043,8 @@ async function init() {
   const amazighPackSoon = () => { if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang); };
   setTimeout(amazighPackSoon, 1500);
   window.addEventListener('online', amazighPackSoon);
+  // v10.7.2 : un téléchargement coupé (appli mise en arrière-plan) reprend au retour dans l'appli.
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') amazighPackSoon(); });
   // v9.16.1 : on vérifie toujours le service worker sur le serveur, et on recharge une fois quand une nouvelle version prend la main.
   if ('serviceWorker' in navigator) {
     const hadController = Boolean(navigator.serviceWorker.controller);
