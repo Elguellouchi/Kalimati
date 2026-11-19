@@ -13,6 +13,7 @@
 
 import * as db from '../db.js';
 import { isAmazighLang, langInfo } from './languages.js';
+import { logDiagnostic, LOG_TYPES } from './error-log.js';
 
 export const VOICE_CACHE_PREFIX = 'kalimati-amazigh-voices-';
 const PACK_STATE_KEY = 'amazighVoicePacks';
@@ -431,7 +432,10 @@ export function autoInstallAmazighVoicePack(lang) {
       step('voix gardées');
       const stillThere = await within(countPackVoices(lang), STEP_WAIT_MS, 0);
       if (!index) {
-        if (!stillThere) failures.set(lang, 'pas d’internet, ou site injoignable');
+        if (!stillThere) {
+          failures.set(lang, 'pas d’internet, ou site injoignable');
+          logDiagnostic(LOG_TYPES.SYNC_PACK, 'voice_pack_index_unreachable', { packId: `amz-${lang}` }); // v10.8
+        }
         emitProgress(true);
         return null;
       }
@@ -448,9 +452,12 @@ export function autoInstallAmazighVoicePack(lang) {
       step('téléchargement');
       const done = await downloadAmazighVoicePack(lang, { index });
       state.complete = Boolean(done && done.count >= expected);
+      if (done && done.count < expected) logDiagnostic(LOG_TYPES.SYNC_PACK, `voice_pack_incomplete ${done.count}/${expected}`, { packId: `amz-${lang}`, sev: 'info' }); // v10.8
+      if (done && !hasCaches()) logDiagnostic(LOG_TYPES.SYNC_PACK, 'no_cache_storage_memory_only', { packId: `amz-${lang}`, sev: 'info' }); // v10.8
       return done;
     } catch (err) {
       failures.set(lang, String(err?.message || err).slice(0, 120));
+      logDiagnostic(LOG_TYPES.SYNC_PACK, `voice_pack_failed ${err?.name || ''} ${String(err?.message || err).slice(0, 80)}`, { packId: `amz-${lang}` }); // v10.8
       emitProgress(true);
       return null;
     } finally {

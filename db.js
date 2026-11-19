@@ -111,8 +111,12 @@ function openDb() {
 }
 
 // v10.7 : mémoire pleine = message clair en français (le nom de l'erreur reste QuotaExceededError).
-function readableError(err) {
+// v10.8 : la mémoire pleine est aussi notée dans le journal d'erreurs (événement, sans lien circulaire entre fichiers).
+function readableError(err, storeName = '') {
   if (err && err.name === 'QuotaExceededError') {
+    try {
+      window.dispatchEvent(new CustomEvent('kalimati-diagnostic', { detail: { type: 'STORAGE_QUOTA', detail: `idb_quota_${storeName}`, sev: 'error' } }));
+    } catch { /* hors navigateur */ }
     return Object.assign(new Error('Mémoire du téléphone pleine. Supprimez des vidéos ou un pack vocal (Progrès), puis réessayez.'), { name: 'QuotaExceededError' });
   }
   return err;
@@ -123,8 +127,8 @@ function runOnce(storeName, mode, action) {
     const transaction = db.transaction(storeName, mode);
     const request = action(transaction.objectStore(storeName));
     transaction.oncomplete = () => resolve(request instanceof IDBRequest ? request.result : undefined);
-    transaction.onerror = () => reject(readableError(transaction.error));
-    transaction.onabort = () => reject(readableError(transaction.error));
+    transaction.onerror = () => reject(readableError(transaction.error, storeName));
+    transaction.onabort = () => reject(readableError(transaction.error, storeName));
   }));
 }
 

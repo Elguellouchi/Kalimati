@@ -20,6 +20,7 @@ import { parentBetaSettingsBox } from './admin-beta.js';
 import { LANGS, isAmazighLang, isAmazighScript, AMAZIGH_SCRIPTS } from './languages.js';
 import { getInstalledVoicePacks, downloadAmazighVoicePack, removeAmazighVoicePack, exportDouarVoicePack, importDouarVoicePack } from './voice-packs.js';
 import { deliverBackup } from '../backup.js';
+import { errorLogSettingsBox } from './error-log.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
@@ -361,6 +362,8 @@ export function dashboardScreen(nav) {
       safePart('Voix', () => voiceSettingsBox()),
       safePart('Écriture amazighe', () => amazighScriptBox()),
       safePart('Voix amazighes', () => amazighVoicePacksBox()),
+      // v10.8 : journal d'erreurs (dans le téléphone, anonyme), à lire avant chaque amélioration.
+      safePart('Journal d’erreurs', () => errorLogSettingsBox({ onDeliverFile: deliverBackup })),
       safePart('Voix en ligne', () => speechCloudBox()),
       safePart('Images', () => visualStyleBox()),
       safePart('Amis', () => friendsSettingsBox()),

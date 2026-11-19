@@ -4,6 +4,7 @@
 import { langInfo, isExtraLang, isAmazighLang, cardWord, hasWord } from './modules/languages.js';
 import { inflectStrip } from './modules/morphology.js';
 import { amazighVoiceFor, parentAmazighVoice, packAmazighVoice } from './modules/voice-packs.js';
+import { logDiagnostic, LOG_TYPES } from './modules/error-log.js';
 
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
@@ -59,11 +60,13 @@ export function playBlob(blob, { rate = 1, onResult = null } = {}) {
 // v10.7.2 : dernier toucher d'une carte en amazigh (montré en petit sur l'Accueil).
 // ok : true (son parti), false (pas parti) ; why : 'sans voix', ou la raison donnée par le téléphone.
 export const lastAmazighPlay = { at: 0, ok: null, why: '', lang: null };
-function noteAmazighPlay(lang, ok, why) {
+function noteAmazighPlay(lang, ok, why, cardId) {
   lastAmazighPlay.at = Date.now();
   lastAmazighPlay.ok = ok;
   lastAmazighPlay.why = why || '';
   lastAmazighPlay.lang = lang;
+  // v10.8 : journal d'erreurs (dans le téléphone, sans prénom ni son) : carte restée muette, et pourquoi.
+  if (!ok) logDiagnostic(LOG_TYPES.AUDIO_SILENT, why === 'sans voix' ? 'missing_voice' : `play_failed ${why || ''}`.trim(), { cardId, ctx: { lang } });
 }
 
 // Sur Android, la liste des voix arrive en retard : on la garde à jour.
@@ -218,8 +221,8 @@ export async function sayCard(card, lang) {
   // (elle lirait l'amazigh avec un accent faux, et pas du tout le tifinagh). Rien ne part sur internet.
   if (isAmazighLang(lang)) {
     const voice = amazighVoiceFor(lang, card.id);
-    if (!voice) { noteAmazighPlay(lang, false, 'sans voix'); return false; }
-    return playBlob(voice, { onResult: (ok, why) => noteAmazighPlay(lang, ok, why) });
+    if (!voice) { noteAmazighPlay(lang, false, 'sans voix', card.id); return false; }
+    return playBlob(voice, { onResult: (ok, why) => noteAmazighPlay(lang, ok, why, card.id) });
   }
   // Langues ajoutées (v7.2) : le mot traduit, dit par la voix du téléphone ; un mot sans traduction est dit en français.
   if (isExtraLang(lang)) return speak(cardWord(card, lang), { lang: hasWord(card, lang) ? lang : 'fr' });

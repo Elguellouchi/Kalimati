@@ -27,6 +27,7 @@ import { loadMorphologyState, inflectStrip, renderMorphologyBar } from './module
 import { loadEyeTracking } from './modules/eye-and-packs.js';
 import { initCloudSyncFromUrlAndAuto, captureMagicKeyFromUrl } from './modules/cloud-sync.js';
 import { APP_VERSION, checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
+import { initGlobalErrorLogger, logDiagnostic, recordRejectedTap, setDiagnosticForbiddenNames } from './modules/error-log.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -136,7 +137,7 @@ function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
   const now = performance.now();
   // Identité de la carte : son id, sinon l'élément affiché (évite de bloquer deux cartes différentes sans id).
   const tapKey = (card && card.id != null) ? card.id : element;
-  if (tapKey === lastCardTap.key && now - lastCardTap.at < SAME_CARD_COOLDOWN_MS) return;
+  if (tapKey === lastCardTap.key && now - lastCardTap.at < SAME_CARD_COOLDOWN_MS) { recordRejectedTap({ cardId: card?.id, space: state.space }); return; } // v10.8
   lastCardTap = { key: tapKey, at: now };
   element.classList.remove('pressed');
   void element.offsetWidth;
@@ -964,6 +965,11 @@ async function loadCards() {
 
 async function init() {
   captureMagicKeyFromUrl(); // v10.5 : la clé du lien #key= quitte l'adresse avant toute autre chose
+  // v10.8 : journal d'erreurs local (dans le téléphone, anonyme : ni prénom, ni voix, ni photo, ni phrase, ni clé).
+  initGlobalErrorLogger({
+    getContext: () => ({ v: APP_VERSION, lang: state.lang || 'fr', space: state.space || 'home', online: typeof navigator !== 'undefined' ? Boolean(navigator.onLine) : true }),
+  });
+  window.addEventListener('kalimati-diagnostic', (e) => { if (e?.detail?.type) logDiagnostic(e.detail.type, e.detail.detail, e.detail); });
   nav.attach($('#view'));
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
@@ -986,6 +992,7 @@ async function init() {
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
+  try { setDiagnosticForbiddenNames([firstName()]); } catch { /* pas de prénom */ } // v10.8
   await loadFriendsState().catch(() => {});
   await loadMorphologyState().catch(() => {});
   await loadEyeTracking().catch(() => {}); // v10.1 : mode regard (désactivé par défaut)

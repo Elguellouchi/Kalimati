@@ -5,6 +5,7 @@
 import * as db from '../db.js';
 import { h, btn } from './util.js';
 import { searchPictograms, downloadPictogram } from './arasaac.js';
+import { logDiagnostic, LOG_TYPES } from './error-log.js'; // v10.8
 
 const EYE_KEY = 'eyeTrackingConfig';
 const INSTALLED_PACKS_KEY = 'installedThematicPacks';
@@ -378,8 +379,9 @@ export async function installThematicPack(packId, { fetchArasaac = true } = {}) 
           photoBlob = await inTime(downloadPictogram(hits[0].id));
         }
       } catch (err) {
-        // Garde l'émoji hors-ligne si ARASAAC ne répond pas
+        // Garde l'émoji hors-ligne si ARASAAC ne répond pas (v10.8 : noté dans le journal d'erreurs)
         if (err?.slow) askArasaac = false;
+        logDiagnostic(LOG_TYPES.SYNC_PACK, err?.slow ? 'arasaac_slow_emoji' : 'arasaac_fallback_emoji', { packId: pack.id, cardId: raw.id, sev: 'info' });
       }
     }
     toSave.push({
