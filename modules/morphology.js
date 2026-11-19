@@ -1,5 +1,6 @@
 // 🧠 Moteur morphologique et syntaxique bilingue (Français + Darija marocaine + Code-Switching) — 100 % hors-ligne.
 // Version v10.0 :
+// v10.7 : + conjugaison amazighe (4 variétés), en lettres latines et en tifinagh.
 // 1. Conjugaison automatique des verbes (Présent, Passé, Futur) selon le sujet (Je/Moi, Papa/Il, Maman/Sœur/Elle) et après « Je veux / Bghit ».
 // 2. Insertion automatique du verbe sous-entendu après « Je veux » quand l'enfant pose un nom sans verbe :
 //    - Aliment : « Je veux » + « Pain » -> « Je veux manger du pain » (bghit nakoul l-khobz, verbCardId: 'c-actions-manger')
@@ -14,6 +15,8 @@
 
 import * as db from '../db.js';
 import { h } from './util.js';
+import { isAmazighLang, formatAmazighText } from './languages.js';
+import { amazighEntry } from './amazigh-lexicon.js';
 
 let currentTense = 'present'; // 'past' | 'present' | 'future'
 let childGenderCached = 'girl'; // 'girl' | 'boy' (configurable dans le profil)
@@ -418,11 +421,169 @@ function conjugateVerbDr(vEntry, drFallback, person, tense, afterModal, subjectG
   return isAr ? (vEntry.presAr[person] || vEntry.presAr['1s']) : (vEntry.presDr[person] || vEntry.presDr['1s']);
 }
 
-// ---------- 5. Moteur principal d'inflexion contextuelle de la bande de phrase ----------
-export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
-  if (!Array.isArray(stripItems) || !stripItems.length) {
-    return { tokens: [], sentenceFr: '', sentenceDr: '', sentenceAr: '', displayText: '', speechText: '' };
+// ---------- 4 bis. v10.7 : conjugaison amazighe (shi, tzm, rif, zgh), à faire relire par des locuteurs natifs ----------
+// riɣ / xseɣ (« je veux ») + ad + aoriste ; présent ar / da ; futur rad / ad. Chaque forme : [latin, tifinagh].
+const AMAZIGH_SUBJECTS = {
+  'c-personnes-moi': {
+    shi: { lat: 'Nekk', tif: 'ⵏⴽⴽ' }, tzm: { lat: 'Nekk', tif: 'ⵏⴽⴽ' },
+    rif: { lat: 'Nečč', tif: 'ⵏⵛⵛ' }, zgh: { lat: 'Nekk', tif: 'ⵏⴽⴽ' },
+  },
+  'c-personnes-papa': {
+    shi: { lat: 'Baba', tif: 'ⴱⴰⴱⴰ' }, tzm: { lat: 'Baba', tif: 'ⴱⴰⴱⴰ' },
+    rif: { lat: 'Baba', tif: 'ⴱⴰⴱⴰ' }, zgh: { lat: 'Baba', tif: 'ⴱⴰⴱⴰ' },
+  },
+  'c-personnes-papi': {
+    shi: { lat: 'Jddi', tif: 'ⵊⴷⴷⵉ' }, tzm: { lat: 'Jeddi', tif: 'ⵊⴷⴷⵉ' },
+    rif: { lat: 'Jeddi', tif: 'ⵊⴷⴷⵉ' }, zgh: { lat: 'Jddi', tif: 'ⵊⴷⴷⵉ' },
+  },
+  'c-personnes-maman': {
+    shi: { lat: 'Immi', tif: 'ⵉⵎⵎⵉ' }, tzm: { lat: 'Imma', tif: 'ⵉⵎⵎⴰ' },
+    rif: { lat: 'Yemma', tif: 'ⵢⵎⵎⴰ' }, zgh: { lat: 'Imma', tif: 'ⵉⵎⵎⴰ' },
+  },
+  'c-personnes-mamie': {
+    shi: { lat: 'Jdda', tif: 'ⵊⴷⴷⴰ' }, tzm: { lat: 'Ḥenna', tif: 'ⵃⵏⵏⴰ' },
+    rif: { lat: 'Ḥenna', tif: 'ⵃⵏⵏⴰ' }, zgh: { lat: 'Jdda', tif: 'ⵊⴷⴷⴰ' },
+  },
+  'c-personnes-maitresse': {
+    shi: { lat: 'Taselmadt', tif: 'ⵜⴰⵙⵍⵎⴰⴷⵜ' }, tzm: { lat: 'Taselmadt', tif: 'ⵜⴰⵙⵍⵎⴰⴷⵜ' },
+    rif: { lat: 'Taselmadt', tif: 'ⵜⴰⵙⵍⵎⴰⴷⵜ' }, zgh: { lat: 'Taselmadt', tif: 'ⵜⴰⵙⵍⵎⴰⴷⵜ' },
+  },
+};
+
+function amzModalForm(code, person, tense) {
+  const isRif = code === 'rif';
+  const base = isRif
+    ? { '1s': ['xseɣ', 'ⵅⵙⵖ'], '3ms': ['ixs', 'ⵉⵅⵙ'], '3fs': ['txs', 'ⵜⵅⵙ'] }
+    : { '1s': ['riɣ', 'ⵔⵉⵖ'], '3ms': ['ira', 'ⵉⵔⴰ'], '3fs': ['tra', 'ⵜⵔⴰ'] };
+  const [lat, tif] = base[person] || base['1s'];
+  if (tense === 'past') {
+    if (isRif) return { lat: `tuɣa ${lat}`, tif: `ⵜⵓⵖⴰ ${tif}` };
+    const aux = person === '3ms' ? ['illa', 'ⵉⵍⵍⴰ'] : person === '3fs' ? ['tlla', 'ⵜⵍⵍⴰ'] : ['lliɣ', 'ⵍⵍⵉⵖ'];
+    return { lat: `${aux[0]} ${lat}`, tif: `${aux[1]} ${tif}` };
   }
+  if (tense === 'future') {
+    const p = isRif ? ['ad', 'ⴰⴷ'] : ['rad', 'ⵔⴰⴷ'];
+    return { lat: `${p[0]} ${lat}`, tif: `${p[1]} ${tif}` };
+  }
+  return { lat, tif };
+}
+
+const AMAZIGH_VERBS = {
+  manger: {
+    aor: { '1s': ['ččeɣ', 'ⵛⵛⵖ'], '3ms': ['ičč', 'ⵉⵛⵛ'], '3fs': ['tečč', 'ⵜⵛⵛ'] },
+    pres: {
+      shi: { '1s': ['ar tetteɣ', 'ⴰⵔ ⵜⵜⵜⵖ'], '3ms': ['ar itett', 'ⴰⵔ ⵉⵜⵜⵜ'], '3fs': ['ar tett', 'ⴰⵔ ⵜⵜⵜ'] },
+      tzm: { '1s': ['da tetteɣ', 'ⴷⴰ ⵜⵜⵜⵖ'], '3ms': ['da itett', 'ⴷⴰ ⵉⵜⵜⵜ'], '3fs': ['da tett', 'ⴷⴰ ⵜⵜⵜ'] },
+      rif: { '1s': ['tetteɣ', 'ⵜⵜⵜⵖ'], '3ms': ['itett', 'ⵉⵜⵜⵜ'], '3fs': ['tett', 'ⵜⵜⵜ'] },
+      zgh: { '1s': ['ar tetteɣ', 'ⴰⵔ ⵜⵜⵜⵖ'], '3ms': ['ar itett', 'ⴰⵔ ⵉⵜⵜⵜ'], '3fs': ['ar tett', 'ⴰⵔ ⵜⵜⵜ'] },
+    },
+    past: { '1s': ['ččiɣ', 'ⵛⵛⵉⵖ'], '3ms': ['ičča', 'ⵉⵛⵛⴰ'], '3fs': ['tečča', 'ⵜⵛⵛⴰ'] },
+  },
+  boire: {
+    aor: { '1s': ['suɣ', 'ⵙⵓⵖ'], '3ms': ['isu', 'ⵉⵙⵓ'], '3fs': ['tsu', 'ⵜⵙⵓ'] },
+    aorRif: { '1s': ['sweɣ', 'ⵙⵡⵖ'], '3ms': ['isw', 'ⵉⵙⵡ'], '3fs': ['tesw', 'ⵜⵙⵡ'] },
+    pres: {
+      shi: { '1s': ['ar ssaɣ', 'ⴰⵔ ⵙⵙⴰⵖ'], '3ms': ['ar issa', 'ⴰⵔ ⵉⵙⵙⴰ'], '3fs': ['ar tssa', 'ⴰⵔ ⵜⵙⵙⴰ'] },
+      tzm: { '1s': ['da ssaɣ', 'ⴷⴰ ⵙⵙⴰⵖ'], '3ms': ['da issa', 'ⴷⴰ ⵉⵙⵙⴰ'], '3fs': ['da tssa', 'ⴷⴰ ⵜⵙⵙⴰ'] },
+      rif: { '1s': ['sesseɣ', 'ⵙⵙⵙⵖ'], '3ms': ['isess', 'ⵉⵙⵙⵙ'], '3fs': ['tsess', 'ⵜⵙⵙⵙ'] },
+      zgh: { '1s': ['ar ssaɣ', 'ⴰⵔ ⵙⵙⴰⵖ'], '3ms': ['ar issa', 'ⴰⵔ ⵉⵙⵙⴰ'], '3fs': ['ar tssa', 'ⴰⵔ ⵜⵙⵙⴰ'] },
+    },
+    past: { '1s': ['swiɣ', 'ⵙⵡⵉⵖ'], '3ms': ['iswa', 'ⵉⵙⵡⴰ'], '3fs': ['teswa', 'ⵜⵙⵡⴰ'] },
+  },
+  jouer: {
+    aor: { '1s': ['urarɣ', 'ⵓⵔⴰⵔⵖ'], '3ms': ['yurar', 'ⵢⵓⵔⴰⵔ'], '3fs': ['turar', 'ⵜⵓⵔⴰⵔ'] },
+    aorRif: { '1s': ['irarɣ', 'ⵉⵔⴰⵔⵖ'], '3ms': ['yirar', 'ⵢⵉⵔⴰⵔ'], '3fs': ['tirar', 'ⵜⵉⵔⴰⵔ'] },
+    pres: {
+      shi: { '1s': ['ar tturarɣ', 'ⴰⵔ ⵜⵜⵓⵔⴰⵔⵖ'], '3ms': ['ar itturar', 'ⴰⵔ ⵉⵜⵜⵓⵔⴰⵔ'], '3fs': ['ar tturar', 'ⴰⵔ ⵜⵜⵓⵔⴰⵔ'] },
+      tzm: { '1s': ['da tturarɣ', 'ⴷⴰ ⵜⵜⵓⵔⴰⵔⵖ'], '3ms': ['da itturar', 'ⴷⴰ ⵉⵜⵜⵓⵔⴰⵔ'], '3fs': ['da tturar', 'ⴷⴰ ⵜⵜⵓⵔⴰⵔ'] },
+      rif: { '1s': ['ttirareɣ', 'ⵜⵜⵉⵔⴰⵔⵖ'], '3ms': ['ittirir', 'ⵉⵜⵜⵉⵔⵉⵔ'], '3fs': ['ttirir', 'ⵜⵜⵉⵔⵉⵔ'] },
+      zgh: { '1s': ['ar tturarɣ', 'ⴰⵔ ⵜⵜⵓⵔⴰⵔⵖ'], '3ms': ['ar itturar', 'ⴰⵔ ⵉⵜⵜⵓⵔⴰⵔ'], '3fs': ['ar tturar', 'ⴰⵔ ⵜⵜⵓⵔⴰⵔ'] },
+    },
+    past: { '1s': ['urarɣ', 'ⵓⵔⴰⵔⵖ'], '3ms': ['yurar', 'ⵢⵓⵔⴰⵔ'], '3fs': ['turar', 'ⵜⵓⵔⴰⵔ'] },
+  },
+  aller: {
+    aor: { '1s': ['dduɣ', 'ⴷⴷⵓⵖ'], '3ms': ['iddu', 'ⵉⴷⴷⵓ'], '3fs': ['tddu', 'ⵜⴷⴷⵓ'] },
+    aorRif: { '1s': ['raḥeɣ', 'ⵔⴰⵃⵖ'], '3ms': ['iraḥ', 'ⵉⵔⴰⵃ'], '3fs': ['traḥ', 'ⵜⵔⴰⵃ'] },
+    pres: {
+      shi: { '1s': ['ar ttduɣ', 'ⴰⵔ ⵜⵜⴷⵓⵖ'], '3ms': ['ar ittdu', 'ⴰⵔ ⵉⵜⵜⴷⵓ'], '3fs': ['ar ttdu', 'ⴰⵔ ⵜⵜⴷⵓ'] },
+      tzm: { '1s': ['da ttdduɣ', 'ⴷⴰ ⵜⵜⴷⴷⵓⵖ'], '3ms': ['da ittddu', 'ⴷⴰ ⵉⵜⵜⴷⴷⵓ'], '3fs': ['da ttddu', 'ⴷⴰ ⵜⵜⴷⴷⵓ'] },
+      rif: { '1s': ['traḥeɣ', 'ⵜⵔⴰⵃⵖ'], '3ms': ['itraḥ', 'ⵉⵜⵔⴰⵃ'], '3fs': ['traḥ', 'ⵜⵔⴰⵃ'] },
+      zgh: { '1s': ['ar ttduɣ', 'ⴰⵔ ⵜⵜⴷⵓⵖ'], '3ms': ['ar ittdu', 'ⴰⵔ ⵉⵜⵜⴷⵓ'], '3fs': ['ar ttdu', 'ⴰⵔ ⵜⵜⴷⵓ'] },
+    },
+    past: { '1s': ['ddiɣ', 'ⴷⴷⵉⵖ'], '3ms': ['idda', 'ⵉⴷⴷⴰ'], '3fs': ['tdda', 'ⵜⴷⴷⴰ'] },
+  },
+  courir: {
+    aor: { '1s': ['azzelɣ', 'ⴰⵣⵣⵍⵖ'], '3ms': ['yazzel', 'ⵢⴰⵣⵣⵍ'], '3fs': ['tazzel', 'ⵜⴰⵣⵣⵍ'] },
+    past: { '1s': ['uzzelɣ', 'ⵓⵣⵣⵍⵖ'], '3ms': ['yuzzel', 'ⵢⵓⵣⵣⵍ'], '3fs': ['tuzzel', 'ⵜⵓⵣⵣⵍ'] },
+  },
+  dormir: {
+    aor: { '1s': ['genɣ', 'ⴳⵏⵖ'], '3ms': ['igen', 'ⵉⴳⵏ'], '3fs': ['tgen', 'ⵜⴳⵏ'] },
+    aorRif: { '1s': ['ṭṭṣeɣ', 'ⵟⵟⵚⵖ'], '3ms': ['iṭṭeṣ', 'ⵉⵟⵟⵚ'], '3fs': ['tṭṭeṣ', 'ⵜⵟⵟⵚ'] },
+    past: { '1s': ['genɣ', 'ⴳⵏⵖ'], '3ms': ['igen', 'ⵉⴳⵏ'], '3fs': ['tgen', 'ⵜⴳⵏ'] },
+  },
+  laver: {
+    aor: { '1s': ['ssirdɣ', 'ⵙⵙⵉⵔⴷⵖ'], '3ms': ['issird', 'ⵉⵙⵙⵉⵔⴷ'], '3fs': ['tssird', 'ⵜⵙⵙⵉⵔⴷ'] },
+    past: { '1s': ['ssardɣ', 'ⵙⵙⴰⵔⴷⵖ'], '3ms': ['issard', 'ⵉⵙⵙⴰⵔⴷ'], '3fs': ['tssard', 'ⵜⵙⵙⴰⵔⴷ'] },
+  },
+  lire: {
+    aor: { '1s': ['ɣerɣ', 'ⵖⵔⵖ'], '3ms': ['iɣer', 'ⵉⵖⵔ'], '3fs': ['tɣer', 'ⵜⵖⵔ'] },
+    past: { '1s': ['ɣriɣ', 'ⵖⵔⵉⵖ'], '3ms': ['iɣra', 'ⵉⵖⵔⴰ'], '3fs': ['tɣra', 'ⵜⵖⵔⴰ'] },
+  },
+  ecrire: {
+    aor: { '1s': ['aruɣ', 'ⴰⵔⵓⵖ'], '3ms': ['yaru', 'ⵢⴰⵔⵓ'], '3fs': ['taru', 'ⵜⴰⵔⵓ'] },
+    past: { '1s': ['uriɣ', 'ⵓⵔⵉⵖ'], '3ms': ['yura', 'ⵢⵓⵔⴰ'], '3fs': ['tura', 'ⵜⵓⵔⴰ'] },
+  },
+  regarder: {
+    aor: { '1s': ['smmeqelɣ', 'ⵙⵎⵎⵇⵍⵖ'], '3ms': ['ismmeqel', 'ⵉⵙⵎⵎⵇⵍ'], '3fs': ['tsmmeqel', 'ⵜⵙⵎⵎⵇⵍ'] },
+    aorRif: { '1s': ['xzerɣ', 'ⵅⵣⵔⵖ'], '3ms': ['ixzer', 'ⵉⵅⵣⵔ'], '3fs': ['txzer', 'ⵜⵅⵣⵔ'] },
+    past: { '1s': ['smmeqelɣ', 'ⵙⵎⵎⵇⵍⵖ'], '3ms': ['ismmeqel', 'ⵉⵙⵎⵎⵇⵍ'], '3fs': ['tsmmeqel', 'ⵜⵙⵎⵎⵇⵍ'] },
+  },
+  ecouter: {
+    aor: { '1s': ['sfeldɣ', 'ⵙⴼⵍⴷⵖ'], '3ms': ['isfeld', 'ⵉⵙⴼⵍⴷ'], '3fs': ['tsfeld', 'ⵜⵙⴼⵍⴷ'] },
+    aorRif: { '1s': ['selɣ', 'ⵙⵍⵖ'], '3ms': ['isel', 'ⵉⵙⵍ'], '3fs': ['tsel', 'ⵜⵙⵍ'] },
+    past: { '1s': ['sfeldɣ', 'ⵙⴼⵍⴷⵖ'], '3ms': ['isfeld', 'ⵉⵙⴼⵍⴷ'], '3fs': ['tsfeld', 'ⵜⵙⴼⵍⴷ'] },
+  },
+};
+
+function amzVerbForm(verbKey, code, person, tense, afterWant) {
+  const entry = AMAZIGH_VERBS[verbKey];
+  if (!entry) return null;
+  const aorMap = (code === 'rif' && entry.aorRif) ? entry.aorRif : entry.aor;
+  const [aLat, aTif] = aorMap[person] || aorMap['1s'];
+  if (afterWant) {
+    return { lat: `ad ${aLat}`, tif: `ⴰⴷ ${aTif}` };
+  }
+  if (tense === 'future') {
+    const p = code === 'rif' ? ['ad', 'ⴰⴷ'] : ['rad', 'ⵔⴰⴷ'];
+    return { lat: `${p[0]} ${aLat}`, tif: `${p[1]} ${aTif}` };
+  }
+  if (tense === 'past' && entry.past) {
+    const [pLat, pTif] = entry.past[person] || entry.past['1s'];
+    return { lat: pLat, tif: pTif };
+  }
+  if (entry.pres && entry.pres[code]) {
+    const [prLat, prTif] = entry.pres[code][person] || entry.pres[code]['1s'];
+    return { lat: prLat, tif: prTif };
+  }
+  return { lat: aLat, tif: aTif };
+}
+
+function amzCardText(card, code) {
+  if (!card || !isAmazighLang(code)) return { lat: card?.fr || '', tif: card?.fr || '' };
+  const direct = card[code];
+  if (direct && typeof direct === 'object') return { lat: direct.lat || direct.tif || card.fr, tif: direct.tif || direct.lat || card.fr };
+  const lex = amazighEntry(card.fr, code);
+  if (lex) return lex;
+  return { lat: card.fr || '', tif: card.fr || '' };
+}
+
+// ---------- 5. Moteur principal d'inflexion contextuelle de la bande de phrase ----------
+export function inflectStrip(stripItems = [], { tense = currentTense, lang: optLang = null, scriptMode = 'both' } = {}) {
+  if (!Array.isArray(stripItems) || !stripItems.length) {
+    return { tokens: [], sentenceFr: '', sentenceDr: '', sentenceAr: '', sentenceAmazigh: '', sentenceAmazighLat: '', sentenceAmazighTif: '', displayText: '', speechText: '' };
+  }
+  // v10.7 : variété amazighe de la phrase (celle demandée, sinon celle du premier mot amazigh).
+  const amazighCode = isAmazighLang(optLang) ? optLang : (stripItems.find((it) => isAmazighLang(it?.lang))?.lang || null);
 
   let activePerson = '1s';
   let activeGender = childGenderCached === 'boy' ? 'm' : 'f';
@@ -435,6 +596,8 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
   const frParts = [];
   const drParts = [];
   const arParts = [];
+  const amzLatParts = [];
+  const amzTifParts = [];
 
   for (let i = 0; i < stripItems.length; i += 1) {
     const item = stripItems[i];
@@ -459,6 +622,10 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       const drWord = card.id === 'c-personnes-moi' ? subj.dr : (card.dr || subj.dr);
       const arWord = card.id === 'c-personnes-moi' ? subj.ar : (card.ar || subj.ar);
 
+      const amzSub = amazighCode ? (AMAZIGH_SUBJECTS[card.id]?.[amazighCode] || amzCardText(card, amazighCode)) : null;
+      const amzWord = (amzSub && !(nextIsJeVeux && activePerson === '1s')) ? amzSub : null;
+      if (amzWord) { amzLatParts.push(amzWord.lat); amzTifParts.push(amzWord.tif); }
+
       if (frWord) frParts.push(frWord);
       drParts.push(drWord);
       arParts.push(arWord);
@@ -466,7 +633,9 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       tokens.push({
         card,
         lang,
-        displayLabel: lang === 'dr' ? drWord : (frWord || 'Je'),
+        displayLabel: isAmazighLang(lang)
+          ? formatAmazighText(amzSub || amzCardText(card, lang), scriptMode)
+          : (lang === 'dr' ? drWord : (frWord || 'Je')),
       });
       continue;
     }
@@ -491,6 +660,9 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
         arModal = activePerson === '3ms' ? 'غادي يبغي' : activePerson === '3fs' ? 'غادة تبغي' : 'غادي نبغي';
       }
 
+      const amzModal = amazighCode ? amzModalForm(amazighCode, activePerson, tense) : null;
+      if (amzModal) { amzLatParts.push(amzModal.lat); amzTifParts.push(amzModal.tif); }
+
       hasExplicitSubject = true;
       frParts.push(frModal);
       drParts.push(drModal);
@@ -499,7 +671,9 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       tokens.push({
         card,
         lang,
-        displayLabel: lang === 'dr' ? drModal : frModal,
+        displayLabel: isAmazighLang(lang)
+          ? formatAmazighText(amzModal || amzModalForm(lang, activePerson, tense), scriptMode)
+          : (lang === 'dr' ? drModal : frModal),
       });
       continue;
     }
@@ -517,6 +691,10 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
         hasExplicitSubject = true;
       }
 
+      // Amazigh : calculé avant la mise à jour de afterModalWant (après « riɣ » : ad + aoriste).
+      const amzVerb = amazighCode ? (amzVerbForm(key, amazighCode, activePerson, tense, afterModalWant) || amzCardText(card, amazighCode)) : null;
+      if (amzVerb) { amzLatParts.push(amzVerb.lat); amzTifParts.push(amzVerb.tif); }
+
       afterModalWant = true;
       lastActionVerb = key;
       lastNounGender = null;
@@ -528,7 +706,9 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       tokens.push({
         card,
         lang,
-        displayLabel: lang === 'dr' ? vDr : fullFrVerb,
+        displayLabel: isAmazighLang(lang)
+          ? formatAmazighText(amzVerb || amzCardText(card, lang), scriptMode)
+          : (lang === 'dr' ? vDr : fullFrVerb),
       });
       continue;
     }
@@ -563,10 +743,15 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
         drParts.push(phraseDr);
         arParts.push(phraseAr);
 
+        const amzAdj = amazighCode ? amzCardText(card, amazighCode) : null;
+        if (amzAdj) { amzLatParts.push(amzLatParts.length ? amzAdj.lat.toLowerCase() : amzAdj.lat); amzTifParts.push(amzAdj.tif); }
+
         tokens.push({
           card,
           lang,
-          displayLabel: lang === 'dr' ? phraseDr : phraseFr,
+          displayLabel: isAmazighLang(lang)
+            ? formatAmazighText(amzAdj || amzCardText(card, lang), scriptMode)
+            : (lang === 'dr' ? phraseDr : phraseFr),
         });
         continue;
       }
@@ -590,6 +775,10 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
           frParts.push(impFr);
           drParts.push(impDr);
           arParts.push(impAr);
+          if (amazighCode) {
+            const amzImp = amzVerbForm(impliedKey, amazighCode, activePerson, tense, true);
+            if (amzImp) { amzLatParts.push(amzImp.lat); amzTifParts.push(amzImp.tif); }
+          }
           impliedFrWord = impFr;
           impliedDrWord = impDr;
           lastActionVerb = impliedKey;
@@ -612,14 +801,31 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       drParts.push(drNoun);
       arParts.push(arNoun);
 
+      const amzNoun = amazighCode ? amzCardText(card, amazighCode) : null;
+      if (amzNoun) {
+        let prepLat = '';
+        let prepTif = '';
+        if (['jouer', 'courir', 'sauter', 'dormir', 'aller'].includes(lastActionVerb) && card.cat === 'lieux') {
+          prepLat = amazighCode === 'rif' ? 'ɣer ' : 's ';
+          prepTif = amazighCode === 'rif' ? 'ⵖⵔ ' : 'ⵙ ';
+        } else if (lastActionVerb === 'jouer' && card.cat === 'jouer') {
+          prepLat = 's ';
+          prepTif = 'ⵙ ';
+        }
+        amzLatParts.push(`${prepLat}${amzNoun.lat.toLowerCase()}`);
+        amzTifParts.push(`${prepTif}${amzNoun.tif}`);
+      }
+
       // v10.0 : l'étiquette sous la carte garde le verbe sous-entendu (« manger du pain » / « nakoul l-khobz »)
       tokens.push({
         card,
         lang,
         impliedVerbCardId,
-        displayLabel: lang === 'dr'
-          ? [impliedDrWord, drNoun].filter(Boolean).join(' ')
-          : [impliedFrWord, frNoun].filter(Boolean).join(' '),
+        displayLabel: isAmazighLang(lang)
+          ? formatAmazighText(amzNoun || amzCardText(card, lang), scriptMode)
+          : (lang === 'dr'
+            ? [impliedDrWord, drNoun].filter(Boolean).join(' ')
+            : [impliedFrWord, frNoun].filter(Boolean).join(' ')),
       });
       continue;
     }
@@ -631,10 +837,14 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
     frParts.push(fallbackFr);
     drParts.push(fallbackDr);
     arParts.push(fallbackAr);
+    const amzFall = amazighCode ? amzCardText(card, amazighCode) : null;
+    if (amzFall) { amzLatParts.push(amzFall.lat); amzTifParts.push(amzFall.tif); }
     tokens.push({
       card,
       lang,
-      displayLabel: lang === 'dr' ? fallbackDr : fallbackFr,
+      displayLabel: isAmazighLang(lang)
+        ? formatAmazighText(amzFall || amzCardText(card, lang), scriptMode)
+        : (lang === 'dr' ? fallbackDr : fallbackFr),
     });
   }
 
@@ -647,12 +857,23 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
   const sentenceDr = drParts.join(' ').replace(/\s+/g, ' ').trim();
   const sentenceAr = arParts.join(' ').replace(/\s+/g, ' ').trim();
 
+  const amzLatJoined = amzLatParts.join(' ').replace(/\s+/g, ' ').trim();
+  const sentenceAmazighLat = amzLatJoined.charAt(0).toUpperCase() + amzLatJoined.slice(1);
+  const sentenceAmazighTif = amzTifParts.join(' ').replace(/\s+/g, ' ').trim();
+  const sentenceAmazigh = amazighCode
+    ? formatAmazighText({ lat: sentenceAmazighLat, tif: sentenceAmazighTif }, scriptMode)
+    : '';
+
+  // speechText reste le français : aucune voix du téléphone ne lit l'amazigh (la phrase amazighe est seulement affichée).
   return {
     tokens,
     sentenceFr,
     sentenceDr,
     sentenceAr,
-    displayText: sentenceFr,
+    sentenceAmazigh,
+    sentenceAmazighLat,
+    sentenceAmazighTif,
+    displayText: sentenceAmazigh || sentenceFr,
     speechText: sentenceFr,
   };
 }
@@ -661,17 +882,27 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
 export const inflectSentenceStrip = inflectStrip;
 
 // ---------- 6. Barre de temps & Aperçu de phrase conjuguée sous la bande de phrase ----------
-export function renderMorphologyBar(stripItems, { lang = 'fr', onTenseChange, onSpeakNatural } = {}) {
+export function renderMorphologyBar(stripItems, { lang = 'fr', scriptMode = 'both', onTenseChange, onSpeakNatural } = {}) {
   if (!stripItems || !stripItems.length) return null;
-  const { sentenceFr, sentenceDr, sentenceAr } = inflectStrip(stripItems, { tense: currentTense });
-  const textMain = lang === 'dr' ? `${sentenceDr}  ·  ${sentenceAr}` : sentenceFr;
-  const textSub = lang === 'dr' ? `🇫🇷 ${sentenceFr}` : `🇲🇦 ${sentenceDr}`;
+  const { sentenceFr, sentenceDr, sentenceAr, sentenceAmazigh, sentenceAmazighLat, sentenceAmazighTif } = inflectStrip(stripItems, { tense: currentTense, lang, scriptMode });
+  const amzActive = isAmazighLang(lang);
+  const textMain = amzActive
+    ? (sentenceAmazigh || sentenceFr)
+    : (lang === 'dr' ? `${sentenceDr}  ·  ${sentenceAr}` : sentenceFr);
+  const textSub = amzActive
+    ? `🇫🇷 ${sentenceFr}`
+    : (lang === 'dr' ? `🇫🇷 ${sentenceFr}` : `🇲🇦 ${sentenceDr}`);
 
-  const tenses = [
-    ['past', '⏪ Hier'],
-    ['present', '⏺️ Maintenant'],
-    ['future', '⏩ Après'],
-  ];
+  // v10.7 : noms des temps en amazigh (à faire relire par des locuteurs natifs).
+  const tenses = amzActive
+    ? (lang === 'rif'
+      ? [['past', '⏪ Iḍennaḍ'], ['present', '⏺️ Luxa'], ['future', '⏩ Deffir']]
+      : [['past', '⏪ Iḍelli'], ['present', '⏺️ Dɣi'], ['future', '⏩ Deffir']])
+    : [
+      ['past', '⏪ Hier'],
+      ['present', '⏺️ Maintenant'],
+      ['future', '⏩ Après'],
+    ];
 
   return h('div', { class: 'morph-bar' },
     h('div', { class: 'morph-tenses' }, tenses.map(([code, label]) => h('button', {
@@ -686,7 +917,7 @@ export function renderMorphologyBar(stripItems, { lang = 'fr', onTenseChange, on
       type: 'button',
       class: 'morph-sentence-preview',
       onclick: () => {
-        if (onSpeakNatural) onSpeakNatural({ sentenceFr, sentenceDr, sentenceAr, lang });
+        if (onSpeakNatural) onSpeakNatural({ sentenceFr, sentenceDr, sentenceAr, sentenceAmazigh, sentenceAmazighLat, sentenceAmazighTif, lang });
       },
     },
     h('strong', {}, `✨ ${textMain}`),

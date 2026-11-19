@@ -320,6 +320,36 @@ export const THEMATIC_PACKS = [
       { id: 'c-pack-promener', cat: 'actions', gram: 'verb', emoji: '🚶‍♀️', fr: 'Se promener', dr: 'Ntsara', ar: 'نتسارى', q: 'marcher' },
     ],
   },
+  // v10.7 : pack « Vie au village » (dossier Drive Amazigh). Les mots amazighs viennent du lexique
+  // (modules/amazigh-lexicon.js), retrouvés par le mot français : une correction du lexique s'applique partout.
+  {
+    id: 'vie-au-village',
+    emoji: '🏡',
+    title: 'Vie au village (Amazigh & rural)',
+    desc: '20 cartes du quotidien rural marocain (atay, pain au four, source, troupeau, oliviers…)',
+    cards: [
+      { id: 'c-rural-atay', cat: 'boire', gram: 'noun', emoji: '🍵', fr: 'Thé à la menthe', dr: 'Atay', ar: 'أتاي', q: 'the' },
+      { id: 'c-rural-aghrum', cat: 'manger', gram: 'noun', emoji: '🫓', fr: 'Pain au four', dr: 'Khobz d-ferran', ar: 'خبز الفران', q: 'pain' },
+      { id: 'c-rural-zzit', cat: 'manger', gram: 'noun', emoji: '🫒', fr: "Huile d'olive", dr: 'Zit l3oud', ar: 'زيت العود', q: 'huile olive' },
+      { id: 'c-rural-tamment', cat: 'manger', gram: 'noun', emoji: '🍯', fr: 'Miel', dr: 'L3sel', ar: 'العسل', q: 'miel' },
+      { id: 'c-rural-aghi', cat: 'boire', gram: 'noun', emoji: '🥛', fr: 'Lait caillé', dr: 'Lben', ar: 'اللبن', q: 'lait' },
+      { id: 'c-rural-tazart', cat: 'manger', gram: 'noun', emoji: '🫐', fr: 'Figues', dr: 'Kermous', ar: 'كرموس', q: 'figue' },
+      { id: 'c-rural-lluz', cat: 'manger', gram: 'noun', emoji: '🌰', fr: 'Amandes', dr: 'Louz', ar: 'لوز', q: 'amande' },
+      { id: 'c-rural-tala', cat: 'lieux', gram: 'noun', emoji: '⛲', fr: "Source d'eau", dr: 'L3in', ar: 'العين', q: 'fontaine' },
+      { id: 'c-rural-anu', cat: 'lieux', gram: 'noun', emoji: '🪣', fr: 'Puits', dr: 'Lbir', ar: 'البير', q: 'puits' },
+      { id: 'c-rural-ikerri', cat: 'jouer', gram: 'noun', emoji: '🐑', fr: 'Mouton', dr: 'Ḥewli', ar: 'حولي', q: 'mouton' },
+      { id: 'c-rural-taghatt', cat: 'jouer', gram: 'noun', emoji: '🐐', fr: 'Chèvre', dr: 'M3za', ar: 'معزة', q: 'chevre' },
+      { id: 'c-rural-aghyul', cat: 'jouer', gram: 'noun', emoji: '🫏', fr: 'Âne', dr: 'Ḥmar', ar: 'حمار', q: 'ane' },
+      { id: 'c-rural-tafunast', cat: 'jouer', gram: 'noun', emoji: '🐄', fr: 'Vache', dr: 'Begra', ar: 'بقرة', q: 'vache' },
+      { id: 'c-rural-tayazidt', cat: 'jouer', gram: 'noun', emoji: '🐔', fr: 'Poule', dr: 'Djaja', ar: 'دجاجة', q: 'poule' },
+      { id: 'c-rural-azemmur', cat: 'lieux', gram: 'noun', emoji: '🌳', fr: 'Olivier', dr: 'Zitouna', ar: 'زيتونة', q: 'olivier' },
+      { id: 'c-rural-adrar', cat: 'lieux', gram: 'noun', emoji: '⛰️', fr: 'Montagne', dr: 'Jbel', ar: 'جبل', q: 'montagne' },
+      { id: 'c-rural-iger', cat: 'lieux', gram: 'noun', emoji: '🌾', fr: 'Champs / Jardin', dr: 'Fdan', ar: 'فدان', q: 'champ' },
+      { id: 'c-rural-ssug', cat: 'lieux', gram: 'noun', emoji: '🧺', fr: 'Souk (Marché)', dr: 'Souq', ar: 'سوق', q: 'marche' },
+      { id: 'c-rural-tamzgida', cat: 'lieux', gram: 'noun', emoji: '🕌', fr: 'Mosquée', dr: 'Jame3', ar: 'جامع', q: 'mosquee' },
+      { id: 'c-rural-aferran', cat: 'lieux', gram: 'noun', emoji: '🔥', fr: 'Four traditionnel', dr: 'Ferran', ar: 'فران', q: 'four' },
+    ],
+  },
 ];
 
 export async function installThematicPack(packId, { fetchArasaac = true } = {}) {
@@ -331,18 +361,25 @@ export async function installThematicPack(packId, { fetchArasaac = true } = {}) 
   let maxOrder = existingCards.reduce((m, c) => Math.max(m, Number(c.order) || 0), 0);
 
   const toSave = [];
+  // v10.7 : réseau de village lent ou muet : 6 s maximum par image, puis on n'insiste plus (les cartes gardent leur émoji).
+  let askArasaac = fetchArasaac && navigator.onLine;
+  const PICTO_WAIT_MS = 6000;
+  const inTime = (promise) => Promise.race([promise, new Promise((resolve, reject) => {
+    setTimeout(() => reject(Object.assign(new Error('ARASAAC trop lent'), { slow: true })), PICTO_WAIT_MS);
+  })]);
   for (const raw of pack.cards) {
     if (byId.has(raw.id)) continue;
     maxOrder += 1;
     let photoBlob = null;
-    if (fetchArasaac && raw.q && navigator.onLine) {
+    if (askArasaac && raw.q && navigator.onLine) {
       try {
-        const hits = await searchPictograms(raw.q);
+        const hits = await inTime(searchPictograms(raw.q));
         if (hits && hits[0]?.id) {
-          photoBlob = await downloadPictogram(hits[0].id);
+          photoBlob = await inTime(downloadPictogram(hits[0].id));
         }
-      } catch {
+      } catch (err) {
         // Garde l'émoji hors-ligne si ARASAAC ne répond pas
+        if (err?.slow) askArasaac = false;
       }
     }
     toSave.push({

@@ -16,7 +16,8 @@ import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
-import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
+import { LANGS, langInfo, isAmazighLang, isAmazighScript, cardWord, categoryName, ui, spokenUi } from './modules/languages.js';
+import { loadAmazighVoices, amazighVoiceFor } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
@@ -36,15 +37,17 @@ const SNOOZE_MS = 10 * 60000;
 const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
   'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
+const state = { cards: [], cat: 'manger', lang: 'fr', amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
 
 // ---------- Cartes ----------
-const label = (card, lang = state.lang) => cardWord(card, lang);
-// Voix du téléphone pour un texte de menu : la langue choisie (darija en lettres latines : voix française).
-const menuVoice = () => (isExtraLang(state.lang) ? state.lang : 'fr');
+// v10.7 : en amazigh, le mot s'affiche en tifinagh et/ou en lettres latines (réglage « Écriture amazighe » dans Progrès).
+const label = (card, lang = state.lang) => cardWord(card, lang, { scriptMode: state.amazighScript });
+// Voix du téléphone pour un texte de menu : la langue choisie (darija en lettres latines : voix française ;
+// amazigh : le menu en français, car aucune voix du téléphone ne lit l'amazigh).
+const sayMenu = (key, suffix = '') => { const said = spokenUi(key, state.lang); return speak(`${said.text}${suffix}`, { lang: said.lang }); };
 
 function photoUrl(card) {
   const cached = photoUrls.get(card.id);
@@ -65,20 +68,36 @@ function cardVisual(card) {
   return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔', label: card.fr }, { button: false });
 }
 
+// v10.7 : en amazigh « tifinagh + latin », le mot en lettres latines, puis le tifinagh en dessous (plus lisible sur petit écran).
+function labelElement(text, lang) {
+  const el = h('span', { class: `label${isAmazighLang(lang) ? ' amz' : ''}` });
+  fillLabel(el, text, lang);
+  return el;
+}
+function fillLabel(el, text, lang) {
+  const parts = isAmazighLang(lang) && state.amazighScript === 'both' ? String(text || '').split(' · ') : [];
+  if (parts.length === 2) el.replaceChildren(parts[0], h('span', { class: 'label-tif' }, parts[1]));
+  else el.textContent = text;
+}
+
 function cardElement(card, { small = false, lang = state.lang } = {}) {
   const category = CATEGORIES.find((c) => c.id === card.cat);
   const gram = GRAMMAR[card.gram] || GRAMMAR.noun;
   const ariaLabel = card.hidden && state.parent ? `${label(card, lang)} (carte masquée)` : label(card, lang);
   const button = h('button', { type: 'button', class: `card${small ? ' small' : ''}${card.hidden ? ' is-hidden' : ''}`, 'aria-label': ariaLabel },
-    cardVisual(card), h('span', { class: 'label' }, label(card, lang)),
+    cardVisual(card), labelElement(label(card, lang), lang),
     card.sub && !small ? h('span', { class: 'sub' }, card.sub) : null,
     card.video ? h('span', { class: 'badge video' }, '▶') : null);
   button.style.setProperty('--gram', gram.color);
   button.style.setProperty('--cat', category ? category.color : '#999');
   if (state.parent && !small) {
+    const needsPhoto = card.cat === 'personnes' && !card.photo && !button.querySelector('.has-photo');
     if (state.lang === 'dr' && !card.audioDr && !defaultVoiceUrl(card, 'dr')) button.append(h('span', { class: 'badge dr' }, '🎙️ Voix Darija à enregistrer'));
+    // v10.7 : en amazigh, une carte sans voix du parent ni voix du pack reste muette : on le montre au parent
+    // (sauf si la carte attend d'abord sa photo : les deux pastilles se cacheraient).
+    if (isAmazighLang(state.lang) && !needsPhoto && !amazighVoiceFor(state.lang, card.id)) button.append(h('span', { class: 'badge amz-voice', title: `Voix ${langInfo(state.lang).name} à enregistrer` }, `🎙️ ${langInfo(state.lang).short}`));
     if (card.hidden) button.append(h('span', { class: 'badge hidden-badge' }, '🙈 masquée'));
-    if (card.cat === 'personnes' && !card.photo && !button.querySelector('.has-photo')) button.append(h('span', { class: 'badge add-photo' }, `📷 Ajouter la photo`));
+    if (needsPhoto) button.append(h('span', { class: 'badge add-photo' }, `📷 Ajouter la photo`));
   }
   return button;
 }
@@ -140,11 +159,13 @@ function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
 }
 
 // ---------- Bande de phrase (chaque mot garde sa langue : code-switching) ----------
-// v9.13 : le moteur hors-ligne (modules/morphology.js) conjugue et accorde la phrase. Seulement en français et en darija.
-const morphLangOk = (strip) => strip.length > 0 && strip.every((item) => item.lang === 'fr' || item.lang === 'dr');
+// v9.13 : le moteur hors-ligne (modules/morphology.js) conjugue et accorde la phrase. En français, en darija
+// et (v10.7) dans les 4 variétés amazighes (phrase affichée seulement : pas de voix du téléphone en amazigh).
+const morphLangOk = (strip) => strip.length > 0 && strip.every((item) => item.lang === 'fr' || item.lang === 'dr' || isAmazighLang(item.lang));
+const stripAmazighLang = () => state.strip.find((item) => isAmazighLang(item.lang))?.lang || (isAmazighLang(state.lang) ? state.lang : null);
 function stripInflection() {
   if (!morphLangOk(state.strip)) return null;
-  try { return inflectStrip(state.strip); } catch { return null; }
+  try { return inflectStrip(state.strip, { lang: stripAmazighLang(), scriptMode: state.amazighScript }); } catch { return null; }
 }
 
 function renderStrip() {
@@ -156,8 +177,8 @@ function renderStrip() {
     // Étiquette conjuguée / accordée sous la carte (« Manger » devient « mange », « Content » devient « contente »).
     const shown = inflected && inflected.tokens[i] && inflected.tokens[i].displayLabel;
     const lab = el.querySelector('.label');
-    if (shown && lab && shown.trim().toLowerCase() !== lab.textContent.trim().toLowerCase()) {
-      lab.textContent = shown;
+    if (shown && lab && shown.trim().toLowerCase() !== label(item.card, item.lang).trim().toLowerCase()) {
+      fillLabel(lab, shown, item.lang);
       lab.classList.add('inflected');
       el.title = shown;
     }
@@ -180,13 +201,17 @@ function renderMorphSlot() {
   const slot = document.getElementById('morph-slot');
   if (!slot) return;
   const show = morphLangOk(state.strip) && ['talk', 'home'].includes(state.space) && !state.modeling;
-  const lang = state.strip.every((item) => item.lang === 'dr') ? 'dr' : 'fr';
+  const amzLang = stripAmazighLang();
+  let lang = 'fr';
+  if (state.strip.every((item) => item.lang === 'dr')) lang = 'dr';
+  else if (amzLang && (state.strip.every((item) => isAmazighLang(item.lang)) || isAmazighLang(state.lang))) lang = amzLang;
   const bar = show ? renderMorphologyBar(state.strip, {
     lang,
+    scriptMode: state.amazighScript,
     onTenseChange: () => renderStrip(),
     onSpeakNatural: async (sentences) => {
       unlockAudio();
-      // Darija sans voix arabe sur le téléphone : on rejoue les mots un par un (sons enregistrés).
+      // Darija sans voix arabe sur le téléphone, ou amazigh : on rejoue les mots un par un (sons enregistrés).
       const said = await sayNaturalSentence(sentences);
       if (!said) sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
     },
@@ -391,6 +416,7 @@ async function editCard(card) {
   const before = card ? ((shared && shared.blob) || card.photo || null) : null;
   openEditor(card ? { ...card, photo: before } : null, {
     defaultCat: state.cat,
+    amazighLang: isAmazighLang(state.lang) ? state.lang : null, // v10.7 : ligne « voix amazighe » dans l'éditeur
     onSave: async (saved, { slot, catChanged }) => {
       let cards = state.cards.filter((c) => c.id !== saved.id);
       let placed = saved;
@@ -445,12 +471,12 @@ const HOME_TILES = [
 function homeScreen() {
   const hello = `${ui('hello', state.lang)} ${firstName()} !`;
   return h('div', { class: 'screen home' },
-    h('button', { type: 'button', class: 'home-hello', onclick: () => speak(hello, { lang: menuVoice() }) },
+    h('button', { type: 'button', class: 'home-hello', onclick: () => sayMenu('hello', ` ${firstName()} !`) },
       h('span', { class: 'home-nour' }, nour({ pose: 'wave', size: 96 })),
       h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, ui('ask', state.lang)))),
     h('button', { type: 'button', class: 'home-lang', onclick: openLangPicker }, `${langInfo(state.lang).flag} ${langInfo(state.lang).name} · 🌍 ${LANGS.length} langues`),
     h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, titleKey, subKey, cls]) => h('button', {
-      type: 'button', class: `home-tile ${cls}`, onclick: () => { speak(ui(titleKey, state.lang), { lang: menuVoice() }); openSpace(id); },
+      type: 'button', class: `home-tile ${cls}`, onclick: () => { sayMenu(titleKey); openSpace(id); },
     }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang))))),
     h('button', { type: 'button', class: 'home-adult', onclick: () => openSpace('progress') }, state.parent ? '📊 Progrès & Console Bêta (adultes)' : '🔒 Progrès (adultes)'),
     // v9.16.2 : numéro de version visible, pour vérifier que le téléphone a bien la dernière mise à jour.
@@ -617,6 +643,8 @@ async function collectSettings() {
 async function setLang(code) {
   state.lang = langInfo(code).code;
   document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
+  // v10.7 : voix amazighes de la variété choisie, gardées en mémoire (le son part tout de suite au toucher).
+  loadAmazighVoices(state.lang).then(() => { if (isAmazighLang(state.lang) && state.parent) renderView(); }).catch(() => {});
   // v10.5.2 : l'écran change tout de suite ; l'enregistrement suit (avant, une écriture bloquée sur iPhone empêchait le changement).
   renderAll();
   await db.setSetting('lang', state.lang).catch((err) => console.error('[Kalimati] langue non enregistrée', err));
@@ -626,12 +654,25 @@ function openLangPicker() {
   const opener = document.activeElement;
   const dialog = h('dialog', { class: 'lang-dialog', 'aria-label': 'Choisir la langue' });
   const close = () => { if (dialog.open) dialog.close(); dialog.remove(); try { opener?.focus?.(); } catch { /* rien */ } };
-  dialog.append(h('div', { class: 'stack pad' }, h('h3', {}, '🌍 Langue / اللغة / Language'),
-    h('div', { class: 'lang-grid' }, LANGS.map((l) => h('button', {
-      type: 'button', class: `lang-choice${l.code === state.lang ? ' active' : ''}`, lang: l.tts, dir: l.rtl ? 'rtl' : 'auto',
-      onclick: () => { close(); setLang(l.code); speak(ui('hello', l.code), { lang: isExtraLang(l.code) ? l.code : 'fr' }); },
-    }, h('span', { class: 'emoji' }, l.flag), h('span', {}, l.name)))),
+  // v10.7 : bouton 🔊 pour les parents qui ne lisent pas : il dit l'aide, et le nom de chaque langue.
+  const sayHello = (code, prefix = '') => { const said = spokenUi('hello', code); return speak(`${prefix}${said.text}`, { lang: said.lang }); };
+  const helpBtn = h('button', {
+    type: 'button', class: 'audio-help-btn', 'aria-label': 'Écouter l’aide pour choisir la langue',
+    onclick: () => { unlockAudio(); speak('Touchez votre langue. Le petit haut-parleur dit le nom de chaque langue.', { lang: 'fr' }); },
+  }, '🔊 Aide');
+  dialog.append(h('div', { class: 'stack pad' },
+    h('div', { class: 'row spread wrap' }, h('h3', {}, '🌍 Langue / اللغة / Language'), helpBtn),
+    h('div', { class: 'lang-grid' }, LANGS.map((l) => h('div', { class: 'lang-choice-row' },
+      h('button', {
+        type: 'button', class: `lang-choice${l.code === state.lang ? ' active' : ''}`, lang: l.tts, dir: l.rtl ? 'rtl' : 'auto',
+        onclick: () => { close(); setLang(l.code); sayHello(l.code); },
+      }, h('span', { class: 'emoji' }, l.flag), h('span', { class: 'lang-names' }, h('span', {}, l.name), l.sub ? h('small', { class: 'lang-sub' }, l.sub) : null)),
+      h('button', {
+        type: 'button', class: 'audio-help-btn tiny', 'aria-label': `Écouter : ${l.name}`,
+        onclick: (e) => { e.stopPropagation(); unlockAudio(); sayHello(l.code, `${l.name}. `); },
+      }, '🔊')))),
     h('p', { class: 'note' }, 'Français et darija : vos voix enregistrées. Autres langues : la voix du téléphone dit les mots traduits.'),
+    h('p', { class: 'note' }, 'Amazigh (ⵣ) : la carte dit votre voix, enregistrée en mode parent. Sans voix enregistrée, elle reste muette. Mots amazighs à faire relire par un locuteur natif.'),
     h('button', { type: 'button', class: 'btn ghost', onclick: close }, 'Fermer')));
   document.body.append(dialog);
   dialog.showModal();
@@ -871,6 +912,19 @@ async function init() {
   nav.attach($('#view'));
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
+  // v10.7 : écriture amazighe choisie (tifinagh + latin par défaut) et voix amazighes en mémoire (sans bloquer l'ouverture).
+  const savedScript = await db.getSetting('amazighScript').catch(() => null);
+  state.amazighScript = isAmazighScript(savedScript) ? savedScript : 'both';
+  loadAmazighVoices(state.lang).catch(() => {});
+  document.addEventListener('kalimati-amazigh-script', (e) => {
+    state.amazighScript = isAmazighScript(e?.detail) ? e.detail : 'both';
+    if (!isAmazighLang(state.lang)) return;
+    // Choisi dans Progrès : la page reste ouverte (seule la phrase change) ; Parler suivra à l'ouverture.
+    if (state.space === 'progress') { try { renderStrip(); } catch (err) { console.error('renderStrip', err); } } else renderAll();
+  });
+  document.addEventListener('kalimati-amazigh-voices-changed', () => {
+    loadAmazighVoices(state.lang).then(() => { if (isAmazighLang(state.lang) && ['talk', 'home'].includes(state.space)) renderView(); }).catch(() => {});
+  });
   await loadAacPlus();
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;
@@ -901,6 +955,7 @@ async function init() {
       await loadVisuals().catch(() => {});
       await loadLevels();
       state.lang = langInfo((await db.getSetting('lang')) || state.lang).code;
+      loadAmazighVoices(state.lang).catch(() => {});
       state.cards = await loadCards();
       const ids = new Set(state.cards.map((c) => c.id));
       state.strip = state.strip.filter((item) => ids.has(item.card.id));

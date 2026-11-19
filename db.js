@@ -110,13 +110,21 @@ function openDb() {
   return dbPromise;
 }
 
+// v10.7 : mémoire pleine = message clair en français (le nom de l'erreur reste QuotaExceededError).
+function readableError(err) {
+  if (err && err.name === 'QuotaExceededError') {
+    return Object.assign(new Error('Mémoire du téléphone pleine. Supprimez des vidéos ou un pack vocal (Progrès), puis réessayez.'), { name: 'QuotaExceededError' });
+  }
+  return err;
+}
+
 function runOnce(storeName, mode, action) {
   return openDb().then((db) => new Promise((resolve, reject) => {
     const transaction = db.transaction(storeName, mode);
     const request = action(transaction.objectStore(storeName));
     transaction.oncomplete = () => resolve(request instanceof IDBRequest ? request.result : undefined);
-    transaction.onerror = () => reject(transaction.error);
-    transaction.onabort = () => reject(transaction.error);
+    transaction.onerror = () => reject(readableError(transaction.error));
+    transaction.onabort = () => reject(readableError(transaction.error));
   }));
 }
 
@@ -211,4 +219,15 @@ export const getRecording = (id) => run('recordings', 'readonly', (s) => s.get(i
 
 // === [DEBUT MODIF v10.5 : S9 / S12 — Suppression d'un réglage et stockage de clé WebCrypto non-exportable] ===
 export const deleteSetting = (key) => run('settings', 'readwrite', (s) => s.delete(key));
+
+// v10.7 : place utilisée par Kalimati dans le téléphone (en Mo), ou null si le navigateur ne le dit pas.
+export async function storageEstimate() {
+  try {
+    if (!navigator.storage?.estimate) return null;
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    return { usageMb: Math.round((usage / 1048576) * 10) / 10, quotaMb: Math.round((quota / 1048576) * 10) / 10 };
+  } catch {
+    return null;
+  }
+}
 // === [FIN MODIF v10.5 : S9 / S12] ===

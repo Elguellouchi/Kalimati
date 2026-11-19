@@ -4,6 +4,14 @@ import { preparePhoto, prepareVideo, startRecording, canRecord } from './media.j
 import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './modules/arasaac.js';
 import { escapeHtml } from './modules/util.js';
 import { sayDefault, stopSpeaking } from './speech.js';
+import { isAmazighLang, langInfo } from './modules/languages.js';
+import { parentAmazighVoice, packAmazighVoice, saveParentAmazighVoice, removeParentAmazighVoice, removeParentAmazighVoicesOfCard } from './modules/voice-packs.js';
+
+// v10.7 : en amazigh, une 3e ligne « Votre voix » enregistre le mot dans la variété choisie.
+// Cette voix est gardée à part (jamais sur la carte : ni sauvegarde, ni synchro). Champ temporaire : draft.amzVoice.
+let amzLang = null;
+const voiceKey = (lang) => (lang === 'dr' ? 'audioDr' : isAmazighLang(lang) ? 'amzVoice' : 'audioFr');
+const voiceLangs = () => (amzLang ? ['fr', 'dr', amzLang] : ['fr', 'dr']);
 import { suggestDarija } from './modules/darija-lexicon.js';
 
 const dialog = document.getElementById('editor');
@@ -54,6 +62,8 @@ function template(draft) {
       <fieldset><legend>Votre voix</legend>${recordHint}
         <div class="ed-voice" data-lang="fr"></div>
         <div class="ed-voice" data-lang="dr"></div>
+        ${amzLang ? `<div class="ed-voice" data-lang="${amzLang}"></div>
+        <p class="hint-muted">Voix ${escapeHtml(langInfo(amzLang).name)} : gardée dans ce téléphone seulement (pas dans la sauvegarde). Sans elle, la carte reste muette en amazigh.</p>` : ''}
       </fieldset>
       <p class="hint" id="ed-error" role="alert"></p>
       <div class="ed-row end">
@@ -81,15 +91,18 @@ function renderPhoto(draft) {
 
 function renderVoice(draft, lang, state) {
   const box = dialog.querySelector(`.ed-voice[data-lang="${lang}"]`);
-  const key = lang === 'dr' ? 'audioDr' : 'audioFr';
-  const name = lang === 'dr' ? 'Darija' : 'Français';
+  const key = voiceKey(lang);
+  const amz = isAmazighLang(lang);
+  const name = lang === 'dr' ? 'Darija' : amz ? escapeHtml(langInfo(lang).name) : 'Français';
   const has = Boolean(draft[key]);
   const recording = state.recordingLang === lang;
   // Sans enregistrement, la carte parle avec la voix par défaut ; le parent choisit de la remplacer par sa voix.
-  const status = has ? 'ma voix ✅' : 'voix par défaut';
+  // v10.7 : en amazigh, la voix par défaut est celle du pack vocal installé ; sans pack, la carte reste muette.
+  const packVoice = amz ? Boolean(packAmazighVoice(lang, draft.id)) : true;
+  const status = has ? 'ma voix ✅' : (amz ? (packVoice ? 'voix du pack' : 'pas encore de voix') : 'voix par défaut');
   box.innerHTML = `
     <span class="voice-name">${name} : ${status}</span>
-    <button type="button" class="btn ghost" data-act="default">▶ Voix par défaut</button>
+    <button type="button" class="btn ghost" data-act="default" ${packVoice ? '' : 'disabled'}>${amz ? '▶ Voix du pack' : '▶ Voix par défaut'}</button>
     <button type="button" class="btn ${recording ? 'danger' : ''}" data-act="rec" ${canRecord() ? '' : 'disabled'}>${recording ? '⏹ Arrêter' : (has ? '🎙️ Réenregistrer' : '🎙️ Remplacer par ma voix')}</button>
     <button type="button" class="btn ghost" data-act="play" ${has ? '' : 'disabled'}>▶ Ma voix</button>
     <button type="button" class="btn ghost" data-act="clear" ${has ? '' : 'disabled'} title="Revenir à la voix par défaut">✕</button>`;
@@ -139,8 +152,8 @@ async function toggleRecording(draft, lang, state) {
     const blob = await state.stop();
     state.stop = null;
     state.recordingLang = null;
-    draft[finishedLang === 'dr' ? 'audioDr' : 'audioFr'] = blob;
-    ['fr', 'dr'].forEach((l) => renderVoice(draft, l, state));
+    draft[voiceKey(finishedLang)] = blob;
+    voiceLangs().forEach((l) => renderVoice(draft, l, state));
     if (finishedLang === lang) return;
   }
   try {
@@ -150,7 +163,7 @@ async function toggleRecording(draft, lang, state) {
   } catch {
     showError('Le micro est refusé. Autorisez-le dans les réglages du téléphone.');
   }
-  ['fr', 'dr'].forEach((l) => renderVoice(draft, l, state));
+  voiceLangs().forEach((l) => renderVoice(draft, l, state));
 }
 
 async function onPhotoChosen(input, draft) {
@@ -223,13 +236,16 @@ function setupLexicon() {
   });
 }
 
-export function openEditor(card, { defaultCat, onSave, onDelete }) {
+export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = null }) {
+  amzLang = isAmazighLang(amazighLang) ? amazighLang : null;
   const blank = { id: `u-${Date.now()}`, cat: defaultCat, fr: '', sub: '', dr: '', ar: '', emoji: '', gram: 'noun', visualKey: null, sayFr: '', sayAr: '', photo: null, video: null, audioFr: null, audioDr: null, order: Date.now(), gridRow: null, gridCol: null, hidden: false };
   const draft = card ? { sub: '', ...card, isNew: false } : { ...blank, isNew: true };
+  const amzBefore = amzLang ? parentAmazighVoice(amzLang, draft.id) : null;
+  draft.amzVoice = amzBefore;
   const state = { stop: null, recordingLang: null };
   dialog.innerHTML = template(draft);
   renderPhoto(draft);
-  ['fr', 'dr'].forEach((l) => renderVoice(draft, l, state));
+  voiceLangs().forEach((l) => renderVoice(draft, l, state));
   setupArasaac(draft);
   setupLexicon();
 
@@ -238,7 +254,7 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
   const close = async () => {
     if (state.stop) {
       const blob = await state.stop();
-      draft[state.recordingLang === 'dr' ? 'audioDr' : 'audioFr'] = blob;
+      draft[voiceKey(state.recordingLang)] = blob;
       state.stop = null;
     }
     stopSpeaking();
@@ -275,6 +291,7 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
       }
       clearTimeout(confirmTimer);
       await close();
+      removeParentAmazighVoicesOfCard(draft.id).catch(() => {});
       onDelete(draft.id);
     };
   }
@@ -283,7 +300,16 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
     if (!fr) { showError('Écrivez au moins le mot en français.'); return; }
     await mediaJob;
     await close();
-    const { isNew, ...rest } = draft;
+    // v10.7 : la voix amazighe ne va jamais sur la carte ; elle est gardée à part, dans ce téléphone.
+    const { isNew, amzVoice, ...rest } = draft;
+    if (amzLang && amzVoice !== amzBefore) {
+      try {
+        if (amzVoice) await saveParentAmazighVoice(amzLang, draft.id, amzVoice);
+        else await removeParentAmazighVoice(amzLang, draft.id);
+      } catch (err) {
+        window.alert(`La voix ${langInfo(amzLang).name} n’a pas pu être gardée. ${err?.message || ''}`.trim());
+      }
+    }
     const row = Number($('#ed-row').value);
     const col = Number($('#ed-col').value);
     const cat = $('#ed-cat').value;

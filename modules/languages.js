@@ -2,6 +2,30 @@
 // Les autres langues traduisent les mots des cartes de départ, les catégories et les menus principaux,
 // et parlent avec la voix du téléphone (aucune connexion nécessaire si la voix est installée).
 // Un mot créé ou renommé par le parent reste en français dans les autres langues.
+// v10.7 : 4 variétés amazighes marocaines séparées (tachelhit, tamazight du centre, tarifit, standard IRCAM),
+// en tifinagh et/ou en lettres latines. Mots à faire relire par des locuteurs natifs (modules/amazigh-lexicon.js).
+// Pas de voix du téléphone en amazigh : seulement la voix enregistrée par le parent ou un pack vocal installé.
+
+import { amazighEntry, hasAmazighWord } from './amazigh-lexicon.js';
+
+export const AMAZIGH_LANGS = ['shi', 'tzm', 'rif', 'zgh'];
+export const isAmazighLang = (code) => AMAZIGH_LANGS.includes(code);
+export const AMAZIGH_SCRIPTS = [
+  { id: 'both', label: 'Tifinagh + Latin (ⵜⴰⵎⴰⵣⵉⵖⵜ · Tamazight)' },
+  { id: 'latin', label: 'Latin seul (Tamazight)' },
+  { id: 'tifinagh', label: 'Tifinagh seul (ⵜⴰⵎⴰⵣⵉⵖⵜ)' },
+];
+export const isAmazighScript = (mode) => AMAZIGH_SCRIPTS.some((opt) => opt.id === mode);
+
+// Affiche un mot amazigh selon l'écriture choisie : « Aɣrum · ⴰⵖⵔⵓⵎ », « Aɣrum » ou « ⴰⵖⵔⵓⵎ ».
+export function formatAmazighText({ tif = '', lat = '' } = {}, scriptMode = 'both') {
+  const t = String(tif || '').trim();
+  const l = String(lat || '').trim();
+  if (scriptMode === 'tifinagh') return t || l;
+  if (scriptMode === 'latin') return l || t;
+  if (t && l && t !== l) return `${l} · ${t}`;
+  return l || t;
+}
 
 export const LANGS = [
   { code: 'fr', short: 'FR', name: 'Français', flag: '🇫🇷', tts: 'fr-FR' },
@@ -15,6 +39,10 @@ export const LANGS = [
   { code: 'nl', short: 'NL', name: 'Nederlands', flag: '🇳🇱', tts: 'nl-NL' },
   { code: 'tr', short: 'TR', name: 'Türkçe', flag: '🇹🇷', tts: 'tr-TR' },
   { code: 'zh', short: '中', name: '中文', flag: '🇨🇳', tts: 'zh-CN' },
+  { code: 'shi', short: 'SHI', name: 'Tachelhit', sub: 'Souss & Anti-Atlas · ⵜⴰⵛⵍⵃⵉⵜ', flag: 'ⵣ', tts: 'shi', amazigh: true },
+  { code: 'tzm', short: 'TZM', name: 'Tamazight', sub: 'Moyen & Haut Atlas · ⵜⴰⵎⴰⵣⵉⵖⵜ', flag: 'ⵣ', tts: 'tzm', amazigh: true },
+  { code: 'rif', short: 'RIF', name: 'Tarifit', sub: 'Rif & Oriental · ⵜⴰⵔⵉⴼⵉⵜ', flag: 'ⵣ', tts: 'rif', amazigh: true },
+  { code: 'zgh', short: 'ZGH', name: 'Tamazight IRCAM', sub: 'Standard scolaire · ⵜⴰⵎⴰⵣⵉⵖⵜ', flag: 'ⵣ', tts: 'zgh', amazigh: true },
 ];
 
 export const langInfo = (code) => LANGS.find((l) => l.code === code) || LANGS[0];
@@ -123,8 +151,14 @@ const DICT = new Map(WORDS.trim().split('\n').map((line) => {
 }));
 
 // Mot d'une carte dans une langue. « Abir (Moi) » : le prénom reste, « Moi » est traduit.
-export function cardWord(card, code) {
+export function cardWord(card, code, { scriptMode = 'both' } = {}) {
   if (code === 'dr') return card.dr || card.fr;
+  if (isAmazighLang(code)) {
+    const own = card[code];
+    if (own && typeof own === 'object') return formatAmazighText(own, scriptMode) || card.fr;
+    const lex = amazighEntry(card.fr, code);
+    return (lex && formatAmazighText(lex, scriptMode)) || card.fr;
+  }
   if (!isExtraLang(code)) return card.fr;
   const found = DICT.get(norm(card.fr));
   if (found && found[code]) return found[code];
@@ -133,7 +167,10 @@ export function cardWord(card, code) {
   return card.fr;
 }
 // Vrai si la carte a une traduction (sinon elle est dite en français).
-export const hasWord = (card, code) => !isExtraLang(code) || DICT.has(norm(card.fr)) || /\(Moi\)\s*$/.test(card.fr || '');
+export const hasWord = (card, code) => {
+  if (isAmazighLang(code)) return Boolean((card[code] && typeof card[code] === 'object') || hasAmazighWord(card.fr, code));
+  return !isExtraLang(code) || DICT.has(norm(card.fr)) || /\(Moi\)\s*$/.test(card.fr || '');
+};
 
 // ---------- Catégories et menus ----------
 const CATEGORY_NAMES = {
@@ -146,6 +183,11 @@ const CATEGORY_NAMES = {
   nl: ['Basis', 'Eten', 'Drinken', 'Spelen', 'Doen', 'Mensen', 'Behoeften', 'Gevoelens', 'Beschrijven', 'Plaatsen'],
   tr: ['Temel', 'Yemek', 'İçmek', 'Oyun', 'Eylemler', 'Kişiler', 'İhtiyaçlar', 'Duygular', 'Tanımla', 'Yerler'],
   zh: ['常用', '吃', '喝', '玩', '动作', '人', '需要', '情绪', '描述', '地点'],
+  // v10.7 : catégories amazighes (à faire relire par des locuteurs natifs).
+  shi: ['Lmouhim', 'Učči', 'Tissit', 'Urar', 'Tigawin', 'Midden', 'Tiɣawsiwin', 'Iḥulfan', 'Aglam', 'Idɣaren'],
+  tzm: ['Axatar', 'Učči', 'Tissit', 'Urar', 'Tigawin', 'Midden', 'Tisriwin', 'Iḥulfan', 'Aglam', 'Idɣaren'],
+  rif: ['Lmouhim', 'Mačča', 'Tessit', 'Irar', 'Tigawin', 'Iwdan', 'Tiɣawsiwin', 'Iḥulfan', 'Aglam', 'Imukan'],
+  zgh: ['ⵜⴰⵙⵉⵍⴰ', 'ⵓⵛⵛⵉ', 'ⵜⵉⵙⵙⵉⵜ', 'ⵓⵔⴰⵔ', 'ⵜⵉⴳⴰⵡⵉⵏ', 'ⵎⵉⴷⴷⵏ', 'ⵜⵉⵙⵔⵉⵡⵉⵏ', 'ⵉⵃⵓⵍⴼⴰⵏ', 'ⴰⴳⵍⴰⵎ', 'ⵉⴷⵖⴰⵔⵏ'],
 };
 const CATEGORY_ORDER = ['base', 'manger', 'boire', 'jouer', 'actions', 'personnes', 'besoins', 'emotions', 'decrire', 'lieux'];
 
@@ -167,6 +209,17 @@ const UI = {
   pt: { home: 'Início', talk: 'Falar', session: 'Jogos', routines: 'O meu dia', emotions: 'Emoções', progress: 'Progresso', tTalk: 'Eu falo', tPlay: 'Eu brinco', tDay: 'O meu dia', tFeel: 'As minhas emoções', sTalk: 'Os meus cartões e a minha voz', sPlay: 'Jogos para aprender', sDay: 'A minha manhã e a minha noite', sFeel: 'Feliz, triste, zangada…', hello: 'Olá', ask: 'O que fazemos hoje?' },
   nl: { home: 'Start', talk: 'Praten', session: 'Spelletjes', routines: 'Mijn dag', emotions: 'Gevoelens', progress: 'Vooruitgang', tTalk: 'Ik praat', tPlay: 'Ik speel', tDay: 'Mijn dag', tFeel: 'Mijn gevoelens', sTalk: 'Mijn kaarten en mijn stem', sPlay: 'Spelletjes om te leren', sDay: 'Mijn ochtend en mijn avond', sFeel: 'Blij, verdrietig, boos…', hello: 'Hallo', ask: 'Wat gaan we vandaag doen?' },
   tr: { home: 'Ana sayfa', talk: 'Konuş', session: 'Oyunlar', routines: 'Günüm', emotions: 'Duygular', progress: 'İlerleme', tTalk: 'Konuşuyorum', tPlay: 'Oynuyorum', tDay: 'Günüm', tFeel: 'Duygularım', sTalk: 'Kartlarım ve sesim', sPlay: 'Öğrenmek için oyunlar', sDay: 'Sabahım ve akşamım', sFeel: 'Mutlu, üzgün, kızgın…', hello: 'Merhaba', ask: 'Bugün ne yapalım?' },
+  shi: { home: 'Taddart', talk: 'Sawal', session: 'Urar', routines: 'Ass inu', emotions: 'Iḥulfan', progress: 'Afara', tTalk: 'Ar sawalɣ', tPlay: 'Ar tturarɣ', tDay: 'Ass inu', tFeel: 'Iḥulfan inu', sTalk: 'Tiferkiwin d wawal inu', sPlay: 'Uraren i ulmmud', sDay: 'Zik d tmeddit', sFeel: 'Ferḥɣ, ḥzenɣ…', hello: 'Azul', ask: 'Ma rad nskr ass-ad ?' },
+  tzm: { home: 'Taddart', talk: 'Siwel', session: 'Urar', routines: 'Ass inu', emotions: 'Iḥulfan', progress: 'Afara', tTalk: 'Da ssawalɣ', tPlay: 'Da tturarɣ', tDay: 'Ass inu', tFeel: 'Iḥulfan inu', sTalk: 'Tiferkiwin d wawal inu', sPlay: 'Uraren i ulmmud', sDay: 'Zik d tmeddit', sFeel: 'Ferḥɣ, ḥzenɣ…', hello: 'Azul', ask: 'Mayd nttgga ass-a ?' },
+  rif: { home: 'Taddart', talk: 'Siwer', session: 'Irar', routines: 'Ass inu', emotions: 'Iḥulfan', progress: 'Afara', tTalk: 'Ssawareɣ', tPlay: 'Ttirareɣ', tDay: 'Ass inu', tFeel: 'Iḥulfan inu', sTalk: 'Tiferkiwin d wawal inu', sPlay: 'Iraren i ulmmud', sDay: 'Ṣbaḥ d tmeddit', sFeel: 'Ferḥeɣ, ḥzeneɣ…', hello: 'Azul', ask: 'Min ɣa negg ass-a ?' },
+  zgh: { home: 'ⵜⴰⴷⴷⴰⵔⵜ', talk: 'ⵙⴰⵡⵍ', session: 'ⵓⵔⴰⵔ', routines: 'ⴰⵙⵙ ⵉⵏⵓ', emotions: 'ⵉⵃⵓⵍⴼⴰⵏ', progress: 'ⴰⴼⴰⵔⴰ', tTalk: 'ⴰⵔ ⵙⴰⵡⴰⵍⵖ', tPlay: 'ⴰⵔ ⵜⵜⵓⵔⴰⵔⵖ', tDay: 'ⴰⵙⵙ ⵉⵏⵓ', tFeel: 'ⵉⵃⵓⵍⴼⴰⵏ ⵉⵏⵓ', sTalk: 'ⵜⵉⴼⵔⴽⵉⵡⵉⵏ ⴷ ⵡⴰⵡⴰⵍ ⵉⵏⵓ', sPlay: 'ⵓⵔⴰⵔⵏ ⵉ ⵓⵍⵎⵎⵓⴷ', sDay: 'ⵜⵉⴼⴰⵡⵜ ⴷ ⵜⵎⴷⴷⵉⵜ', sFeel: 'ⴼⵔⵃⵖ, ⵃⵣⵏⵖ…', hello: 'ⴰⵣⵓⵍ', ask: 'ⵎⴰⴷ ⵔⴰⴷ ⵏⵙⴽⵔ ⴰⵙⵙ-ⴰ ?' },
   zh: { home: '首页', talk: '说话', session: '游戏', routines: '我的一天', emotions: '情绪', progress: '进度', tTalk: '我说话', tPlay: '我玩', tDay: '我的一天', tFeel: '我的情绪', sTalk: '我的卡片和声音', sPlay: '学习的游戏', sDay: '早上和晚上', sFeel: '开心、难过、生气…', hello: '你好', ask: '今天我们做什么？' },
 };
 export const ui = (key, code) => (UI[code] && UI[code][key]) || UI.fr[key];
+// v10.7 : texte à dire avec la voix du téléphone pour un menu. Pas de voix amazighe sur les téléphones :
+// on dit alors le menu en français (une voix française lirait mal l'amazigh, et pas du tout le tifinagh).
+// « Azul » (bonjour) se lit bien avec la voix française : on le garde.
+export function spokenUi(key, code) {
+  if (isAmazighLang(code)) return { text: key === 'hello' ? 'Azul' : UI.fr[key], lang: 'fr' };
+  return { text: ui(key, code), lang: isExtraLang(code) ? code : 'fr' };
+}

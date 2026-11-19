@@ -1,0 +1,2226 @@
+{
+ "note": "Fichier fabriqué par tools/export-amazigh-cards.mjs. Ne pas modifier à la main.",
+ "count": 111,
+ "cards": [
+  {
+   "id": "c-base-je-veux",
+   "fr": "Je veux",
+   "shi": {
+    "lat": "Riɣ",
+    "tif": "ⵔⵉⵖ"
+   },
+   "tzm": {
+    "lat": "Riɣ",
+    "tif": "ⵔⵉⵖ"
+   },
+   "rif": {
+    "lat": "Xseɣ",
+    "tif": "ⵅⵙⵖ"
+   },
+   "zgh": {
+    "lat": "Riɣ",
+    "tif": "ⵔⵉⵖ"
+   }
+  },
+  {
+   "id": "c-base-oui",
+   "fr": "Oui",
+   "shi": {
+    "lat": "Yyih",
+    "tif": "ⵢⵢⵉⵀ"
+   },
+   "tzm": {
+    "lat": "Iyyeh",
+    "tif": "ⵉⵢⵢⵀ"
+   },
+   "rif": {
+    "lat": "Wah",
+    "tif": "ⵡⴰⵀ"
+   },
+   "zgh": {
+    "lat": "Yah",
+    "tif": "ⵢⴰⵀ"
+   }
+  },
+  {
+   "id": "c-base-non",
+   "fr": "Non",
+   "shi": {
+    "lat": "Uhu",
+    "tif": "ⵓⵀⵓ"
+   },
+   "tzm": {
+    "lat": "Uhu",
+    "tif": "ⵓⵀⵓ"
+   },
+   "rif": {
+    "lat": "Lla",
+    "tif": "ⵍⵍⴰ"
+   },
+   "zgh": {
+    "lat": "Uhu",
+    "tif": "ⵓⵀⵓ"
+   }
+  },
+  {
+   "id": "c-base-encore",
+   "fr": "Encore",
+   "shi": {
+    "lat": "Rnu",
+    "tif": "ⵔⵏⵓ"
+   },
+   "tzm": {
+    "lat": "Zayd",
+    "tif": "ⵣⴰⵢⴷ"
+   },
+   "rif": {
+    "lat": "Ɛawed",
+    "tif": "ⵄⴰⵡⴷ"
+   },
+   "zgh": {
+    "lat": "Rnu",
+    "tif": "ⵔⵏⵓ"
+   }
+  },
+  {
+   "id": "c-base-fini",
+   "fr": "Fini",
+   "shi": {
+    "lat": "Ikemmel",
+    "tif": "ⵉⴽⵎⵎⵍ"
+   },
+   "tzm": {
+    "lat": "Iqḍa",
+    "tif": "ⵉⵇⴹⴰ"
+   },
+   "rif": {
+    "lat": "Ikemmel",
+    "tif": "ⵉⴽⵎⵎⵍ"
+   },
+   "zgh": {
+    "lat": "Imda",
+    "tif": "ⵉⵎⴷⴰ"
+   }
+  },
+  {
+   "id": "c-base-aide-moi",
+   "fr": "Aide-moi",
+   "shi": {
+    "lat": "Awes-iyi",
+    "tif": "ⴰⵡⵙ-ⵉⵢⵉ"
+   },
+   "tzm": {
+    "lat": "Ɛawen-iyi",
+    "tif": "ⵄⴰⵡⵏ-ⵉⵢⵉ"
+   },
+   "rif": {
+    "lat": "Ɛawen-ayi",
+    "tif": "ⵄⴰⵡⵏ-ⴰⵢⵉ"
+   },
+   "zgh": {
+    "lat": "Aws-iyi",
+    "tif": "ⴰⵡⵙ-ⵉⵢⵉ"
+   }
+  },
+  {
+   "id": "c-base-attends",
+   "fr": "Attends",
+   "shi": {
+    "lat": "Qqel",
+    "tif": "ⵇⵇⵍ"
+   },
+   "tzm": {
+    "lat": "Qqel",
+    "tif": "ⵇⵇⵍ"
+   },
+   "rif": {
+    "lat": "Raja",
+    "tif": "ⵔⴰⵊⴰ"
+   },
+   "zgh": {
+    "lat": "Ggan",
+    "tif": "ⴳⴳⴰⵏ"
+   }
+  },
+  {
+   "id": "c-base-j-ai-mal",
+   "fr": "J'ai mal",
+   "shi": {
+    "lat": "Iḍur-iyi",
+    "tif": "ⵉⴹⵓⵔ-ⵉⵢⵉ"
+   },
+   "tzm": {
+    "lat": "Iqreḥ-iyi",
+    "tif": "ⵉⵇⵔⵃ-ⵉⵢⵉ"
+   },
+   "rif": {
+    "lat": "Iqreḥ-ayi",
+    "tif": "ⵉⵇⵔⵃ-ⴰⵢⵉ"
+   },
+   "zgh": {
+    "lat": "Iḍur-iyi",
+    "tif": "ⵉⴹⵓⵔ-ⵉⵢⵉ"
+   }
+  },
+  {
+   "id": "c-base-bonjour",
+   "fr": "Bonjour",
+   "shi": {
+    "lat": "Azul",
+    "tif": "ⴰⵣⵓⵍ"
+   },
+   "tzm": {
+    "lat": "Azul",
+    "tif": "ⴰⵣⵓⵍ"
+   },
+   "rif": {
+    "lat": "Azul",
+    "tif": "ⴰⵣⵓⵍ"
+   },
+   "zgh": {
+    "lat": "Azul",
+    "tif": "ⴰⵣⵓⵍ"
+   }
+  },
+  {
+   "id": "c-base-au-revoir",
+   "fr": "Au revoir",
+   "shi": {
+    "lat": "Ar tufat",
+    "tif": "ⴰⵔ ⵜⵓⴼⴰⵜ"
+   },
+   "tzm": {
+    "lat": "Ar tufat",
+    "tif": "ⴰⵔ ⵜⵓⴼⴰⵜ"
+   },
+   "rif": {
+    "lat": "Bsslama",
+    "tif": "ⴱⵙⵙⵍⴰⵎⴰ"
+   },
+   "zgh": {
+    "lat": "Ar tufat",
+    "tif": "ⴰⵔ ⵜⵓⴼⴰⵜ"
+   }
+  },
+  {
+   "id": "c-base-viens-jouer",
+   "fr": "Viens jouer",
+   "shi": {
+    "lat": "As-d ad nurar",
+    "tif": "ⴰⵙ-ⴷ ⴰⴷ ⵏⵓⵔⴰⵔ"
+   },
+   "tzm": {
+    "lat": "Addu-d ad nurar",
+    "tif": "ⴰⴷⴷⵓ-ⴷ ⴰⴷ ⵏⵓⵔⴰⵔ"
+   },
+   "rif": {
+    "lat": "As-d ad nirar",
+    "tif": "ⴰⵙ-ⴷ ⴰⴷ ⵏⵉⵔⴰⵔ"
+   },
+   "zgh": {
+    "lat": "As-d ad nurar",
+    "tif": "ⴰⵙ-ⴷ ⴰⴷ ⵏⵓⵔⴰⵔ"
+   }
+  },
+  {
+   "id": "c-manger-pain",
+   "fr": "Pain",
+   "shi": {
+    "lat": "Aɣrum",
+    "tif": "ⴰⵖⵔⵓⵎ"
+   },
+   "tzm": {
+    "lat": "Aɣrum",
+    "tif": "ⴰⵖⵔⵓⵎ"
+   },
+   "rif": {
+    "lat": "Aɣrum",
+    "tif": "ⴰⵖⵔⵓⵎ"
+   },
+   "zgh": {
+    "lat": "Aɣrum",
+    "tif": "ⴰⵖⵔⵓⵎ"
+   }
+  },
+  {
+   "id": "c-manger-pomme",
+   "fr": "Pomme",
+   "shi": {
+    "lat": "Tadeffuḥt",
+    "tif": "ⵜⴰⴷⴼⴼⵓⵃⵜ"
+   },
+   "tzm": {
+    "lat": "Tateffaḥt",
+    "tif": "ⵜⴰⵜⴼⴼⴰⵃⵜ"
+   },
+   "rif": {
+    "lat": "Tadeffaḥt",
+    "tif": "ⵜⴰⴷⴼⴼⴰⵃⵜ"
+   },
+   "zgh": {
+    "lat": "Tadeffuḥt",
+    "tif": "ⵜⴰⴷⴼⴼⵓⵃⵜ"
+   }
+  },
+  {
+   "id": "c-manger-banane",
+   "fr": "Banane",
+   "shi": {
+    "lat": "Tabanant",
+    "tif": "ⵜⴰⴱⴰⵏⴰⵏⵜ"
+   },
+   "tzm": {
+    "lat": "Banan",
+    "tif": "ⴱⴰⵏⴰⵏ"
+   },
+   "rif": {
+    "lat": "Banan",
+    "tif": "ⴱⴰⵏⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Tabanant",
+    "tif": "ⵜⴰⴱⴰⵏⴰⵏⵜ"
+   }
+  },
+  {
+   "id": "c-manger-gateau",
+   "fr": "Gâteau",
+   "shi": {
+    "lat": "Taḥlawat",
+    "tif": "ⵜⴰⵃⵍⴰⵡⴰⵜ"
+   },
+   "tzm": {
+    "lat": "Taḥlawat",
+    "tif": "ⵜⴰⵃⵍⴰⵡⴰⵜ"
+   },
+   "rif": {
+    "lat": "Taḥlawat",
+    "tif": "ⵜⴰⵃⵍⴰⵡⴰⵜ"
+   },
+   "zgh": {
+    "lat": "Taḥlawat",
+    "tif": "ⵜⴰⵃⵍⴰⵡⴰⵜ"
+   }
+  },
+  {
+   "id": "c-manger-yaourt",
+   "fr": "Yaourt",
+   "shi": {
+    "lat": "Danun",
+    "tif": "ⴷⴰⵏⵓⵏ"
+   },
+   "tzm": {
+    "lat": "Danun",
+    "tif": "ⴷⴰⵏⵓⵏ"
+   },
+   "rif": {
+    "lat": "Danun",
+    "tif": "ⴷⴰⵏⵓⵏ"
+   },
+   "zgh": {
+    "lat": "Aɣu yersen",
+    "tif": "ⴰⵖⵓ ⵢⵔⵙⵏ"
+   }
+  },
+  {
+   "id": "c-manger-riz",
+   "fr": "Riz",
+   "shi": {
+    "lat": "Rruz",
+    "tif": "ⵔⵔⵓⵣ"
+   },
+   "tzm": {
+    "lat": "Rruz",
+    "tif": "ⵔⵔⵓⵣ"
+   },
+   "rif": {
+    "lat": "Rruz",
+    "tif": "ⵔⵔⵓⵣ"
+   },
+   "zgh": {
+    "lat": "Rruz",
+    "tif": "ⵔⵔⵓⵣ"
+   }
+  },
+  {
+   "id": "c-manger-biscuit",
+   "fr": "Biscuit",
+   "shi": {
+    "lat": "Biskwi",
+    "tif": "ⴱⵉⵙⴽⵡⵉ"
+   },
+   "tzm": {
+    "lat": "Biskwi",
+    "tif": "ⴱⵉⵙⴽⵡⵉ"
+   },
+   "rif": {
+    "lat": "Biskwi",
+    "tif": "ⴱⵉⵙⴽⵡⵉ"
+   },
+   "zgh": {
+    "lat": "Biskwi",
+    "tif": "ⴱⵉⵙⴽⵡⵉ"
+   }
+  },
+  {
+   "id": "c-manger--uf",
+   "fr": "Œuf",
+   "shi": {
+    "lat": "Taglayt",
+    "tif": "ⵜⴰⴳⵍⴰⵢⵜ"
+   },
+   "tzm": {
+    "lat": "Tamellalt",
+    "tif": "ⵜⴰⵎⵍⵍⴰⵍⵜ"
+   },
+   "rif": {
+    "lat": "Tamellalt",
+    "tif": "ⵜⴰⵎⵍⵍⴰⵍⵜ"
+   },
+   "zgh": {
+    "lat": "Taglayt",
+    "tif": "ⵜⴰⴳⵍⴰⵢⵜ"
+   }
+  },
+  {
+   "id": "c-boire-eau",
+   "fr": "Eau",
+   "shi": {
+    "lat": "Aman",
+    "tif": "ⴰⵎⴰⵏ"
+   },
+   "tzm": {
+    "lat": "Aman",
+    "tif": "ⴰⵎⴰⵏ"
+   },
+   "rif": {
+    "lat": "Aman",
+    "tif": "ⴰⵎⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Aman",
+    "tif": "ⴰⵎⴰⵏ"
+   }
+  },
+  {
+   "id": "c-boire-lait",
+   "fr": "Lait",
+   "shi": {
+    "lat": "Aɣu",
+    "tif": "ⴰⵖⵓ"
+   },
+   "tzm": {
+    "lat": "Aɣu",
+    "tif": "ⴰⵖⵓ"
+   },
+   "rif": {
+    "lat": "Aɣi",
+    "tif": "ⴰⵖⵉ"
+   },
+   "zgh": {
+    "lat": "Akfay",
+    "tif": "ⴰⴽⴼⴰⵢ"
+   }
+  },
+  {
+   "id": "c-boire-jus",
+   "fr": "Jus",
+   "shi": {
+    "lat": "Lɛaṣir",
+    "tif": "ⵍⵄⴰⵚⵉⵔ"
+   },
+   "tzm": {
+    "lat": "Lɛaṣir",
+    "tif": "ⵍⵄⴰⵚⵉⵔ"
+   },
+   "rif": {
+    "lat": "Lɛaṣir",
+    "tif": "ⵍⵄⴰⵚⵉⵔ"
+   },
+   "zgh": {
+    "lat": "Aẓemmi",
+    "tif": "ⴰⵥⵎⵎⵉ"
+   }
+  },
+  {
+   "id": "c-manger-chips",
+   "fr": "Chips",
+   "shi": {
+    "lat": "Cibs",
+    "tif": "ⵛⵉⴱⵙ"
+   },
+   "tzm": {
+    "lat": "Cibs",
+    "tif": "ⵛⵉⴱⵙ"
+   },
+   "rif": {
+    "lat": "Cibs",
+    "tif": "ⵛⵉⴱⵙ"
+   },
+   "zgh": {
+    "lat": "Cibs",
+    "tif": "ⵛⵉⴱⵙ"
+   }
+  },
+  {
+   "id": "c-manger-fromage",
+   "fr": "Fromage",
+   "shi": {
+    "lat": "Afermaj",
+    "tif": "ⴰⴼⵔⵎⴰⵊ"
+   },
+   "tzm": {
+    "lat": "Afermaj",
+    "tif": "ⴰⴼⵔⵎⴰⵊ"
+   },
+   "rif": {
+    "lat": "Afermaj",
+    "tif": "ⴰⴼⵔⵎⴰⵊ"
+   },
+   "zgh": {
+    "lat": "Aguglu",
+    "tif": "ⴰⴳⵓⴳⵍⵓ"
+   }
+  },
+  {
+   "id": "c-manger-pancake",
+   "fr": "Pancake",
+   "shi": {
+    "lat": "Bankik",
+    "tif": "ⴱⴰⵏⴽⵉⴽ"
+   },
+   "tzm": {
+    "lat": "Bankik",
+    "tif": "ⴱⴰⵏⴽⵉⴽ"
+   },
+   "rif": {
+    "lat": "Bankik",
+    "tif": "ⴱⴰⵏⴽⵉⴽ"
+   },
+   "zgh": {
+    "lat": "Taɣrift",
+    "tif": "ⵜⴰⵖⵔⵉⴼⵜ"
+   }
+  },
+  {
+   "id": "c-manger-mcdo",
+   "fr": "Mcdo",
+   "shi": {
+    "lat": "Makdu",
+    "tif": "ⵎⴰⴽⴷⵓ"
+   },
+   "tzm": {
+    "lat": "Makdu",
+    "tif": "ⵎⴰⴽⴷⵓ"
+   },
+   "rif": {
+    "lat": "Makdu",
+    "tif": "ⵎⴰⴽⴷⵓ"
+   },
+   "zgh": {
+    "lat": "Makdu",
+    "tif": "ⵎⴰⴽⴷⵓ"
+   }
+  },
+  {
+   "id": "c-boire-coca-cola",
+   "fr": "Coca-cola",
+   "shi": {
+    "lat": "Kuka",
+    "tif": "ⴽⵓⴽⴰ"
+   },
+   "tzm": {
+    "lat": "Kuka",
+    "tif": "ⴽⵓⴽⴰ"
+   },
+   "rif": {
+    "lat": "Kuka",
+    "tif": "ⴽⵓⴽⴰ"
+   },
+   "zgh": {
+    "lat": "Kuka",
+    "tif": "ⴽⵓⴽⴰ"
+   }
+  },
+  {
+   "id": "c-jouer-trampoline",
+   "fr": "Trampoline",
+   "shi": {
+    "lat": "Trambulin",
+    "tif": "ⵜⵔⴰⵎⴱⵓⵍⵉⵏ"
+   },
+   "tzm": {
+    "lat": "Trambulin",
+    "tif": "ⵜⵔⴰⵎⴱⵓⵍⵉⵏ"
+   },
+   "rif": {
+    "lat": "Trambulin",
+    "tif": "ⵜⵔⴰⵎⴱⵓⵍⵉⵏ"
+   },
+   "zgh": {
+    "lat": "Trambulin",
+    "tif": "ⵜⵔⴰⵎⴱⵓⵍⵉⵏ"
+   }
+  },
+  {
+   "id": "c-jouer-ballon",
+   "fr": "Ballon",
+   "shi": {
+    "lat": "Takurt",
+    "tif": "ⵜⴰⴽⵓⵔⵜ"
+   },
+   "tzm": {
+    "lat": "Takurt",
+    "tif": "ⵜⴰⴽⵓⵔⵜ"
+   },
+   "rif": {
+    "lat": "Takurt",
+    "tif": "ⵜⴰⴽⵓⵔⵜ"
+   },
+   "zgh": {
+    "lat": "Takurt",
+    "tif": "ⵜⴰⴽⵓⵔⵜ"
+   }
+  },
+  {
+   "id": "c-jouer-tablette",
+   "fr": "Tablette",
+   "shi": {
+    "lat": "Tablit",
+    "tif": "ⵜⴰⴱⵍⵉⵜ"
+   },
+   "tzm": {
+    "lat": "Tablit",
+    "tif": "ⵜⴰⴱⵍⵉⵜ"
+   },
+   "rif": {
+    "lat": "Tablit",
+    "tif": "ⵜⴰⴱⵍⵉⵜ"
+   },
+   "zgh": {
+    "lat": "Taflwit",
+    "tif": "ⵜⴰⴼⵍⵡⵉⵜ"
+   }
+  },
+  {
+   "id": "c-jouer-dessin-anime",
+   "fr": "Dessin animé",
+   "shi": {
+    "lat": "Rrusum",
+    "tif": "ⵔⵔⵓⵙⵓⵎ"
+   },
+   "tzm": {
+    "lat": "Rrusum",
+    "tif": "ⵔⵔⵓⵙⵓⵎ"
+   },
+   "rif": {
+    "lat": "Rrusum",
+    "tif": "ⵔⵔⵓⵙⵓⵎ"
+   },
+   "zgh": {
+    "lat": "Unuɣen ittmussun",
+    "tif": "ⵓⵏⵓⵖⵏ ⵉⵜⵜⵎⵓⵙⵙⵓⵏ"
+   }
+  },
+  {
+   "id": "c-jouer-poupee",
+   "fr": "Poupée",
+   "shi": {
+    "lat": "Taslit",
+    "tif": "ⵜⴰⵙⵍⵉⵜ"
+   },
+   "tzm": {
+    "lat": "Taslit",
+    "tif": "ⵜⴰⵙⵍⵉⵜ"
+   },
+   "rif": {
+    "lat": "Tamunt",
+    "tif": "ⵜⴰⵎⵓⵏⵜ"
+   },
+   "zgh": {
+    "lat": "Taslit",
+    "tif": "ⵜⴰⵙⵍⵉⵜ"
+   }
+  },
+  {
+   "id": "c-jouer-musique",
+   "fr": "Musique",
+   "shi": {
+    "lat": "Aẓawan",
+    "tif": "ⴰⵥⴰⵡⴰⵏ"
+   },
+   "tzm": {
+    "lat": "Aẓawan",
+    "tif": "ⴰⵥⴰⵡⴰⵏ"
+   },
+   "rif": {
+    "lat": "Musiqa",
+    "tif": "ⵎⵓⵙⵉⵇⴰ"
+   },
+   "zgh": {
+    "lat": "Aẓawan",
+    "tif": "ⴰⵥⴰⵡⴰⵏ"
+   }
+  },
+  {
+   "id": "c-jouer-balancoire",
+   "fr": "Balançoire",
+   "shi": {
+    "lat": "Jellula",
+    "tif": "ⵊⵍⵍⵓⵍⴰ"
+   },
+   "tzm": {
+    "lat": "Zzeɛlula",
+    "tif": "ⵣⵣⵄⵍⵓⵍⴰ"
+   },
+   "rif": {
+    "lat": "Jellula",
+    "tif": "ⵊⵍⵍⵓⵍⴰ"
+   },
+   "zgh": {
+    "lat": "Tazellula",
+    "tif": "ⵜⴰⵣⵍⵍⵓⵍⴰ"
+   }
+  },
+  {
+   "id": "c-actions-manger",
+   "fr": "Manger",
+   "shi": {
+    "lat": "Čč",
+    "tif": "ⵛⵛ"
+   },
+   "tzm": {
+    "lat": "Čč",
+    "tif": "ⵛⵛ"
+   },
+   "rif": {
+    "lat": "Čč",
+    "tif": "ⵛⵛ"
+   },
+   "zgh": {
+    "lat": "Čč",
+    "tif": "ⵛⵛ"
+   }
+  },
+  {
+   "id": "c-actions-boire",
+   "fr": "Boire",
+   "shi": {
+    "lat": "Su",
+    "tif": "ⵙⵓ"
+   },
+   "tzm": {
+    "lat": "Su",
+    "tif": "ⵙⵓ"
+   },
+   "rif": {
+    "lat": "Sew",
+    "tif": "ⵙⵡ"
+   },
+   "zgh": {
+    "lat": "Su",
+    "tif": "ⵙⵓ"
+   }
+  },
+  {
+   "id": "c-actions-jouer",
+   "fr": "Jouer",
+   "shi": {
+    "lat": "Urar",
+    "tif": "ⵓⵔⴰⵔ"
+   },
+   "tzm": {
+    "lat": "Urar",
+    "tif": "ⵓⵔⴰⵔ"
+   },
+   "rif": {
+    "lat": "Irar",
+    "tif": "ⵉⵔⴰⵔ"
+   },
+   "zgh": {
+    "lat": "Urar",
+    "tif": "ⵓⵔⴰⵔ"
+   }
+  },
+  {
+   "id": "c-actions-courir",
+   "fr": "Courir",
+   "shi": {
+    "lat": "Azzel",
+    "tif": "ⴰⵣⵣⵍ"
+   },
+   "tzm": {
+    "lat": "Azzel",
+    "tif": "ⴰⵣⵣⵍ"
+   },
+   "rif": {
+    "lat": "Azzel",
+    "tif": "ⴰⵣⵣⵍ"
+   },
+   "zgh": {
+    "lat": "Azzel",
+    "tif": "ⴰⵣⵣⵍ"
+   }
+  },
+  {
+   "id": "c-actions-donner",
+   "fr": "Donner",
+   "shi": {
+    "lat": "Fk",
+    "tif": "ⴼⴽ"
+   },
+   "tzm": {
+    "lat": "Wš",
+    "tif": "ⵡⵛ"
+   },
+   "rif": {
+    "lat": "Uš",
+    "tif": "ⵓⵛ"
+   },
+   "zgh": {
+    "lat": "Fk",
+    "tif": "ⴼⴽ"
+   }
+  },
+  {
+   "id": "c-actions-couper",
+   "fr": "Couper",
+   "shi": {
+    "lat": "Bbi",
+    "tif": "ⴱⴱⵉ"
+   },
+   "tzm": {
+    "lat": "Bbi",
+    "tif": "ⴱⴱⵉ"
+   },
+   "rif": {
+    "lat": "Qess",
+    "tif": "ⵇⵙⵙ"
+   },
+   "zgh": {
+    "lat": "Bbi",
+    "tif": "ⴱⴱⵉ"
+   }
+  },
+  {
+   "id": "c-actions-sauter",
+   "fr": "Sauter",
+   "shi": {
+    "lat": "Nḍu",
+    "tif": "ⵏⴹⵓ"
+   },
+   "tzm": {
+    "lat": "Nḍu",
+    "tif": "ⵏⴹⵓ"
+   },
+   "rif": {
+    "lat": "Nṭew",
+    "tif": "ⵏⵟⵡ"
+   },
+   "zgh": {
+    "lat": "Nḍu",
+    "tif": "ⵏⴹⵓ"
+   }
+  },
+  {
+   "id": "c-actions-laver",
+   "fr": "Laver",
+   "shi": {
+    "lat": "Ssird",
+    "tif": "ⵙⵙⵉⵔⴷ"
+   },
+   "tzm": {
+    "lat": "Ssird",
+    "tif": "ⵙⵙⵉⵔⴷ"
+   },
+   "rif": {
+    "lat": "Ssired",
+    "tif": "ⵙⵙⵉⵔⴷ"
+   },
+   "zgh": {
+    "lat": "Ssird",
+    "tif": "ⵙⵙⵉⵔⴷ"
+   }
+  },
+  {
+   "id": "c-actions-dessiner",
+   "fr": "Dessiner",
+   "shi": {
+    "lat": "Rsem",
+    "tif": "ⵔⵙⵎ"
+   },
+   "tzm": {
+    "lat": "Rsem",
+    "tif": "ⵔⵙⵎ"
+   },
+   "rif": {
+    "lat": "Rsem",
+    "tif": "ⵔⵙⵎ"
+   },
+   "zgh": {
+    "lat": "Ssunɣ",
+    "tif": "ⵙⵙⵓⵏⵖ"
+   }
+  },
+  {
+   "id": "c-actions-ouvrir",
+   "fr": "Ouvrir",
+   "shi": {
+    "lat": "Rzem",
+    "tif": "ⵔⵣⵎ"
+   },
+   "tzm": {
+    "lat": "Rzem",
+    "tif": "ⵔⵣⵎ"
+   },
+   "rif": {
+    "lat": "Rzem",
+    "tif": "ⵔⵣⵎ"
+   },
+   "zgh": {
+    "lat": "Rzem",
+    "tif": "ⵔⵣⵎ"
+   }
+  },
+  {
+   "id": "c-personnes-papa",
+   "fr": "Papa",
+   "shi": {
+    "lat": "Baba",
+    "tif": "ⴱⴰⴱⴰ"
+   },
+   "tzm": {
+    "lat": "Baba",
+    "tif": "ⴱⴰⴱⴰ"
+   },
+   "rif": {
+    "lat": "Baba",
+    "tif": "ⴱⴰⴱⴰ"
+   },
+   "zgh": {
+    "lat": "Baba",
+    "tif": "ⴱⴰⴱⴰ"
+   }
+  },
+  {
+   "id": "c-personnes-maman",
+   "fr": "Maman",
+   "shi": {
+    "lat": "Immi",
+    "tif": "ⵉⵎⵎⵉ"
+   },
+   "tzm": {
+    "lat": "Imma",
+    "tif": "ⵉⵎⵎⴰ"
+   },
+   "rif": {
+    "lat": "Yemma",
+    "tif": "ⵢⵎⵎⴰ"
+   },
+   "zgh": {
+    "lat": "Imma",
+    "tif": "ⵉⵎⵎⴰ"
+   }
+  },
+  {
+   "id": "c-personnes-maitresse",
+   "fr": "Maîtresse",
+   "shi": {
+    "lat": "Taselmadt",
+    "tif": "ⵜⴰⵙⵍⵎⴰⴷⵜ"
+   },
+   "tzm": {
+    "lat": "Taselmadt",
+    "tif": "ⵜⴰⵙⵍⵎⴰⴷⵜ"
+   },
+   "rif": {
+    "lat": "Taselmadt",
+    "tif": "ⵜⴰⵙⵍⵎⴰⴷⵜ"
+   },
+   "zgh": {
+    "lat": "Taselmadt",
+    "tif": "ⵜⴰⵙⵍⵎⴰⴷⵜ"
+   }
+  },
+  {
+   "id": "c-personnes-mamie",
+   "fr": "Mamie",
+   "shi": {
+    "lat": "Jdda",
+    "tif": "ⵊⴷⴷⴰ"
+   },
+   "tzm": {
+    "lat": "Ḥenna",
+    "tif": "ⵃⵏⵏⴰ"
+   },
+   "rif": {
+    "lat": "Ḥenna",
+    "tif": "ⵃⵏⵏⴰ"
+   },
+   "zgh": {
+    "lat": "Jdda",
+    "tif": "ⵊⴷⴷⴰ"
+   }
+  },
+  {
+   "id": "c-personnes-papi",
+   "fr": "Papi",
+   "shi": {
+    "lat": "Jddi",
+    "tif": "ⵊⴷⴷⵉ"
+   },
+   "tzm": {
+    "lat": "Jeddi",
+    "tif": "ⵊⴷⴷⵉ"
+   },
+   "rif": {
+    "lat": "Jeddi",
+    "tif": "ⵊⴷⴷⵉ"
+   },
+   "zgh": {
+    "lat": "Jddi",
+    "tif": "ⵊⴷⴷⵉ"
+   }
+  },
+  {
+   "id": "c-besoins-toilettes",
+   "fr": "Toilettes",
+   "shi": {
+    "lat": "Bit lma",
+    "tif": "ⴱⵉⵜ ⵍⵎⴰ"
+   },
+   "tzm": {
+    "lat": "Bit lma",
+    "tif": "ⴱⵉⵜ ⵍⵎⴰ"
+   },
+   "rif": {
+    "lat": "Bit lma",
+    "tif": "ⴱⵉⵜ ⵍⵎⴰ"
+   },
+   "zgh": {
+    "lat": "Asirid",
+    "tif": "ⴰⵙⵉⵔⵉⴷ"
+   }
+  },
+  {
+   "id": "c-besoins-dormir",
+   "fr": "Dormir",
+   "shi": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   },
+   "tzm": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   },
+   "rif": {
+    "lat": "Ṭṭeṣ",
+    "tif": "ⵟⵟⵚ"
+   },
+   "zgh": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   }
+  },
+  {
+   "id": "c-besoins-calin",
+   "fr": "Câlin",
+   "shi": {
+    "lat": "Aḥbu",
+    "tif": "ⴰⵃⴱⵓ"
+   },
+   "tzm": {
+    "lat": "Asmun",
+    "tif": "ⴰⵙⵎⵓⵏ"
+   },
+   "rif": {
+    "lat": "Aḥbu",
+    "tif": "ⴰⵃⴱⵓ"
+   },
+   "zgh": {
+    "lat": "Asmun",
+    "tif": "ⴰⵙⵎⵓⵏ"
+   }
+  },
+  {
+   "id": "c-besoins-bain",
+   "fr": "Bain",
+   "shi": {
+    "lat": "Lḥammam",
+    "tif": "ⵍⵃⴰⵎⵎⴰⵎ"
+   },
+   "tzm": {
+    "lat": "Lḥammam",
+    "tif": "ⵍⵃⴰⵎⵎⴰⵎ"
+   },
+   "rif": {
+    "lat": "Lḥammam",
+    "tif": "ⵍⵃⴰⵎⵎⴰⵎ"
+   },
+   "zgh": {
+    "lat": "Asirid",
+    "tif": "ⴰⵙⵉⵔⵉⴷ"
+   }
+  },
+  {
+   "id": "c-besoins-changer",
+   "fr": "Changer",
+   "shi": {
+    "lat": "Beddel",
+    "tif": "ⴱⴷⴷⵍ"
+   },
+   "tzm": {
+    "lat": "Beddel",
+    "tif": "ⴱⴷⴷⵍ"
+   },
+   "rif": {
+    "lat": "Beddel",
+    "tif": "ⴱⴷⴷⵍ"
+   },
+   "zgh": {
+    "lat": "Senfel",
+    "tif": "ⵙⵏⴼⵍ"
+   }
+  },
+  {
+   "id": "c-besoins-calme",
+   "fr": "Calme",
+   "shi": {
+    "lat": "Afsus",
+    "tif": "ⴰⴼⵙⵓⵙ"
+   },
+   "tzm": {
+    "lat": "Arsal",
+    "tif": "ⴰⵔⵙⴰⵍ"
+   },
+   "rif": {
+    "lat": "Lehna",
+    "tif": "ⵍⵀⵏⴰ"
+   },
+   "zgh": {
+    "lat": "Afsus",
+    "tif": "ⴰⴼⵙⵓⵙ"
+   }
+  },
+  {
+   "id": "c-emotions-content",
+   "fr": "Content",
+   "shi": {
+    "lat": "Ferḥeɣ",
+    "tif": "ⴼⵔⵃⵖ"
+   },
+   "tzm": {
+    "lat": "Ferḥeɣ",
+    "tif": "ⴼⵔⵃⵖ"
+   },
+   "rif": {
+    "lat": "Ferḥeɣ",
+    "tif": "ⴼⵔⵃⵖ"
+   },
+   "zgh": {
+    "lat": "Ferḥeɣ",
+    "tif": "ⴼⵔⵃⵖ"
+   }
+  },
+  {
+   "id": "c-emotions-triste",
+   "fr": "Triste",
+   "shi": {
+    "lat": "Ḥzeneɣ",
+    "tif": "ⵃⵣⵏⵖ"
+   },
+   "tzm": {
+    "lat": "Ḥzeneɣ",
+    "tif": "ⵃⵣⵏⵖ"
+   },
+   "rif": {
+    "lat": "Ḥzeneɣ",
+    "tif": "ⵃⵣⵏⵖ"
+   },
+   "zgh": {
+    "lat": "Ḥzeneɣ",
+    "tif": "ⵃⵣⵏⵖ"
+   }
+  },
+  {
+   "id": "c-emotions-en-colere",
+   "fr": "En colère",
+   "shi": {
+    "lat": "Rqqeɣ",
+    "tif": "ⵔⵇⵇⵖ"
+   },
+   "tzm": {
+    "lat": "Zɛfeɣ",
+    "tif": "ⵣⵄⴼⵖ"
+   },
+   "rif": {
+    "lat": "Zɛfeɣ",
+    "tif": "ⵣⵄⴼⵖ"
+   },
+   "zgh": {
+    "lat": "Zɛfeɣ",
+    "tif": "ⵣⵄⴼⵖ"
+   }
+  },
+  {
+   "id": "c-emotions-peur",
+   "fr": "Peur",
+   "shi": {
+    "lat": "Kṣuḍeɣ",
+    "tif": "ⴽⵚⵓⴹⵖ"
+   },
+   "tzm": {
+    "lat": "Ggedeɣ",
+    "tif": "ⴳⴳⴷⵖ"
+   },
+   "rif": {
+    "lat": "Ggedeɣ",
+    "tif": "ⴳⴳⴷⵖ"
+   },
+   "zgh": {
+    "lat": "Kṣuḍeɣ",
+    "tif": "ⴽⵚⵓⴹⵖ"
+   }
+  },
+  {
+   "id": "c-emotions-fatigue",
+   "fr": "Fatigué",
+   "shi": {
+    "lat": "Rmmiɣ",
+    "tif": "ⵔⵎⵎⵉⵖ"
+   },
+   "tzm": {
+    "lat": "Rmmiɣ",
+    "tif": "ⵔⵎⵎⵉⵖ"
+   },
+   "rif": {
+    "lat": "Uhleɣ",
+    "tif": "ⵓⵀⵍⵖ"
+   },
+   "zgh": {
+    "lat": "Rmmiɣ",
+    "tif": "ⵔⵎⵎⵉⵖ"
+   }
+  },
+  {
+   "id": "c-emotions-fier",
+   "fr": "Fier",
+   "shi": {
+    "lat": "Zuxxeɣ",
+    "tif": "ⵣⵓⵅⵅⵖ"
+   },
+   "tzm": {
+    "lat": "Zuxxeɣ",
+    "tif": "ⵣⵓⵅⵅⵖ"
+   },
+   "rif": {
+    "lat": "Zuxxeɣ",
+    "tif": "ⵣⵓⵅⵅⵖ"
+   },
+   "zgh": {
+    "lat": "Zuxxeɣ",
+    "tif": "ⵣⵓⵅⵅⵖ"
+   }
+  },
+  {
+   "id": "c-decrire-grand",
+   "fr": "Grand",
+   "shi": {
+    "lat": "Imqqur",
+    "tif": "ⵉⵎⵇⵇⵓⵔ"
+   },
+   "tzm": {
+    "lat": "Ameqqran",
+    "tif": "ⴰⵎⵇⵇⵔⴰⵏ"
+   },
+   "rif": {
+    "lat": "Ameqqran",
+    "tif": "ⴰⵎⵇⵇⵔⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Ameqqran",
+    "tif": "ⴰⵎⵇⵇⵔⴰⵏ"
+   }
+  },
+  {
+   "id": "c-decrire-petit",
+   "fr": "Petit",
+   "shi": {
+    "lat": "Imẓẓi",
+    "tif": "ⵉⵎⵥⵥⵉ"
+   },
+   "tzm": {
+    "lat": "Ameẓyan",
+    "tif": "ⴰⵎⵥⵢⴰⵏ"
+   },
+   "rif": {
+    "lat": "Ameẓẓyan",
+    "tif": "ⴰⵎⵥⵥⵢⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Ameẓyan",
+    "tif": "ⴰⵎⵥⵢⴰⵏ"
+   }
+  },
+  {
+   "id": "c-decrire-rouge",
+   "fr": "Rouge",
+   "shi": {
+    "lat": "Azggʷaɣ",
+    "tif": "ⴰⵣⴳⴳⵯⴰⵖ"
+   },
+   "tzm": {
+    "lat": "Azeggʷaɣ",
+    "tif": "ⴰⵣⴳⴳⵯⴰⵖ"
+   },
+   "rif": {
+    "lat": "Azeggʷaɣ",
+    "tif": "ⴰⵣⴳⴳⵯⴰⵖ"
+   },
+   "zgh": {
+    "lat": "Azeggʷaɣ",
+    "tif": "ⴰⵣⴳⴳⵯⴰⵖ"
+   }
+  },
+  {
+   "id": "c-decrire-bleu",
+   "fr": "Bleu",
+   "shi": {
+    "lat": "Azegzaw",
+    "tif": "ⴰⵣⴳⵣⴰⵡ"
+   },
+   "tzm": {
+    "lat": "Anili",
+    "tif": "ⴰⵏⵉⵍⵉ"
+   },
+   "rif": {
+    "lat": "Aziza",
+    "tif": "ⴰⵣⵉⵣⴰ"
+   },
+   "zgh": {
+    "lat": "Anili",
+    "tif": "ⴰⵏⵉⵍⵉ"
+   }
+  },
+  {
+   "id": "c-decrire-jaune",
+   "fr": "Jaune",
+   "shi": {
+    "lat": "Awraɣ",
+    "tif": "ⴰⵡⵔⴰⵖ"
+   },
+   "tzm": {
+    "lat": "Awraɣ",
+    "tif": "ⴰⵡⵔⴰⵖ"
+   },
+   "rif": {
+    "lat": "Awraɣ",
+    "tif": "ⴰⵡⵔⴰⵖ"
+   },
+   "zgh": {
+    "lat": "Awraɣ",
+    "tif": "ⴰⵡⵔⴰⵖ"
+   }
+  },
+  {
+   "id": "c-decrire-vert",
+   "fr": "Vert",
+   "shi": {
+    "lat": "Azegzaw",
+    "tif": "ⴰⵣⴳⵣⴰⵡ"
+   },
+   "tzm": {
+    "lat": "Azegzaw",
+    "tif": "ⴰⵣⴳⵣⴰⵡ"
+   },
+   "rif": {
+    "lat": "Azegzaw",
+    "tif": "ⴰⵣⴳⵣⴰⵡ"
+   },
+   "zgh": {
+    "lat": "Azegzaw",
+    "tif": "ⴰⵣⴳⵣⴰⵡ"
+   }
+  },
+  {
+   "id": "c-decrire-chaud",
+   "fr": "Chaud",
+   "shi": {
+    "lat": "Irɣa",
+    "tif": "ⵉⵔⵖⴰ"
+   },
+   "tzm": {
+    "lat": "Iḥma",
+    "tif": "ⵉⵃⵎⴰ"
+   },
+   "rif": {
+    "lat": "Iḥma",
+    "tif": "ⵉⵃⵎⴰ"
+   },
+   "zgh": {
+    "lat": "Irɣa",
+    "tif": "ⵉⵔⵖⴰ"
+   }
+  },
+  {
+   "id": "c-decrire-froid",
+   "fr": "Froid",
+   "shi": {
+    "lat": "Iṣemmiḍ",
+    "tif": "ⵉⵚⵎⵎⵉⴹ"
+   },
+   "tzm": {
+    "lat": "Iṣemmiḍ",
+    "tif": "ⵉⵚⵎⵎⵉⴹ"
+   },
+   "rif": {
+    "lat": "Iṣemmeḍ",
+    "tif": "ⵉⵚⵎⵎⴹ"
+   },
+   "zgh": {
+    "lat": "Iṣemmiḍ",
+    "tif": "ⵉⵚⵎⵎⵉⴹ"
+   }
+  },
+  {
+   "id": "c-decrire-rond",
+   "fr": "Rond",
+   "shi": {
+    "lat": "Imdewwer",
+    "tif": "ⵉⵎⴷⵡⵡⵔ"
+   },
+   "tzm": {
+    "lat": "Imdewwer",
+    "tif": "ⵉⵎⴷⵡⵡⵔ"
+   },
+   "rif": {
+    "lat": "Imdewwer",
+    "tif": "ⵉⵎⴷⵡⵡⵔ"
+   },
+   "zgh": {
+    "lat": "Amdewwer",
+    "tif": "ⴰⵎⴷⵡⵡⵔ"
+   }
+  },
+  {
+   "id": "c-lieux-dehors",
+   "fr": "Dehors",
+   "shi": {
+    "lat": "Berra",
+    "tif": "ⴱⵔⵔⴰ"
+   },
+   "tzm": {
+    "lat": "Berra",
+    "tif": "ⴱⵔⵔⴰ"
+   },
+   "rif": {
+    "lat": "Berra",
+    "tif": "ⴱⵔⵔⴰ"
+   },
+   "zgh": {
+    "lat": "Berra",
+    "tif": "ⴱⵔⵔⴰ"
+   }
+  },
+  {
+   "id": "c-lieux-maison",
+   "fr": "Maison",
+   "shi": {
+    "lat": "Tigemmi",
+    "tif": "ⵜⵉⴳⵎⵎⵉ"
+   },
+   "tzm": {
+    "lat": "Taddart",
+    "tif": "ⵜⴰⴷⴷⴰⵔⵜ"
+   },
+   "rif": {
+    "lat": "Taddart",
+    "tif": "ⵜⴰⴷⴷⴰⵔⵜ"
+   },
+   "zgh": {
+    "lat": "Taddart",
+    "tif": "ⵜⴰⴷⴷⴰⵔⵜ"
+   }
+  },
+  {
+   "id": "c-lieux-voiture",
+   "fr": "Voiture",
+   "shi": {
+    "lat": "Ṭṭumubil",
+    "tif": "ⵟⵟⵓⵎⵓⴱⵉⵍ"
+   },
+   "tzm": {
+    "lat": "Ṭṭumubil",
+    "tif": "ⵟⵟⵓⵎⵓⴱⵉⵍ"
+   },
+   "rif": {
+    "lat": "Ṭṭumubil",
+    "tif": "ⵟⵟⵓⵎⵓⴱⵉⵍ"
+   },
+   "zgh": {
+    "lat": "Tasḥerrakt",
+    "tif": "ⵜⴰⵙⵃⵔⵔⴰⴽⵜ"
+   }
+  },
+  {
+   "id": "c-lieux-parc",
+   "fr": "Parc",
+   "shi": {
+    "lat": "Urti",
+    "tif": "ⵓⵔⵜⵉ"
+   },
+   "tzm": {
+    "lat": "Urti",
+    "tif": "ⵓⵔⵜⵉ"
+   },
+   "rif": {
+    "lat": "Jjerda",
+    "tif": "ⵊⵊⵔⴷⴰ"
+   },
+   "zgh": {
+    "lat": "Urti",
+    "tif": "ⵓⵔⵜⵉ"
+   }
+  },
+  {
+   "id": "c-lieux-ecole",
+   "fr": "École",
+   "shi": {
+    "lat": "Tinmel",
+    "tif": "ⵜⵉⵏⵎⵍ"
+   },
+   "tzm": {
+    "lat": "Tinmel",
+    "tif": "ⵜⵉⵏⵎⵍ"
+   },
+   "rif": {
+    "lat": "Tinmel",
+    "tif": "ⵜⵉⵏⵎⵍ"
+   },
+   "zgh": {
+    "lat": "Tinmel",
+    "tif": "ⵜⵉⵏⵎⵍ"
+   }
+  },
+  {
+   "id": "c-base-s-il-te-plait",
+   "fr": "S'il te plaît",
+   "shi": {
+    "lat": "Ɛafak",
+    "tif": "ⵄⴰⴼⴰⴽ"
+   },
+   "tzm": {
+    "lat": "Ɛafak",
+    "tif": "ⵄⴰⴼⴰⴽ"
+   },
+   "rif": {
+    "lat": "Ɛafak",
+    "tif": "ⵄⴰⴼⴰⴽ"
+   },
+   "zgh": {
+    "lat": "Mk tufit",
+    "tif": "ⵎⴽ ⵜⵓⴼⵉⵜ"
+   }
+  },
+  {
+   "id": "c-base-merci",
+   "fr": "Merci",
+   "shi": {
+    "lat": "Tanemmirt",
+    "tif": "ⵜⴰⵏⵎⵎⵉⵔⵜ"
+   },
+   "tzm": {
+    "lat": "Tanemmirt",
+    "tif": "ⵜⴰⵏⵎⵎⵉⵔⵜ"
+   },
+   "rif": {
+    "lat": "Tanemmirt",
+    "tif": "ⵜⴰⵏⵎⵎⵉⵔⵜ"
+   },
+   "zgh": {
+    "lat": "Tanemmirt",
+    "tif": "ⵜⴰⵏⵎⵎⵉⵔⵜ"
+   }
+  },
+  {
+   "id": "c-base-c-est-quoi-",
+   "fr": "C'est quoi ?",
+   "shi": {
+    "lat": "Ma yga wad ?",
+    "tif": "ⵎⴰ ⵢⴳⴰ ⵡⴰⴷ ?"
+   },
+   "tzm": {
+    "lat": "Mayd iga wa ?",
+    "tif": "ⵎⴰⵢⴷ ⵉⴳⴰ ⵡⴰ ?"
+   },
+   "rif": {
+    "lat": "Minzi wa ?",
+    "tif": "ⵎⵉⵏⵣⵉ ⵡⴰ ?"
+   },
+   "zgh": {
+    "lat": "Ma yga wa ?",
+    "tif": "ⵎⴰ ⵢⴳⴰ ⵡⴰ ?"
+   }
+  },
+  {
+   "id": "c-base-ou-est-",
+   "fr": "Où est ?",
+   "shi": {
+    "lat": "Mani ?",
+    "tif": "ⵎⴰⵏⵉ ?"
+   },
+   "tzm": {
+    "lat": "Mani ?",
+    "tif": "ⵎⴰⵏⵉ ?"
+   },
+   "rif": {
+    "lat": "Mani ?",
+    "tif": "ⵎⴰⵏⵉ ?"
+   },
+   "zgh": {
+    "lat": "Mani ?",
+    "tif": "ⵎⴰⵏⵉ ?"
+   }
+  },
+  {
+   "id": "c-base-avec",
+   "fr": "Avec",
+   "shi": {
+    "lat": "D",
+    "tif": "ⴷ"
+   },
+   "tzm": {
+    "lat": "D",
+    "tif": "ⴷ"
+   },
+   "rif": {
+    "lat": "Aked",
+    "tif": "ⴰⴽⴷ"
+   },
+   "zgh": {
+    "lat": "D",
+    "tif": "ⴷ"
+   }
+  },
+  {
+   "id": "c-actions-lire",
+   "fr": "Lire",
+   "shi": {
+    "lat": "Ɣer",
+    "tif": "ⵖⵔ"
+   },
+   "tzm": {
+    "lat": "Ɣer",
+    "tif": "ⵖⵔ"
+   },
+   "rif": {
+    "lat": "Ɣer",
+    "tif": "ⵖⵔ"
+   },
+   "zgh": {
+    "lat": "Ɣer",
+    "tif": "ⵖⵔ"
+   }
+  },
+  {
+   "id": "c-actions-ecrire",
+   "fr": "Écrire",
+   "shi": {
+    "lat": "Ara",
+    "tif": "ⴰⵔⴰ"
+   },
+   "tzm": {
+    "lat": "Ara",
+    "tif": "ⴰⵔⴰ"
+   },
+   "rif": {
+    "lat": "Ari",
+    "tif": "ⴰⵔⵉ"
+   },
+   "zgh": {
+    "lat": "Ara",
+    "tif": "ⴰⵔⴰ"
+   }
+  },
+  {
+   "id": "c-actions-regarder",
+   "fr": "Regarder",
+   "shi": {
+    "lat": "Smmeqel",
+    "tif": "ⵙⵎⵎⵇⵍ"
+   },
+   "tzm": {
+    "lat": "Ɛqel",
+    "tif": "ⵄⵇⵍ"
+   },
+   "rif": {
+    "lat": "Xzer",
+    "tif": "ⵅⵣⵔ"
+   },
+   "zgh": {
+    "lat": "Smmeqel",
+    "tif": "ⵙⵎⵎⵇⵍ"
+   }
+  },
+  {
+   "id": "c-actions-ecouter",
+   "fr": "Écouter",
+   "shi": {
+    "lat": "Sfled",
+    "tif": "ⵙⴼⵍⴷ"
+   },
+   "tzm": {
+    "lat": "Sfled",
+    "tif": "ⵙⴼⵍⴷ"
+   },
+   "rif": {
+    "lat": "Sel",
+    "tif": "ⵙⵍ"
+   },
+   "zgh": {
+    "lat": "Sfled",
+    "tif": "ⵙⴼⵍⴷ"
+   }
+  },
+  {
+   "id": "c-actions-dormir",
+   "fr": "Dormir",
+   "shi": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   },
+   "tzm": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   },
+   "rif": {
+    "lat": "Ṭṭeṣ",
+    "tif": "ⵟⵟⵚ"
+   },
+   "zgh": {
+    "lat": "Gen",
+    "tif": "ⴳⵏ"
+   }
+  },
+  {
+   "id": "c-decrire-dans",
+   "fr": "Dans",
+   "shi": {
+    "lat": "G",
+    "tif": "ⴳ"
+   },
+   "tzm": {
+    "lat": "Deg",
+    "tif": "ⴷⴳ"
+   },
+   "rif": {
+    "lat": "Deg",
+    "tif": "ⴷⴳ"
+   },
+   "zgh": {
+    "lat": "G",
+    "tif": "ⴳ"
+   }
+  },
+  {
+   "id": "c-decrire-sur",
+   "fr": "Sur",
+   "shi": {
+    "lat": "F",
+    "tif": "ⴼ"
+   },
+   "tzm": {
+    "lat": "Xef",
+    "tif": "ⵅⴼ"
+   },
+   "rif": {
+    "lat": "Xef",
+    "tif": "ⵅⴼ"
+   },
+   "zgh": {
+    "lat": "F",
+    "tif": "ⴼ"
+   }
+  },
+  {
+   "id": "c-decrire-sous",
+   "fr": "Sous",
+   "shi": {
+    "lat": "Ddaw",
+    "tif": "ⴷⴷⴰⵡ"
+   },
+   "tzm": {
+    "lat": "Ddaw",
+    "tif": "ⴷⴷⴰⵡ"
+   },
+   "rif": {
+    "lat": "Saddo",
+    "tif": "ⵙⴰⴷⴷⵓ"
+   },
+   "zgh": {
+    "lat": "Ddaw",
+    "tif": "ⴷⴷⴰⵡ"
+   }
+  },
+  {
+   "id": "c-decrire-beaucoup",
+   "fr": "Beaucoup",
+   "shi": {
+    "lat": "Bahra",
+    "tif": "ⴱⴰⵀⵔⴰ"
+   },
+   "tzm": {
+    "lat": "Kigan",
+    "tif": "ⴽⵉⴳⴰⵏ"
+   },
+   "rif": {
+    "lat": "Aṭṭas",
+    "tif": "ⴰⵟⵟⴰⵙ"
+   },
+   "zgh": {
+    "lat": "Kigan",
+    "tif": "ⴽⵉⴳⴰⵏ"
+   }
+  },
+  {
+   "id": "c-decrire-un-peu",
+   "fr": "Un peu",
+   "shi": {
+    "lat": "Imik",
+    "tif": "ⵉⵎⵉⴽ"
+   },
+   "tzm": {
+    "lat": "Imik",
+    "tif": "ⵉⵎⵉⴽ"
+   },
+   "rif": {
+    "lat": "Drus",
+    "tif": "ⴷⵔⵓⵙ"
+   },
+   "zgh": {
+    "lat": "Imik",
+    "tif": "ⵉⵎⵉⴽ"
+   }
+  },
+  {
+   "id": "c-pack-the-menthe",
+   "fr": "Thé à la menthe",
+   "shi": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "tzm": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "rif": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "zgh": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   }
+  },
+  {
+   "id": "c-rural-atay",
+   "fr": "Thé à la menthe",
+   "shi": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "tzm": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "rif": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   },
+   "zgh": {
+    "lat": "Atay",
+    "tif": "ⴰⵜⴰⵢ"
+   }
+  },
+  {
+   "id": "c-rural-aghrum",
+   "fr": "Pain au four",
+   "shi": {
+    "lat": "Aɣrum n tferrant",
+    "tif": "ⴰⵖⵔⵓⵎ ⵏ ⵜⴼⵔⵔⴰⵏⵜ"
+   },
+   "tzm": {
+    "lat": "Aɣrum n uferran",
+    "tif": "ⴰⵖⵔⵓⵎ ⵏ ⵓⴼⵔⵔⴰⵏ"
+   },
+   "rif": {
+    "lat": "Aɣrum n uferran",
+    "tif": "ⴰⵖⵔⵓⵎ ⵏ ⵓⴼⵔⵔⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Aɣrum n tferrant",
+    "tif": "ⴰⵖⵔⵓⵎ ⵏ ⵜⴼⵔⵔⴰⵏⵜ"
+   }
+  },
+  {
+   "id": "c-rural-zzit",
+   "fr": "Huile d'olive",
+   "shi": {
+    "lat": "Zzit n uzemmur",
+    "tif": "ⵣⵣⵉⵜ ⵏ ⵓⵣⵎⵎⵓⵔ"
+   },
+   "tzm": {
+    "lat": "Zzit n uzemmur",
+    "tif": "ⵣⵣⵉⵜ ⵏ ⵓⵣⵎⵎⵓⵔ"
+   },
+   "rif": {
+    "lat": "Zzit n uzemmur",
+    "tif": "ⵣⵣⵉⵜ ⵏ ⵓⵣⵎⵎⵓⵔ"
+   },
+   "zgh": {
+    "lat": "Zzit n uzemmur",
+    "tif": "ⵣⵣⵉⵜ ⵏ ⵓⵣⵎⵎⵓⵔ"
+   }
+  },
+  {
+   "id": "c-rural-tamment",
+   "fr": "Miel",
+   "shi": {
+    "lat": "Tamment",
+    "tif": "ⵜⴰⵎⵎⵏⵜ"
+   },
+   "tzm": {
+    "lat": "Tamment",
+    "tif": "ⵜⴰⵎⵎⵏⵜ"
+   },
+   "rif": {
+    "lat": "Tamment",
+    "tif": "ⵜⴰⵎⵎⵏⵜ"
+   },
+   "zgh": {
+    "lat": "Tamment",
+    "tif": "ⵜⴰⵎⵎⵏⵜ"
+   }
+  },
+  {
+   "id": "c-rural-aghi",
+   "fr": "Lait caillé",
+   "shi": {
+    "lat": "Aɣu",
+    "tif": "ⴰⵖⵓ"
+   },
+   "tzm": {
+    "lat": "Aɣu",
+    "tif": "ⴰⵖⵓ"
+   },
+   "rif": {
+    "lat": "Aɣi",
+    "tif": "ⴰⵖⵉ"
+   },
+   "zgh": {
+    "lat": "Aɣi",
+    "tif": "ⴰⵖⵉ"
+   }
+  },
+  {
+   "id": "c-rural-tazart",
+   "fr": "Figues",
+   "shi": {
+    "lat": "Tazart",
+    "tif": "ⵜⴰⵣⴰⵔⵜ"
+   },
+   "tzm": {
+    "lat": "Tazart",
+    "tif": "ⵜⴰⵣⴰⵔⵜ"
+   },
+   "rif": {
+    "lat": "Tazart",
+    "tif": "ⵜⴰⵣⴰⵔⵜ"
+   },
+   "zgh": {
+    "lat": "Tazart",
+    "tif": "ⵜⴰⵣⴰⵔⵜ"
+   }
+  },
+  {
+   "id": "c-rural-lluz",
+   "fr": "Amandes",
+   "shi": {
+    "lat": "Lluz",
+    "tif": "ⵍⵍⵓⵣ"
+   },
+   "tzm": {
+    "lat": "Lluz",
+    "tif": "ⵍⵍⵓⵣ"
+   },
+   "rif": {
+    "lat": "Lluz",
+    "tif": "ⵍⵍⵓⵣ"
+   },
+   "zgh": {
+    "lat": "Lluz",
+    "tif": "ⵍⵍⵓⵣ"
+   }
+  },
+  {
+   "id": "c-rural-tala",
+   "fr": "Source d'eau",
+   "shi": {
+    "lat": "Tala",
+    "tif": "ⵜⴰⵍⴰ"
+   },
+   "tzm": {
+    "lat": "Aɣbalu",
+    "tif": "ⴰⵖⴱⴰⵍⵓ"
+   },
+   "rif": {
+    "lat": "Tala",
+    "tif": "ⵜⴰⵍⴰ"
+   },
+   "zgh": {
+    "lat": "Aɣbalu",
+    "tif": "ⴰⵖⴱⴰⵍⵓ"
+   }
+  },
+  {
+   "id": "c-rural-anu",
+   "fr": "Puits",
+   "shi": {
+    "lat": "Anu",
+    "tif": "ⴰⵏⵓ"
+   },
+   "tzm": {
+    "lat": "Anu",
+    "tif": "ⴰⵏⵓ"
+   },
+   "rif": {
+    "lat": "Anu",
+    "tif": "ⴰⵏⵓ"
+   },
+   "zgh": {
+    "lat": "Anu",
+    "tif": "ⴰⵏⵓ"
+   }
+  },
+  {
+   "id": "c-rural-ikerri",
+   "fr": "Mouton",
+   "shi": {
+    "lat": "Ikerri",
+    "tif": "ⵉⴽⵔⵔⵉ"
+   },
+   "tzm": {
+    "lat": "Ikerri",
+    "tif": "ⵉⴽⵔⵔⵉ"
+   },
+   "rif": {
+    "lat": "Ikerri",
+    "tif": "ⵉⴽⵔⵔⵉ"
+   },
+   "zgh": {
+    "lat": "Ikerri",
+    "tif": "ⵉⴽⵔⵔⵉ"
+   }
+  },
+  {
+   "id": "c-rural-taghatt",
+   "fr": "Chèvre",
+   "shi": {
+    "lat": "Taɣaṭṭ",
+    "tif": "ⵜⴰⵖⴰⵟⵟ"
+   },
+   "tzm": {
+    "lat": "Taɣaṭṭ",
+    "tif": "ⵜⴰⵖⴰⵟⵟ"
+   },
+   "rif": {
+    "lat": "Taɣaṭṭ",
+    "tif": "ⵜⴰⵖⴰⵟⵟ"
+   },
+   "zgh": {
+    "lat": "Taɣaṭṭ",
+    "tif": "ⵜⴰⵖⴰⵟⵟ"
+   }
+  },
+  {
+   "id": "c-rural-aghyul",
+   "fr": "Âne",
+   "shi": {
+    "lat": "Aɣyul",
+    "tif": "ⴰⵖⵢⵓⵍ"
+   },
+   "tzm": {
+    "lat": "Aɣyul",
+    "tif": "ⴰⵖⵢⵓⵍ"
+   },
+   "rif": {
+    "lat": "Aɣyul",
+    "tif": "ⴰⵖⵢⵓⵍ"
+   },
+   "zgh": {
+    "lat": "Aɣyul",
+    "tif": "ⴰⵖⵢⵓⵍ"
+   }
+  },
+  {
+   "id": "c-rural-tafunast",
+   "fr": "Vache",
+   "shi": {
+    "lat": "Tafunast",
+    "tif": "ⵜⴰⴼⵓⵏⴰⵙⵜ"
+   },
+   "tzm": {
+    "lat": "Tafunast",
+    "tif": "ⵜⴰⴼⵓⵏⴰⵙⵜ"
+   },
+   "rif": {
+    "lat": "Tafunast",
+    "tif": "ⵜⴰⴼⵓⵏⴰⵙⵜ"
+   },
+   "zgh": {
+    "lat": "Tafunast",
+    "tif": "ⵜⴰⴼⵓⵏⴰⵙⵜ"
+   }
+  },
+  {
+   "id": "c-rural-tayazidt",
+   "fr": "Poule",
+   "shi": {
+    "lat": "Tayaziḍt",
+    "tif": "ⵜⴰⵢⴰⵣⵉⴹⵜ"
+   },
+   "tzm": {
+    "lat": "Tayaziḍt",
+    "tif": "ⵜⴰⵢⴰⵣⵉⴹⵜ"
+   },
+   "rif": {
+    "lat": "Tyaziṭ",
+    "tif": "ⵜⵢⴰⵣⵉⵟ"
+   },
+   "zgh": {
+    "lat": "Tayaziḍt",
+    "tif": "ⵜⴰⵢⴰⵣⵉⴹⵜ"
+   }
+  },
+  {
+   "id": "c-rural-azemmur",
+   "fr": "Olivier",
+   "shi": {
+    "lat": "Azemmur",
+    "tif": "ⴰⵣⵎⵎⵓⵔ"
+   },
+   "tzm": {
+    "lat": "Azemmur",
+    "tif": "ⴰⵣⵎⵎⵓⵔ"
+   },
+   "rif": {
+    "lat": "Azemmur",
+    "tif": "ⴰⵣⵎⵎⵓⵔ"
+   },
+   "zgh": {
+    "lat": "Azemmur",
+    "tif": "ⴰⵣⵎⵎⵓⵔ"
+   }
+  },
+  {
+   "id": "c-rural-adrar",
+   "fr": "Montagne",
+   "shi": {
+    "lat": "Adrar",
+    "tif": "ⴰⴷⵔⴰⵔ"
+   },
+   "tzm": {
+    "lat": "Adrar",
+    "tif": "ⴰⴷⵔⴰⵔ"
+   },
+   "rif": {
+    "lat": "Adrar",
+    "tif": "ⴰⴷⵔⴰⵔ"
+   },
+   "zgh": {
+    "lat": "Adrar",
+    "tif": "ⴰⴷⵔⴰⵔ"
+   }
+  },
+  {
+   "id": "c-rural-iger",
+   "fr": "Champs / Jardin",
+   "shi": {
+    "lat": "Iger",
+    "tif": "ⵉⴳⵔ"
+   },
+   "tzm": {
+    "lat": "Iger",
+    "tif": "ⵉⴳⵔ"
+   },
+   "rif": {
+    "lat": "Iyar",
+    "tif": "ⵉⵢⴰⵔ"
+   },
+   "zgh": {
+    "lat": "Iger",
+    "tif": "ⵉⴳⵔ"
+   }
+  },
+  {
+   "id": "c-rural-ssug",
+   "fr": "Souk (Marché)",
+   "shi": {
+    "lat": "Ssug",
+    "tif": "ⵙⵙⵓⴳ"
+   },
+   "tzm": {
+    "lat": "Ssug",
+    "tif": "ⵙⵙⵓⴳ"
+   },
+   "rif": {
+    "lat": "Ssuq",
+    "tif": "ⵙⵙⵓⵇ"
+   },
+   "zgh": {
+    "lat": "Agadaz",
+    "tif": "ⴰⴳⴰⴷⴰⵣ"
+   }
+  },
+  {
+   "id": "c-rural-tamzgida",
+   "fr": "Mosquée",
+   "shi": {
+    "lat": "Tamzgida",
+    "tif": "ⵜⴰⵎⵣⴳⵉⴷⴰ"
+   },
+   "tzm": {
+    "lat": "Tamzgida",
+    "tif": "ⵜⴰⵎⵣⴳⵉⴷⴰ"
+   },
+   "rif": {
+    "lat": "Tamzyida",
+    "tif": "ⵜⴰⵎⵣⵢⵉⴷⴰ"
+   },
+   "zgh": {
+    "lat": "Tamzgida",
+    "tif": "ⵜⴰⵎⵣⴳⵉⴷⴰ"
+   }
+  },
+  {
+   "id": "c-rural-aferran",
+   "fr": "Four traditionnel",
+   "shi": {
+    "lat": "Taferrant",
+    "tif": "ⵜⴰⴼⵔⵔⴰⵏⵜ"
+   },
+   "tzm": {
+    "lat": "Aferran",
+    "tif": "ⴰⴼⵔⵔⴰⵏ"
+   },
+   "rif": {
+    "lat": "Aferran",
+    "tif": "ⴰⴼⵔⵔⴰⵏ"
+   },
+   "zgh": {
+    "lat": "Aferran",
+    "tif": "ⴰⴼⵔⵔⴰⵏ"
+   }
+  }
+ ]
+}

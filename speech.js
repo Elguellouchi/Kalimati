@@ -1,8 +1,9 @@
 // Fait parler une carte : voix enregistrée par le parent d'abord, puis voix du téléphone.
 // Voix lente (0,85), darija lue avec une voix arabe si la graphie arabe existe, phrases mélangeant FR et darija.
 
-import { langInfo, isExtraLang, cardWord, hasWord } from './modules/languages.js';
+import { langInfo, isExtraLang, isAmazighLang, cardWord, hasWord } from './modules/languages.js';
 import { inflectStrip } from './modules/morphology.js';
+import { amazighVoiceFor, parentAmazighVoice, packAmazighVoice } from './modules/voice-packs.js';
 
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
@@ -115,6 +116,8 @@ export function speak(text, { lang = 'fr', rate = RATE } = {}) {
 }
 
 export function recordingFor(card, lang) {
+  // v10.7 : la voix amazighe du parent est gardée à part (jamais sur la carte, donc jamais sauvegardée ni synchronisée).
+  if (isAmazighLang(lang)) return parentAmazighVoice(lang, card.id);
   return lang === 'dr' ? card.audioDr : card.audioFr;
 }
 
@@ -135,6 +138,7 @@ export async function loadDefaultVoices() {
 const spokenText = (card, lang) => (lang === 'dr' ? (card.sayAr || card.ar) : (card.sayFr || card.fr));
 
 export function defaultVoiceUrl(card, lang) {
+  if (isAmazighLang(lang)) return null; // v10.7 : pas de voix française livrée pour une carte dite en amazigh
   const key = lang === 'dr' ? 'dr' : 'fr';
   const text = spokenText(card, key);
   return text && defaultVoices[key][card.id] === text ? `./voix/${key}/${encodeURIComponent(card.id)}.mp3` : null;
@@ -186,6 +190,12 @@ function sayWithPhoneVoice(card, lang) {
 // Ordre : 1) voix enregistrée par le parent ; 2) voix par défaut livrée avec l'app ; 3) voix du téléphone.
 // sayFr / sayAr : phrase à dire quand elle diffère du mot affiché (ex. « Ghita, ma sœur »).
 export async function sayCard(card, lang) {
+  // v10.7 : amazigh. 1) voix du parent ; 2) pack vocal installé ; 3) silence. Jamais la voix du téléphone
+  // (elle lirait l'amazigh avec un accent faux, et pas du tout le tifinagh). Rien ne part sur internet.
+  if (isAmazighLang(lang)) {
+    const voice = amazighVoiceFor(lang, card.id);
+    return voice ? playBlob(voice) : false;
+  }
   // Langues ajoutées (v7.2) : le mot traduit, dit par la voix du téléphone ; un mot sans traduction est dit en français.
   if (isExtraLang(lang)) return speak(cardWord(card, lang), { lang: hasWord(card, lang) ? lang : 'fr' });
   const recording = recordingFor(card, lang);
@@ -196,7 +206,14 @@ export async function sayCard(card, lang) {
 }
 
 // Fait entendre la voix par défaut d'une carte (fenêtre d'édition), même si une voix est enregistrée.
-export const sayDefault = (card, lang) => sayCard({ ...card, audioFr: null, audioDr: null }, lang);
+export const sayDefault = (card, lang) => {
+  // v10.7 : en amazigh, la « voix par défaut » est celle du pack vocal installé (sinon rien).
+  if (isAmazighLang(lang)) {
+    const voice = packAmazighVoice(lang, card.id);
+    return voice ? playBlob(voice) : Promise.resolve(false);
+  }
+  return sayCard({ ...card, audioFr: null, audioDr: null }, lang);
+};
 
 // v9.16 : catalogue des cartes (donné par app.js) pour retrouver la carte d'un verbe sous-entendu (« Je veux » + Pain -> Manger).
 let cardCatalog = [];
@@ -338,6 +355,8 @@ export function buildNaturalSentence(items, lang = 'fr') {
 // v9.13 : dit la phrase conjuguée entière (bouton « ✨ » sous la bande). Voix du téléphone.
 // Darija : seulement si le téléphone a une voix arabe. Sinon on renvoie false et l'appelant rejoue les mots un par un (fichiers sons).
 export async function sayNaturalSentence({ sentenceFr = '', sentenceAr = '', lang = 'fr' } = {}) {
+  // v10.7 : pas de voix du téléphone en amazigh : l'appelant rejoue les mots un par un (voix du parent ou du pack).
+  if (isAmazighLang(lang)) return false;
   if (lang === 'dr') {
     if (!sentenceAr || !hasArabicVoice()) return false;
     stopSpeaking();

@@ -17,6 +17,9 @@ import { abcSummaryCard, abcScreen } from './ex-abc.js';
 import { orthoSummaryCard, orthoReportScreen } from './ortho-report.js';
 import { getAtecHistory, atecSummaryCard, atecScreen } from './atec.js';
 import { parentBetaSettingsBox } from './admin-beta.js';
+import { LANGS, isAmazighLang, isAmazighScript, AMAZIGH_SCRIPTS } from './languages.js';
+import { getInstalledVoicePacks, downloadAmazighVoicePack, removeAmazighVoicePack, exportDouarVoicePack, importDouarVoicePack } from './voice-packs.js';
+import { deliverBackup } from '../backup.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
@@ -99,11 +102,148 @@ function voiceSettingsBox() {
     return sel;
   };
   return h('details', { class: 'card-box' },
-    h('summary', {}, '🔊 Réglage des voix (Français & Darija / Arabe)'),
+    h('summary', {}, '🔊 Réglage des voix (Français & Darija / Arabe) ', helpSpeaker('Choisissez la voix du téléphone pour le français et pour la darija.')),
     h('div', { class: 'stack' },
       h('label', { class: 'field' }, 'Voix française du téléphone', makeSelect('fr', frVoices)),
       h('label', { class: 'field' }, 'Voix arabe / darija du téléphone', makeSelect('ar', arVoices)),
       h('p', { class: 'note' }, 'Astuce iPhone / iPad : dans Réglages ➔ Accessibilité ➔ Contenu énoncé ➔ Voix, téléchargez une voix « Améliorée » ou « Premium » (ex. Audrey / Thomas en Français, Majed / Laila en Arabe) pour une voix très humaine hors ligne.')));
+}
+
+// v10.7 : petit haut-parleur 🔊 dans un titre replié : il dit l'aide à voix haute (parents qui ne lisent pas).
+function helpSpeaker(text) {
+  return h('button', {
+    type: 'button', class: 'audio-help-btn tiny', 'aria-label': 'Écouter l’aide',
+    onclick: (e) => { e.preventDefault(); e.stopPropagation(); speak(text, { lang: 'fr' }); },
+  }, '🔊');
+}
+
+// v10.7 : écriture des mots amazighs (tifinagh + latin, latin seul, tifinagh seul).
+function amazighScriptBox() {
+  const select = h('select', {
+    'aria-label': 'Écriture des mots amazighs',
+    onchange: async (e) => {
+      const mode = isAmazighScript(e.target.value) ? e.target.value : 'both';
+      await db.setSetting('amazighScript', mode);
+      document.dispatchEvent(new CustomEvent('kalimati-amazigh-script', { detail: mode }));
+    },
+  }, AMAZIGH_SCRIPTS.map((opt) => h('option', { value: opt.id }, opt.label)));
+  db.getSetting('amazighScript').then((v) => { if (isAmazighScript(v)) select.value = v; }).catch(() => {});
+  return h('details', { class: 'card-box' },
+    h('summary', {}, 'ⵣ Écriture amazighe (tifinagh / latin) ', helpSpeaker('Choisissez comment écrire les mots amazighs : tifinagh et lettres latines, lettres latines seules, ou tifinagh seul.')),
+    h('div', { class: 'stack' },
+      h('p', { class: 'note' }, 'Pour les 4 variétés amazighes : tachelhit, tamazight, tarifit et tamazight IRCAM. Les mots sont à faire relire par un locuteur natif.'),
+      select));
+}
+
+// v10.7 : voix amazighes. Packs vocaux à la carte (une seule variété, jamais téléchargés seuls) et « Voix du Douar ».
+function amazighVoicePacksBox() {
+  const amzLangs = LANGS.filter((l) => isAmazighLang(l.code));
+  const body = h('div', { class: 'stack' });
+  const status = h('p', { class: 'note', role: 'status' });
+  const wrap = h('details', { class: 'card-box' },
+    h('summary', {}, 'ⵣ Voix amazighes & « Voix du Douar » ', helpSpeaker('En amazigh, la carte dit votre voix. Enregistrez-la sur chaque carte, en mode parent. Vous pouvez aussi partager vos voix avec d’autres familles.')),
+    body);
+  let douarFile = null;
+
+  async function render() {
+    const installed = await getInstalledVoicePacks().catch(() => ({}));
+    const usage = await db.storageEstimate().catch(() => null);
+    const rows = amzLangs.map((l) => {
+      const info = installed[l.code];
+      const dl = h('button', { type: 'button', class: 'btn ghost tiny' }, info ? '🔄 Mettre à jour' : '📥 Télécharger');
+      dl.onclick = async () => {
+        dl.disabled = true;
+        dl.textContent = '⏳…';
+        try {
+          const res = await downloadAmazighVoicePack(l.code, { onProgress: (done, total) => { dl.textContent = `⏳ ${done}/${total}`; } });
+          status.textContent = `✅ Pack ${l.name} prêt sans internet (${res.count} voix).`;
+          render();
+        } catch (err) {
+          status.textContent = `⚠️ ${err?.message || err}`;
+          dl.disabled = false;
+          dl.textContent = info ? '🔄 Mettre à jour' : '📥 Télécharger';
+        }
+      };
+      const rm = info ? h('button', { type: 'button', class: 'btn ghost tiny', 'aria-label': `Supprimer le pack ${l.name}` }, '🗑️') : null;
+      if (rm) {
+        let confirmRm = false;
+        rm.onclick = async () => {
+          if (!confirmRm) { confirmRm = true; rm.textContent = 'Supprimer ?'; setTimeout(() => { confirmRm = false; rm.textContent = '🗑️'; }, 4000); return; }
+          await removeAmazighVoicePack(l.code);
+          status.textContent = `Pack ${l.name} supprimé. Vos voix enregistrées restent.`;
+          render();
+        };
+      }
+      return h('div', { class: 'row spread wrap amz-pack-row' },
+        h('div', {}, h('strong', {}, `${l.flag} ${l.name}`), h('small', { class: 'lang-sub' }, info ? `✅ ${info.count} voix gardées dans le téléphone` : l.sub)),
+        h('div', { class: 'row' }, dl, rm));
+    });
+
+    const expLang = h('select', { 'aria-label': 'Variété à partager' }, amzLangs.map((l) => h('option', { value: l.code }, l.name)));
+    const adultsOnly = h('input', { type: 'checkbox' });
+    const share = h('button', { type: 'button', class: 'btn primary', hidden: true }, '📤 Envoyer le fichier');
+    const prepare = h('button', { type: 'button', class: 'btn ghost' }, '📦 Préparer « Voix du Douar »');
+    prepare.onclick = async () => {
+      if (!adultsOnly.checked) { status.textContent = '⚠️ Cochez d’abord la case : voix d’adultes seulement.'; return; }
+      prepare.disabled = true;
+      try {
+        const res = await exportDouarVoicePack(expLang.value);
+        douarFile = res.file;
+        share.hidden = false;
+        status.textContent = `✅ Fichier prêt (${res.count} voix d’adultes, aucune donnée d’enfant). Touchez « Envoyer le fichier ».`;
+      } catch (err) {
+        status.textContent = `⚠️ ${err?.message || err}`;
+      } finally {
+        prepare.disabled = false;
+      }
+    };
+    // Sur iPhone, l'envoi doit partir directement du toucher : le fichier est donc préparé avant.
+    share.onclick = async () => {
+      if (!douarFile) return;
+      share.disabled = true;
+      try {
+        const result = await deliverBackup(douarFile);
+        if (result !== 'cancelled') { douarFile = null; share.hidden = true; status.textContent = '✅ « Voix du Douar » envoyé.'; }
+      } catch (err) {
+        status.textContent = `⚠️ ${err?.message || err}`;
+      } finally {
+        share.disabled = false;
+      }
+    };
+
+    const importInput = h('input', { type: 'file', accept: '.json,application/json', hidden: true });
+    importInput.onchange = async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      try {
+        const res = await importDouarVoicePack(file);
+        const name = (LANGS.find((l) => l.code === res.lang) || {}).name || res.lang;
+        status.textContent = `✅ ${res.importedCount} voix ${name} ajoutées${res.skipped ? ` (${res.skipped} ignorées)` : ''}. Vos propres voix passent toujours avant.`;
+        render();
+      } catch (err) {
+        status.textContent = `⚠️ ${err?.message || err}`;
+      }
+    };
+    const importBtn = h('button', { type: 'button', class: 'btn ghost' }, '📥 Importer « Voix du Douar »');
+    importBtn.onclick = () => importInput.click();
+
+    body.replaceChildren(
+      h('p', { class: 'note' }, 'En amazigh, la carte dit la voix enregistrée en mode parent (éditeur de la carte). Sans voix, elle reste muette : en mode parent, elle porte la pastille « 🎙️ » suivie de la variété (par exemple 🎙️ SHI). Ces voix restent dans le téléphone : elles ne sont pas dans la sauvegarde.'),
+      h('h4', {}, '📥 Packs vocaux (une seule variété, sur demande)'),
+      h('p', { class: 'note' }, 'Pas encore publiés : les mots doivent d’abord être relus par des locuteurs natifs.'),
+      ...rows,
+      usage ? h('p', { class: 'note' }, `Mémoire utilisée par Kalimati : ${usage.usageMb} Mo.`) : null,
+      h('h4', {}, '🤝 « Voix du Douar » : partager vos voix avec d’autres familles'),
+      h('p', { class: 'note' }, 'Seules les voix d’adultes partent, jamais celle d’un enfant ni les cartes « Moi », « Sœur / Frère » ou « Thérapeute ».'),
+      h('label', { class: 'check' }, adultsOnly, ' Ce sont des voix d’adultes seulement (aucune voix d’enfant).'),
+      h('div', { class: 'row wrap' }, expLang, prepare, share),
+      h('div', { class: 'row wrap' }, importBtn, importInput),
+      status);
+  }
+
+  wrap.addEventListener('toggle', () => { if (wrap.open) render().catch(() => {}); });
+  return wrap;
 }
 
 function kpiBlock(title, goals, results, today = null) {
@@ -213,6 +353,8 @@ export function dashboardScreen(nav) {
       }),
       h('div', { class: 'row' }, btn(iconLabel('download', 'Exporter les essais (CSV pour la psychologue)'), exportCsv, 'ghost')),
       safePart('Voix', () => voiceSettingsBox()),
+      safePart('Écriture amazighe', () => amazighScriptBox()),
+      safePart('Voix amazighes', () => amazighVoicePacksBox()),
       safePart('Voix en ligne', () => speechCloudBox()),
       safePart('Images', () => visualStyleBox()),
       safePart('Amis', () => friendsSettingsBox()),

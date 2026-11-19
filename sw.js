@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-6';
+const CACHE = 'kalimati-v10-7';
 const FILES = [
   './', './index.html', './boot-guard.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -8,7 +8,7 @@ const FILES = [
   './modules/progress.js', './modules/nour.js', './modules/timer.js', './modules/widgets.js',
   './modules/grid-layout.js', './modules/arasaac.js', './modules/spaces.js', './modules/dashboard.js',
   './modules/profil.js', './modules/visuals.js', './modules/ex-emotions.js',
-  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js',
+  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js', './modules/amazigh-lexicon.js', './modules/voice-packs.js',
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js', './modules/core-vocabulary-plan.js',
@@ -59,14 +59,19 @@ self.addEventListener('install', (event) => {
     };
     await Promise.all((await voiceFiles()).map(reuse));
     await Promise.all((await assetFiles()).map(reuse));
+    // v10.7 : police tifinagh gardée pour l'amazigh sans internet (ne bloque pas l'installation).
+    await reuse('./assets/fonts/NotoSansTifinagh-Regular.woff2');
     await self.skipWaiting();
   })());
 });
 
+// v10.7 : les voix amazighes (packs et voix des parents) sont gardées d'une version à l'autre.
+const AMAZIGH_VOICES = 'kalimati-amazigh-voices-';
+
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && !k.startsWith(AMAZIGH_VOICES)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -79,8 +84,11 @@ self.addEventListener('activate', (event) => {
 const NETWORK_WAIT_MS = 3000;
 const isStatic = (url) => /\/(voix|assets|icons)\//.test(url.pathname) || /\.(mp3|png|jpe?g|svg|webp|woff2?|json)$/.test(url.pathname);
 
+// v10.7 : les packs vocaux amazighs ont leur propre cache (choisi par le parent) : pas de deuxième copie ici.
+const isAmazighVoice = (url) => /\/voix\/(shi|tzm|rif|zgh)\/|\/voix\/amz-/.test(new URL(url).pathname);
+
 function saveCopy(request, response) {
-  if (response && response.ok) {
+  if (response && response.ok && !isAmazighVoice(request.url)) {
     const copy = response.clone();
     caches.open(CACHE).then((cache) => cache.put(request, copy)).catch(() => {});
   }
