@@ -7,6 +7,7 @@ import { speak, playBlob, stopSpeaking } from '../speech.js';
 import { playClap, canRecord, startRecording } from '../media.js';
 import { renderVisual } from './visuals.js';
 import { firstName, sisterName } from './aba.js';
+import { unlockFriendSticker } from './friends.js';
 
 const STORIES_KEY = 'stories';
 const P = (emoji, text, dr = '') => ({ emoji, text, dr, audio: null });
@@ -77,22 +78,47 @@ function readPage(page, lang) {
 export function storiesView(ctx) {
   const root = h('div', { class: 'stories' }, h('p', { class: 'note' }, 'Chargement…'));
   let stories = [];
+  let boumaTimer = 0;
+  const clearBoumaTimer = () => { if (boumaTimer) { clearTimeout(boumaTimer); boumaTimer = 0; } };
   const persist = async (next) => { stories = next; await saveStories(stories); };
-  ctx.onCleanup(stopSpeaking);
+  ctx.onCleanup(() => { stopSpeaking(); clearBoumaTimer(); });
 
-  const list = () => root.replaceChildren(
-    h('p', { class: 'note' }, `Des petites histoires pour préparer ${firstName()} à ce qui va se passer.`),
-    h('div', { class: 'section-grid' }, stories.map((story) => h('button', { type: 'button', class: 'section-tile big', onclick: () => reader(story, 0) },
-      h('span', { class: 'emoji' }, story.emoji), h('span', {}, story.title)))),
-    ctx.isParent() ? h('div', { class: 'row' },
-      btn('➕ Nouvelle histoire', async () => {
-        const story = { id: uid('story'), emoji: '📖', title: 'Mon histoire', pages: [P('⭐', 'Écrivez ici la première phrase.')] };
-        await persist([...stories, story]);
-        editor(story);
-      }, 'primary'),
-      btn('↺ Remettre les histoires d’origine', async () => { if (window.confirm('Remettre les 4 histoires d’origine ? Vos photos restent.')) { await persist(DEFAULT_STORIES()); list(); } }, 'ghost tiny')) : null);
+  let confirmResetStories = false;
+  const list = () => {
+    clearBoumaTimer();
+    root.replaceChildren(
+      h('p', { class: 'note' }, `Des petites histoires pour préparer ${firstName()} à ce qui va se passer.`),
+      h('div', { class: 'section-grid' }, stories.map((story) => h('button', { type: 'button', class: 'section-tile big', onclick: () => reader(story, 0) },
+        h('span', { class: 'emoji' }, story.emoji), h('span', {}, story.title)))),
+      ctx.isParent() ? h('div', { class: 'row' },
+        btn('➕ Nouvelle histoire', async () => {
+          const story = { id: uid('story'), emoji: '📖', title: 'Mon histoire', pages: [P('⭐', 'Écrivez ici la première phrase.')] };
+          await persist([...stories, story]);
+          editor(story);
+        }, 'primary'),
+        btn('↺ Remettre les histoires d’origine', async (e) => {
+          const b = e.currentTarget;
+          if (!confirmResetStories) {
+            confirmResetStories = true;
+            b.textContent = 'Confirmer la remise à zéro ?';
+            setTimeout(() => { if (confirmResetStories) { confirmResetStories = false; b.textContent = '↺ Remettre les histoires d’origine'; } }, 4000);
+            return;
+          }
+          confirmResetStories = false;
+          await persist(DEFAULT_STORIES());
+          list();
+        }, 'ghost tiny')) : null);
+  };
 
   function reader(story, index) {
+    // === [DEBUT MODIF v10.5 : 4.22 · F08 — Déblocage de Bouma le hibou après 20 secondes de lecture d'une histoire] ===
+    if (index === 0 && !boumaTimer) {
+      boumaTimer = setTimeout(() => {
+        boumaTimer = 0;
+        if (!ctx.isParent()) unlockFriendSticker('bouma').catch(() => {});
+      }, 20000);
+    }
+    // === [FIN MODIF v10.5 : 4.22 · F08] ===
     const page = story.pages[index];
     const last = index === story.pages.length - 1;
     const go = (i) => { reader(story, i); readPage(story.pages[i], ctx.lang()); };
@@ -104,7 +130,12 @@ export function storiesView(ctx) {
       h('div', { class: 'order-slots' }, story.pages.map((_, j) => h('span', { class: `order-slot${j <= index ? ' on' : ''}` }, String(j + 1)))),
       h('div', { class: 'row center' },
         index > 0 ? btn('◀', () => go(index - 1), 'ghost big-arrow') : null,
-        last ? btn('🌟 Fini !', () => { playClap(); speak('Bravo ! Tu as lu toute l’histoire.'); list(); }, 'primary') : btn('▶ Page suivante', () => go(index + 1), 'primary')));
+        last ? btn('🌟 Fini !', () => {
+          if (!ctx.isParent()) unlockFriendSticker('bouma').catch(() => {});
+          playClap();
+          speak('Bravo ! Tu as lu toute l’histoire.');
+          list();
+        }, 'primary') : btn('▶ Page suivante', () => go(index + 1), 'primary')));
   }
 
   function editor(story) {
@@ -118,7 +149,17 @@ export function storiesView(ctx) {
     const input = (value, onchange, attrs = {}) => h('input', { value: value || '', ...attrs, onchange: (e) => onchange(e.target.value) });
     root.replaceChildren(
       h('div', { class: 'row' }, btn('✔ Terminé', () => reader(story, 0), 'primary'),
-        btn('🗑 Supprimer l’histoire', async () => { if (window.confirm(`Supprimer « ${story.title} » ?`)) { await persist(stories.filter((s) => s.id !== story.id)); list(); } }, 'ghost tiny')),
+        btn('🗑 Supprimer l’histoire', async (e) => {
+          const b = e.currentTarget;
+          if (!b._confirmDel) {
+            b._confirmDel = true;
+            b.textContent = 'Confirmer la suppression ?';
+            setTimeout(() => { if (b._confirmDel) { b._confirmDel = false; b.textContent = '🗑 Supprimer l’histoire'; } }, 4000);
+            return;
+          }
+          await persist(stories.filter((s) => s.id !== story.id));
+          list();
+        }, 'ghost tiny')),
       h('div', { class: 'ed-grid' }, h('label', { class: 'ed-field' }, h('span', {}, 'Titre'), input(story.title, (v) => update({ title: v }))),
         h('label', { class: 'ed-field' }, h('span', {}, 'Image du titre'), input(story.emoji, (v) => update({ emoji: v }), { maxlength: 8 }))),
       h('p', { class: 'note' }, '📷 sur l’image : mettre une vraie photo (le cabinet du docteur, le coiffeur du quartier…). Phrases courtes, positives, au « je ».'),

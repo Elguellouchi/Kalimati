@@ -42,7 +42,7 @@ const CREDITS = [
   ['Icônes Lucide', 'Lucide Icons et contributeurs', 'ISC', 'https://lucide.dev'],
   ['Lexique darija (DODa)', 'Aissam Outchakoucht et Hamza Es-Samaali', 'CC BY-NC 4.0 (usage non commercial)', 'https://github.com/darija-open-dataset/dataset'],
   ['Pictogrammes ARASAAC (en ligne, au choix)', 'Sergio Palao, Gouvernement d’Aragon', 'CC BY-NC-SA 4.0', 'https://arasaac.org'],
-  ['Voix livrées des cartes', 'voix Éloïse et Mouna (Microsoft), fabriquées une fois sur le PC et rangées dans l’app', '', ''],
+  ['Voix livrées des cartes', 'voix Éloïse (français) et Shimmer (darija), fabriquées une fois sur le PC et rangées dans l’app', '', ''],
 ];
 
 export function aboutBox() {

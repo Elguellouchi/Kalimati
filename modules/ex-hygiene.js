@@ -14,6 +14,7 @@ import { choiceBoard, praise, modeTabs } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { levelOf } from './levels.js';
 import { renderVisual } from './visuals.js';
+import { unlockFriendSticker } from './friends.js';
 
 const stepItem = (prefix, [id, emoji, fr, dr, ar, timerSec = 0]) => ({
   id, emoji, fr, dr, ar, timerSec, vkey: `hyg:${prefix}:${id}`,
@@ -396,14 +397,20 @@ function hygieneReal(routine, ctx) {
     clearInterval(timer);
     if (index >= steps.length) {
       playClap();
+      // === [DEBUT MODIF v10.5 : 4.19 · F05, 4.21 · F07 & 4.22 · F08 — Récompense Mchicha immédiate pour l'enfant, cotation adulte repliée] ===
+      unlockFriendSticker('mchicha').catch(() => {});
       root.replaceChildren(
-        praise(`${routine.emoji} ${routine.title} terminé !`),
-        ratingPanel(routine.goalId, {
-          item: `hygiene-${routine.id}`,
-          meta: { routine: routine.id, mode: 'reel' },
-          labels: { plus: '✅ Seule', prompt: '👉 Avec aide / rappel', minus: '🌱 Difficile aujourd’hui' },
-          onRated: () => { index = 0; show(); },
-        }));
+        praise(`${routine.emoji} ${routine.title} terminé ! Bravo !`),
+        btn('🔄 Recommencer la routine', () => { index = 0; show(); }, 'primary'),
+        h('details', { open: Boolean(ctx.parent) },
+          h('summary', {}, '📝 Note de l’adulte'),
+          ratingPanel(routine.goalId, {
+            item: `hygiene-${routine.id}`,
+            meta: { routine: routine.id, mode: 'reel' },
+            labels: { plus: '✅ Seule', prompt: '👉 Avec aide / rappel', minus: '🌱 Pas encore' },
+            onRated: () => { index = 0; show(); },
+          })));
+      // === [FIN MODIF v10.5 : 4.19 · F05, 4.21 · F07 & 4.22 · F08] ===
       return;
     }
     const step = steps[index];
@@ -444,8 +451,13 @@ export function hygieneRoutineView(routineId, ctx = {}, extraGame = null) {
     h('div', { class: 'card-box' },
       h('h3', {}, `${routine.emoji} ${c.lang === 'dr' ? `${routine.drTitle} · ${routine.arTitle}` : routine.title}`),
       h('p', { class: 'note' }, routine.sub),
-      h('p', { class: 'note' }, `💡 ${routine.sensoryTip}`),
-      h('p', { class: 'note' }, '📷 En mode parent, touchez le petit 📷 d’une étape dans « En vrai » pour mettre votre vraie photo.')),
+      // === [DEBUT MODIF v10.5 : 4.19 · F05 — Conseil sensoriel adulte replié en mode enfant] ===
+      c.parent
+        ? h('div', {},
+          h('p', { class: 'note' }, `💡 ${routine.sensoryTip}`),
+          h('p', { class: 'note' }, '📷 Mode parent : touchez le petit 📷 d’une étape dans « En vrai » pour mettre votre vraie photo.'))
+        : h('details', {}, h('summary', { class: 'note' }, '💡 Conseil sensoriel (pour l’adulte)'), h('p', { class: 'note' }, routine.sensoryTip))),
+      // === [FIN MODIF v10.5 : 4.19 · F05] ===
     modeTabs(tabs));
 }
 

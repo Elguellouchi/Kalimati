@@ -14,15 +14,17 @@ const GRAMS = ['person', 'verb', 'noun', 'adj', 'social'];
 //    ou, à défaut, téléchargement classique. Sur iPhone, le partage exige un nouveau toucher : d'où le 2e bouton.
 const pause = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-export async function buildBackupFile({ cards, trials = [], settings = {}, visuals = [], abcLogs = [], orthoLogs = [] }, onProgress = () => {}) {
+// v10.5 : includeMedia = false par défaut : aucune photo, vidéo ni voix dans le fichier (elles restent dans le téléphone).
+export async function buildBackupFile({ cards, trials = [], settings = {}, visuals = [], abcLogs = [], orthoLogs = [], includeMedia = false }, onProgress = () => {}) {
+  if (!includeMedia) visuals = [];
   const total = cards.length + visuals.length || 1;
   let done = 0;
   const step = async () => { done += 1; onProgress(Math.min(99, Math.round((done / total) * 100))); await pause(); };
-  const head = { format: FORMAT, exportedAt: new Date().toISOString(), trials, settings, abcLogs, orthoLogs };
+  const head = { format: FORMAT, exportedAt: new Date().toISOString(), includesMedia: Boolean(includeMedia), trials, settings, abcLogs, orthoLogs };
   const parts = [JSON.stringify(head).slice(0, -1), ',"cards":['];
   for (let i = 0; i < cards.length; i += 1) {
     const copy = { ...cards[i] };
-    for (const field of BLOB_FIELDS) copy[field] = cards[i][field] ? await blobToDataUrl(cards[i][field]) : null;
+    for (const field of BLOB_FIELDS) copy[field] = includeMedia && cards[i][field] ? await blobToDataUrl(cards[i][field]) : null;
     parts.push((i ? ',' : '') + JSON.stringify(copy));
     await step();
   }

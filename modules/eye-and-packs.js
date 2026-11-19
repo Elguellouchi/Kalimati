@@ -39,7 +39,18 @@ export async function loadEyeTracking() {
   }
   applyEyeTrackingStyles();
   initDwellListener();
-  if (eyeCfg.headCamera) startHeadTrackingCamera().catch(() => {});
+  if (eyeCfg.headCamera && !IS_IOS) startHeadTrackingCamera().catch(() => {});
+  // === [DEBUT MODIF v10.5 : 4.77 · C13 — Arrêt automatique des pistes caméra quand l'application passe en arrière-plan] ===
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && headStream) {
+        stopHeadTrackingCamera();
+      } else if (document.visibilityState === 'visible' && eyeCfg.headCamera && !IS_IOS && !headStream) {
+        startHeadTrackingCamera().catch(() => {}); // reprend quand l'appli revient
+      }
+    });
+  }
+  // === [FIN MODIF v10.5 : 4.77 · C13] ===
 }
 
 function applyEyeTrackingStyles() {
@@ -397,10 +408,14 @@ export function eyeTrackingAndPacksBox({ onCardsAdded } = {}) {
           : 'Mode Regard (Dwell) désactivé.';
       },
     }, [
+      // === [DEBUT MODIF v10.5 : 4.63 · F12 — Plage complète de 500 ms à 2 000 ms pour le mode Regard] ===
       [0, 'Désactivé (toucher normal)'],
+      [500, 'Très rapide — 0,5 s de regard'],
       [800, 'Rapide — 0,8 s de regard'],
       [1200, 'Confort — 1,2 s de regard (recommandé iOS 18)'],
       [1800, 'Lent — 1,8 s de regard'],
+      [2000, 'Très calme — 2,0 s de regard'],
+      // === [FIN MODIF v10.5 : 4.63 · F12] ===
     ].map(([val, label]) => h('option', { value: val, selected: eyeCfg.dwellMs === val ? 'selected' : null }, label)));
 
     const gapChk = h('input', {

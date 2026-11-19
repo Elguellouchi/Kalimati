@@ -88,7 +88,7 @@ export async function todayTrials(goalId) {
 function segmented(options, current, onPick) {
   const box = h('div', { class: 'seg small' });
   const draw = (active) => box.replaceChildren(...options.map((o) => h('button', {
-    type: 'button', class: o.id === active ? 'active' : '', onclick: () => { draw(o.id); onPick(o.id); },
+    type: 'button', class: o.id === active ? 'active' : '', 'aria-pressed': String(o.id === active), onclick: () => { draw(o.id); onPick(o.id); },
   }, o.label)));
   draw(current);
   return box;
@@ -96,7 +96,7 @@ function segmented(options, current, onPick) {
 
 // Barre clinique discrète en haut des espaces Séance et Routines.
 export function clinicBar() {
-  return h('div', { class: 'clinic-bar' },
+  return h('div', { class: 'clinic-bar', role: 'group', 'aria-label': 'Contexte de la séance (adulte)' },
     segmented(INTERVENANTS, clinic.intervenant, (id) => { clinic.intervenant = id; saveClinic(); }),
     segmented(ENVIRONMENTS, clinic.environment, (id) => { clinic.environment = id; saveClinic(); }));
 }
@@ -106,7 +106,7 @@ const DEFAULT_LABELS = { plus: '✅ Autonome', prompt: '👉 Guidé', minus: '�
 // Panneau de cotation d'un essai. item : valeur ou fonction (ex. image affichée).
 export function ratingPanel(goalId, { item = null, labels = {}, onRated, withPrompts = true, meta = null } = {}) {
   const names = { ...DEFAULT_LABELS, ...labels };
-  const tally = h('p', { class: 'tally' }, '…');
+  const tally = h('p', { class: 'tally', role: 'status', 'aria-live': 'polite' }, '…');
   const promptRow = h('div', { class: 'row prompt-row', hidden: true });
   let lastTrial = null;
 
@@ -137,7 +137,7 @@ export function ratingPanel(goalId, { item = null, labels = {}, onRated, withPro
   undo.disabled = true;
 
   refresh();
-  return h('div', { class: 'rating' },
+  return h('div', { class: 'rating', role: 'group', 'aria-label': 'Notation de l’adulte' },
     h('div', { class: 'row rating-row' },
       btn(names.plus, () => rate('plus'), 'rate-plus'),
       btn(names.prompt, () => (withPrompts ? (promptRow.hidden = !promptRow.hidden) : rate('prompt')), 'rate-prompt'),

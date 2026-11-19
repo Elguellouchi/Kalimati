@@ -1,4 +1,4 @@
-// Kalimati v10.4 (plus de rechargement après un pack ou une synchro, balayage et cadenas plus sûrs, éditeur sans fenêtre de confirmation). Avant, v10.3.2 (restauration par fusion : rien n'est effacé, bilans ATEC inclus dans la sauvegarde). Avant, v10.1.3 (la croix efface d’un simple toucher, ↩ pendant 4 s pour annuler). Avant, v10.1.2 (ouverture plus sûre : réseau lent limité à 3 s, plus de rechargement en pleine utilisation, voix et images non retéléchargées). Avant, v10.1.1 (mode Regard : page iPhone claire, caméra coupée sur iPhone). Avant, v10.1 (mode regard, packs thématiques, lien #key= et synchro auto). Avant, v10.0 (morphology.js et cloud-sync.js du Drive : Hier/Après sur « Je veux » et les émotions, synchro plus sûre). Avant, v9.16 (verbe sous-entendu : « Je veux » + Pain = « Je veux manger du pain »). Avant, v9.15 (synchro équipe chiffrée Supabase + suivi clinique, cloud-sync.js). Avant, v9.14 (voix Shimmer des 7 Amis, Donner et Chips en Shimmer). Avant, v9.13 (phrases conjuguées : Hier / Maintenant / Après, accord fille/garçon, français et darija). Avant, v9.12 (les 7 Amis : un compagnon par espace, Album des Amis). Avant, v9.11 (clé maître vérifiée par empreinte SHA-256). Avant, v9.10 (sauvegarde en 2 temps sans blocage, voix darija). Avant, v9.9 (étoiles, jardin de récompenses, design calme, zéro rouge). Avant, v9.8 : 5 espaces (Parler, Séance ABA, Routines, Émotions & famille, Progrès PEI). v9.8 : sauvegarde complète, voix Google éteinte par défaut, console cachée (?admin=1 + clé), version neutre.
+// Kalimati v10.5 (accessibilité, sons hors ligne sur iPhone, synchro plus sûre, effacement du serveur possible). Avant, v10.4 (plus de rechargement après un pack ou une synchro, balayage et cadenas plus sûrs).
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID } from './data.js';
 import * as db from './db.js';
@@ -17,13 +17,13 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isExtraLang, cardWord, categoryName, ui } from './modules/languages.js';
-import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed } from './modules/aac-plus.js';
+import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
 import { loadMorphologyState, inflectStrip, renderMorphologyBar } from './modules/morphology.js';
 import { loadEyeTracking } from './modules/eye-and-packs.js';
-import { initCloudSyncFromUrlAndAuto } from './modules/cloud-sync.js';
+import { initCloudSyncFromUrlAndAuto, captureMagicKeyFromUrl } from './modules/cloud-sync.js';
 import { APP_VERSION, checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 
 const HOLD_TO_UNLOCK_MS = 3000;
@@ -67,7 +67,8 @@ function cardVisual(card) {
 function cardElement(card, { small = false, lang = state.lang } = {}) {
   const category = CATEGORIES.find((c) => c.id === card.cat);
   const gram = GRAMMAR[card.gram] || GRAMMAR.noun;
-  const button = h('button', { type: 'button', class: `card${small ? ' small' : ''}${card.hidden ? ' is-hidden' : ''}`, 'aria-label': label(card, lang) },
+  const ariaLabel = card.hidden && state.parent ? `${label(card, lang)} (carte masquée)` : label(card, lang);
+  const button = h('button', { type: 'button', class: `card${small ? ' small' : ''}${card.hidden ? ' is-hidden' : ''}`, 'aria-label': ariaLabel },
     cardVisual(card), h('span', { class: 'label' }, label(card, lang)),
     card.sub && !small ? h('span', { class: 'sub' }, card.sub) : null,
     card.video ? h('span', { class: 'badge video' }, '▶') : null);
@@ -84,11 +85,24 @@ function cardElement(card, { small = false, lang = state.lang } = {}) {
 function playCardVideo(card) {
   const url = URL.createObjectURL(card.video);
   const video = h('video', { src: url, autoplay: true, muted: true, playsinline: true });
-  const overlay = h('div', { class: 'video-overlay', onclick: () => close() }, video);
-  const close = () => { overlay.remove(); URL.revokeObjectURL(url); };
+  // v10.5 (A11) : bouton « Fermer » visible, touche Échap, et retour à la carte touchée.
+  const opener = document.activeElement;
+  let closed = false;
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); close(); } };
+  const closeBtn = h('button', { type: 'button', class: 'btn primary video-close-btn', 'aria-label': 'Fermer la vidéo', onclick: (e) => { e.stopPropagation(); close(); } }, '✕ Fermer');
+  const overlay = h('div', { class: 'video-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': `Vidéo : ${card.fr || ''}`, onclick: () => close() }, video, closeBtn);
+  function close() {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', onKey);
+    overlay.remove(); URL.revokeObjectURL(url);
+    try { opener?.focus?.(); } catch { /* rien */ }
+  }
+  document.addEventListener('keydown', onKey);
   video.onended = close;
   video.onerror = close;
   document.body.append(overlay);
+  closeBtn.focus();
 }
 
 // Filtre anti-rebond : ignore un second toucher involontaire (< 450 ms) sur la même carte, tout en laissant enchaîner deux cartes différentes sans délai.
@@ -156,6 +170,7 @@ function renderStrip() {
   if (focus) row.scrollLeft = focus.offsetLeft + focus.offsetWidth - row.clientWidth + 6;
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = langInfo(state.lang).short;
+  $('#btn-lang').setAttribute('aria-label', `Langue : ${langInfo(state.lang).name}. Changer de langue`);
   renderSuggestions();
 }
 
@@ -231,9 +246,19 @@ function setupStrip() {
     clearBtn.setAttribute('aria-label', 'Tout effacer');
   };
   clearBtn.setAttribute('aria-label', 'Tout effacer'); clearBtn.removeAttribute('title');
+  // v10.5 (F11) : option du parent « 2 touchers sur ✕ » (éteinte par défaut). 1er toucher = « ✕ ? » pendant 3 s.
+  let confirmTimer = null;
+  const endConfirm = () => { clearTimeout(confirmTimer); confirmTimer = null; };
   clearBtn.onclick = () => {
     if (undoStrip) { state.strip = undoStrip; endUndo(); renderStrip(); return; }
     if (!state.strip.length) return;
+    if (clearConfirmNeeded() && !confirmTimer) {
+      clearBtn.textContent = '✕ ?';
+      clearBtn.setAttribute('aria-label', 'Toucher encore pour tout effacer');
+      confirmTimer = setTimeout(() => { confirmTimer = null; clearBtn.textContent = '✕'; clearBtn.setAttribute('aria-label', 'Tout effacer'); }, 3000);
+      return;
+    }
+    endConfirm();
     stopSpeaking();
     undoStrip = state.strip; state.strip = []; state.playing = -1; renderStrip();
     clearBtn.textContent = '↩'; clearBtn.classList.add('undo');
@@ -286,7 +311,7 @@ function renderTalk() {
     return el;
   }));
   const tabs = h('nav', { class: 'tabs', 'aria-label': 'Catégories' }, CATEGORIES.filter((c) => c.id !== CORE_CAT).map((category) => {
-    const tab = h('button', { type: 'button', class: `tab${category.id === state.cat ? ' active' : ''}`, onclick: () => { state.cat = category.id; renderView(); } },
+    const tab = h('button', { type: 'button', class: `tab${category.id === state.cat ? ' active' : ''}`, 'aria-current': category.id === state.cat ? 'true' : null, onclick: () => { state.cat = category.id; renderView(); } },
       categoryName(category, state.lang));
     tab.style.setProperty('--cat', category.color);
     return tab;
@@ -296,7 +321,7 @@ function renderTalk() {
     const el = cardElement(card);
     el.style.gridRow = String(card.gridRow);
     el.style.gridColumn = String(card.gridCol);
-    if (card.hidden && !state.parent) el.style.visibility = 'hidden';
+    if (card.hidden && !state.parent) { el.style.visibility = 'hidden'; el.setAttribute('aria-hidden', 'true'); el.tabIndex = -1; }
     const press = trackPress(el);
     el.onclick = () => onCardTap(card, el, press());
     grid.append(el);
@@ -336,7 +361,7 @@ function renderTalk() {
       }, ms);
       view.addEventListener('click', (e) => {
         // v10.4 : un onglet, un mot essentiel ou une suggestion se touchent normalement pendant le balayage.
-        if (e.target.closest('.model-toggle, .tab, .tabs, .core, .suggest-row')) return;
+        if (e.target.closest('.model-toggle, .tab, .tabs, .core, .suggest-row, .friend-banner')) return;
         const activeEl = targets[idx];
         if (activeEl && e.target.closest('.card') !== activeEl) {
           e.preventDefault();
@@ -381,6 +406,8 @@ async function editCard(card) {
     },
     onDelete: async (id) => {
       await db.deleteCard(id);
+      const cached = photoUrls.get(id); // v10.5 (C10) : libère l'image gardée en mémoire
+      if (cached) { URL.revokeObjectURL(cached.url); photoUrls.delete(id); }
       state.cards = state.cards.filter((c) => c.id !== id);
       state.strip = state.strip.filter((item) => item.card.id !== id);
       renderAll();
@@ -395,7 +422,7 @@ const SPACES = [
 
 function renderSpaces() {
   $('#spaces').replaceChildren(...SPACES.map(([id, emoji, text]) => h('button', {
-    type: 'button', class: `space-btn${state.space === id ? ' active' : ''}`, onclick: () => openSpace(id),
+    type: 'button', class: `space-btn${state.space === id ? ' active' : ''}`, 'aria-current': state.space === id ? 'page' : null, onclick: () => openSpace(id),
   }, h('span', { class: 'emoji' }, emoji), h('span', {}, ui(id, state.lang) || text), id === 'progress' && !state.parent ? h('span', { class: 'mini-lock' }, '🔒') : null)));
 }
 
@@ -459,6 +486,12 @@ async function showBackupAge() {
 
 function renderAll() {
   document.body.classList.toggle('parent', state.parent);
+  // v10.5 (A06) : le cadenas dit son état aux lecteurs d'écran.
+  const lockEl = $('#lock');
+  if (lockEl) {
+    lockEl.setAttribute('aria-pressed', String(state.parent));
+    lockEl.setAttribute('aria-label', state.parent ? 'Mode parent ouvert : toucher pour verrouiller' : 'Mode parent verrouillé : rester appuyé 3 secondes pour ouvrir');
+  }
   if (state.parent) showBackupAge();
   document.querySelectorAll('[data-lang-choice]').forEach((b) => b.classList.toggle('active', b.dataset.langChoice === state.lang));
   $('#cols').value = String(state.cols);
@@ -531,6 +564,16 @@ function setupLock() {
     timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
   });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => lock.addEventListener(type, cancel));
+  // v10.5 (A05) : au clavier, garder Entrée ou Espace enfoncé 3 secondes.
+  lock.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && !state.parent && !timer) {
+      e.preventDefault();
+      lock.classList.add('holding');
+      timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+    }
+  });
+  lock.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') cancel(); });
+  lock.addEventListener('blur', cancel);
   lock.addEventListener('click', () => {
     if (Date.now() - unlockedAt < RELOCK_GUARD_MS) return;
     if (state.parent) { state.parent = false; renderAll(); }
@@ -546,13 +589,15 @@ async function collectSettings() {
 // ---------- Choix de la langue (11 langues) ----------
 async function setLang(code) {
   state.lang = langInfo(code).code;
+  document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
   await db.setSetting('lang', state.lang);
   renderAll();
 }
 
 function openLangPicker() {
-  const dialog = h('dialog', { class: 'lang-dialog' });
-  const close = () => { if (dialog.open) dialog.close(); dialog.remove(); };
+  const opener = document.activeElement;
+  const dialog = h('dialog', { class: 'lang-dialog', 'aria-label': 'Choisir la langue' });
+  const close = () => { if (dialog.open) dialog.close(); dialog.remove(); try { opener?.focus?.(); } catch { /* rien */ } };
   dialog.append(h('div', { class: 'stack pad' }, h('h3', {}, '🌍 Langue / اللغة / Language'),
     h('div', { class: 'lang-grid' }, LANGS.map((l) => h('button', {
       type: 'button', class: `lang-choice${l.code === state.lang ? ' active' : ''}`, lang: l.tts, dir: l.rtl ? 'rtl' : 'auto',
@@ -636,11 +681,13 @@ function setupParentBar() {
     exportBtn.textContent = '⏳ Préparation… 0 %';
     panel.hidden = true;
     try {
+      // v10.5 : par défaut, la sauvegarde ne contient ni photo ni voix (textes, cartes, journaux, bilans seulement).
+      const includeMedia = Boolean($('#backup-media')?.checked);
       backupFile = await buildBackupFile({ cards: state.cards, trials: await db.getAllTrials(), settings: await collectSettings(),
-        visuals: await db.getAllVisualOverrides(), abcLogs: await db.getAllAbcLogs(), orthoLogs: await db.getAllOrthoLogs() },
+        visuals: includeMedia ? await db.getAllVisualOverrides() : [], abcLogs: await db.getAllAbcLogs(), orthoLogs: await db.getAllOrthoLogs(), includeMedia },
       (pct) => { exportBtn.textContent = `⏳ Préparation… ${pct} %`; });
       const size = backupFile.size >= 1048576 ? `${(backupFile.size / 1048576).toFixed(1).replace('.', ',')} Mo` : `${Math.max(1, Math.round(backupFile.size / 1024))} Ko`;
-      showPanel(`✅ Sauvegarde prête (${size}). Touchez « Enregistrer le fichier » pour la garder.`, true);
+      showPanel(`✅ Sauvegarde prête (${size}, ${includeMedia ? 'AVEC photos et voix' : 'sans photo ni voix'}). Touchez « Enregistrer le fichier » pour la garder.`, true);
     } catch (error) {
       showPanel(`⚠️ La sauvegarde n’a pas pu être préparée. Réessayez. (${error.message || 'erreur inconnue'})`, false);
     } finally {
@@ -792,8 +839,10 @@ async function loadCards() {
 }
 
 async function init() {
+  captureMagicKeyFromUrl(); // v10.5 : la clé du lien #key= quitte l'adresse avant toute autre chose
   nav.attach($('#view'));
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
+  document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
   await loadAacPlus();
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;

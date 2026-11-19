@@ -123,25 +123,44 @@ function feelings(lang) {
       h('span', { class: 'emoji' }, emoji), h('span', { class: 'label' }, fr)))));
 }
 
-let calmOpenedAt = 0;
+// === [DEBUT MODIF v10.5 : 4.22 · F08 & 4.42 · A12 — Jmimla la chamelle après 30 s, aria-modal, touche Échap et restauration du focus] ===
+let jmimlaTimer = 0;
+let calmTriggerEl = null;
+
+function onCalmKeyDown(e) {
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    closeCalm();
+  }
+}
+
 export function closeCalm() {
-  if (!overlay) return;
-  // v9.12 : après au moins 30 secondes au calme, Jmimla rejoint l'Album des Amis (en silence).
-  if (calmOpenedAt && Date.now() - calmOpenedAt >= 30000) unlockFriendSticker('jmimla').catch(() => {});
-  calmOpenedAt = 0;
   stopSpeaking();
-  overlay.remove();
-  overlay = null;
+  if (jmimlaTimer) { clearTimeout(jmimlaTimer); jmimlaTimer = 0; }
+  document.removeEventListener('keydown', onCalmKeyDown);
+  if (overlay) { overlay.remove(); overlay = null; }
+  if (calmTriggerEl && typeof calmTriggerEl.focus === 'function') {
+    try { calmTriggerEl.focus(); } catch {}
+  }
+  calmTriggerEl = null;
 }
 
 export function openCalm(lang = 'fr') {
   closeCalm();
-  overlay = h('div', { class: 'calm-overlay', role: 'dialog', 'aria-label': 'Coin calme' },
+  calmTriggerEl = document.activeElement;
+  jmimlaTimer = setTimeout(() => {
+    jmimlaTimer = 0;
+    if (overlay) unlockFriendSticker('jmimla').catch(() => {});
+  }, 30000);
+  const closeBtn = btn('✖ Fermer', closeCalm, 'ghost');
+  overlay = h('div', { class: 'calm-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Coin calme' },
     h('div', { class: 'calm-panel' },
-      h('div', { class: 'row calm-head' }, h('h2', {}, '🌈 Mon coin calme'), btn('✖ Fermer', closeCalm, 'ghost')),
+      h('div', { class: 'row calm-head' }, h('h2', {}, '🌈 Mon coin calme'), closeBtn),
       friendCompanionBanner('calm', { lang }),
       breathing(lang), bubbles(lang), counting(lang), feelings(lang)));
+  document.addEventListener('keydown', onCalmKeyDown);
   document.body.append(overlay);
-  calmOpenedAt = Date.now();
+  closeBtn.focus();
   say('Je me calme. On respire ensemble.', 'نهدن. نتنفسو جميع.', lang);
 }
+// === [FIN MODIF v10.5 : 4.22 · F08 & 4.42 · A12] ===

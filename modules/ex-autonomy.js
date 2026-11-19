@@ -15,7 +15,7 @@ import { renderVisual } from './visuals.js';
 import { SEQUENCES, TOILET_STEPS } from './content.js';
 import { hygieneRoutineView } from './ex-hygiene.js';
 
-// ---------- V : « À table en famille (avec Papa, Maman et Ghita) » ----------
+// ---------- V : « À table en famille » ----------
 export const mealTitle = () => `À table en famille (avec Papa, Maman et ${sisterName()})`;
 const BITES_PER_TOKEN = 5;
 
@@ -50,7 +50,9 @@ function mealShell(game, goalId, ratingOptions) {
   return h('div', { class: 'stack' },
     h('h3', {}, `🍽️ ${mealTitle()}`), familyTable(), game,
     h('details', {}, h('summary', {}, '⏳ Sablier du repas'), timer.element),
-    h('details', { open: true }, h('summary', {}, 'Note de l’adulte'), ratingPanel(goalId, ratingOptions)));
+    // === [DEBUT MODIF v10.5 : 4.18 · G-03 & 4.21 · F07 — Panneau de notation adulte replié par défaut pendant le jeu de l'enfant] ===
+    h('details', {}, h('summary', {}, '📝 Note de l’adulte'), ratingPanel(goalId, ratingOptions)));
+    // === [FIN MODIF v10.5 : 4.18 · G-03 & 4.21 · F07] ===
 }
 
 // V.1 : l'assiette (photo du vrai plat possible) ; chaque bouchée à la cuillère allume une étoile.
@@ -226,7 +228,7 @@ function flamingo() {
 }
 
 // ---------- Z : motricité fine ----------
-// Z.2 : « Atelier découpage d'Abir » — bandes à imprimer.
+// Z.2 : « Atelier découpage » — bandes à imprimer.
 function printStrips() {
   const area = document.getElementById('print-area');
   area.innerHTML = `<div class="print-sheet"><h1>Atelier découpage d'${firstName()}</h1>
@@ -428,7 +430,7 @@ function toiletReal(ctx) {
     if (index >= TOILET_STEPS.length) {
       playClap();
       root.replaceChildren(praise('Bravo, tout est fait !'),
-        ratingPanel('X.2', { item: 'en-vrai', meta: { mode: 'reel' }, labels: { plus: '✅ Seule', prompt: '👉 Avec rappel', minus: '🌱 Non réussi' }, onRated: () => { index = 0; show(); } }));
+        ratingPanel('X.2', { item: 'en-vrai', meta: { mode: 'reel' }, labels: { plus: '✅ Seule', prompt: '👉 Avec rappel', minus: '🌱 Pas encore' }, onRated: () => { index = 0; show(); } }));
       return;
     }
     const step = TOILET_STEPS[index];

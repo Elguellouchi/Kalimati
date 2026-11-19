@@ -1,5 +1,5 @@
 // Sections D et E : imitation motrice (miroir, gestes fins, chansons) et vocale (écho, phrases, atelier /t/ /d/ /k/).
-// La caméra du miroir n'enregistre rien. Les voix d'Abir restent dans le téléphone et ne sont jamais exportées.
+// La caméra du miroir n'enregistre rien. Les voix de l'enfant restent dans le téléphone et ne sont jamais exportées.
 import * as db from '../db.js';
 import { h, btn, sample, sleep, uid } from './util.js';
 import { speak, playBlob, stopSpeaking, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
@@ -41,7 +41,12 @@ function d1(ctx) {
       camBox.replaceChildren(h('p', { class: 'note' }, 'Caméra refusée ou absente. Autorisez-la dans les réglages du téléphone.'));
     }
   };
-  ctx.onCleanup(() => { if (stream) stream.getTracks().forEach((t) => t.stop()); });
+  // === [DEBUT MODIF v10.5 : 4.77 · C13 — Arrêt propre de la caméra à la fermeture ou mise en arrière-plan] ===
+  const stopCam = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
+  const onVis = () => { if (document.visibilityState === 'hidden') stopCam(); };
+  document.addEventListener('visibilitychange', onVis);
+  ctx.onCleanup(() => { document.removeEventListener('visibilitychange', onVis); stopCam(); });
+  // === [FIN MODIF v10.5 : 4.77 · C13] ===
   const lengthSelect = h('select', { onchange: (e) => { length = Number(e.target.value); draw(); } }, h('option', { value: 3 }, '3 gestes'), h('option', { value: 2 }, '2 gestes'));
   draw();
   return h('div', { class: 'stack' },
@@ -86,7 +91,7 @@ function d3() {
     ratingPanel('D.3', { item: () => song.id, labels: { plus: 'A imité les gestes ✅' } }));
 }
 
-// E.1 : Écho-Studio bisyllabique ; la loutre souffle des bulles quand Abir vocalise.
+// E.1 : Écho-Studio bisyllabique ; la loutre souffle des bulles quand l'enfant vocalise.
 function e1(ctx) {
   let word = ECHO_WORDS[0];
   let stop = null;
@@ -116,12 +121,12 @@ function e1(ctx) {
       if (result.blob) { lastVoice = result.blob; replay.disabled = false; }
       return;
     }
-    if (!canRecord()) { window.alert('Ce téléphone ne permet pas d’utiliser le micro ici.'); return; }
+    if (!canRecord()) { status.textContent = 'Ce téléphone ne permet pas d’utiliser le micro ici.'; return; }
     try {
       stop = await startListening({ record: true, onLevel: (level) => setBubbleLevel(otter, level) });
       micBtn.textContent = '⏹ Stop';
       setTimeout(() => { if (stop) toggleMic(); }, 5000);
-    } catch { window.alert('Le micro est refusé. Autorisez-le dans les réglages du téléphone.'); }
+    } catch { status.textContent = 'Le micro est refusé. Autorisez-le dans les réglages du téléphone.'; }
   }
   ctx.onCleanup(() => { if (stop) stop(); });
   draw();
@@ -137,7 +142,7 @@ function e1(ctx) {
       }, 'ghost tiny') : null),
     canRecognizeSpeech() ? h('p', { class: 'note' }, SPEECH_CLOUD_NOTE) : null,
     otter,
-    ratingPanel('E.1', { item: () => word.id, withPrompts: false, labels: { plus: 'Intelligible ✅', prompt: 'Approximatif 👉', minus: 'Pas de réponse 🌱' } }));
+    ratingPanel('E.1', { item: () => word.id, withPrompts: false, labels: { plus: 'Intelligible ✅', prompt: 'Approximatif 👉', minus: 'Pas encore 🌱' } }));
 }
 
 // E.2 : phrases de 2-3 mots, cartes éclairées l'une après l'autre.
@@ -175,7 +180,7 @@ function phonemeTab(phoneme) {
     let stop = null;
     const rec = btn('🎙️', async () => {
       if (stop) { const blob = await stop(); stop = null; rec.textContent = '🎙️'; await db.putRecording({ id: uid('rec'), key, ts: Date.now(), kind: 'child-voice', blob }); drawRecs(); return; }
-      try { stop = await startRecording(); rec.textContent = '⏹'; } catch { window.alert('Le micro est refusé.'); }
+      try { stop = await startRecording(); rec.textContent = '⏹'; } catch { rec.textContent = '⚠️ Micro refusé'; }
     }, 'ghost');
     const grade = (result, label) => btn(label, async (e) => {
       await recordTrial('E.3', result, { item: `${phoneme.id}:${word}` });
@@ -190,7 +195,13 @@ function phonemeTab(phoneme) {
     h('div', { class: 'phon-cue' }, renderVisual({ emoji: phoneme.emoji, vkey: `phoneme:${phoneme.id}`, label: `bouche son ${phoneme.id}` }), h('p', {}, phoneme.cue)),
     ...phoneme.words.map(wordRow),
     btn('✅ Progrès validé avec l’orthophoniste', async (e) => {
-      if (!window.confirm('Confirmer que l’orthophoniste valide l’amélioration ?')) return;
+      if (!validate._confirmed) {
+        validate._confirmed = true;
+        validate.textContent = 'Confirmer la validation orthophoniste ?';
+        setTimeout(() => { if (validate._confirmed) { validate._confirmed = false; validate.textContent = '✅ Valider avec l’orthophoniste'; } }, 4000);
+        return;
+      }
+      validate._confirmed = false;
       await recordTrial('E.3', 'plus', { item: 'validation', meta: { validated: true, phoneme: phoneme.id } });
       e.target.textContent = 'Validation enregistrée ✅';
     }, 'ghost'));

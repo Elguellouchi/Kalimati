@@ -27,7 +27,7 @@ const receptive = () => trialLoop((next) => {
     after);
 });
 
-// Mode 2 : situations de la vie d'Abir et de Ghita.
+// Mode 2 : situations de la vie quotidienne.
 const situations = () => trialLoop((next) => {
   const situation = pick(SITUATIONS);
   const text = situation.text.replace('{sister}', sisterName()).replace('{name}', firstName());
@@ -72,7 +72,12 @@ function mirror(ctx) {
       message.replaceChildren(praise(`C’est la photo de « ${emotion.fr} » !`));
     } catch (e) { message.replaceChildren(h('p', { class: 'note' }, `${e.message} Touchez d’abord « Ouvrir le miroir ».`)); }
   };
-  ctx.onCleanup(() => { if (stream) stream.getTracks().forEach((t) => t.stop()); });
+  // === [DEBUT MODIF v10.5 : 4.77 · C13 — Arrêt propre de la caméra du miroir magique] ===
+  const stopCam = () => { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; } };
+  const onVis = () => { if (document.visibilityState === 'hidden') stopCam(); };
+  document.addEventListener('visibilitychange', onVis);
+  ctx.onCleanup(() => { document.removeEventListener('visibilitychange', onVis); stopCam(); });
+  // === [FIN MODIF v10.5 : 4.77 · C13] ===
   draw();
   return h('div', { class: 'stack' }, chips,
     h('div', { class: 'mirror-studio' }, model, camBox),

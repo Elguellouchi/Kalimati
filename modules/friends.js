@@ -260,10 +260,13 @@ export function renderFriendSvg(friendId = 'nour', { pose = 'neutral', size = 88
   });
 }
 
-// Prononce la phrase d'un ami uniquement lorsque l'enfant touche l'ami (jamais de son surprise)
+// Prononce la phrase d'un ami uniquement lorsque l'enfant touche l'ami (jamais de son surprise).
+// Joue en priorité le fichier MP3 pré-généré par OpenAI (./voix/fr/ami-<id>-<1|2>.mp3 ou ./voix/dr/ami-<id>-<1|2>.mp3),
+// et bascule automatiquement sur la synthèse vocale du téléphone si le fichier MP3 n'est pas encore présent.
 export function sayFriendPhrase(friendId, { index = 0, lang = 'fr' } = {}) {
   const f = FRIEND_BY_ID.get(friendId) || FRIENDS[0];
-  const phrase = f.phrases[index] || f.phrases[0];
+  const phraseIdx = f.phrases[index] ? index : 0;
+  const phrase = f.phrases[phraseIdx];
   if (!phrase) return;
   const darija = lang === 'dr' || lang === 'ar';
   const phoneVoice = () => (darija ? speak(phrase.ar || phrase.dr, { lang: 'ar' }) : speak(phrase.fr, { lang: 'fr' }));

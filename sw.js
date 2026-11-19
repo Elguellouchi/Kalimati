@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-4';
+const CACHE = 'kalimati-v10-5';
 const FILES = [
   './', './index.html', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -87,17 +87,46 @@ function saveCopy(request, response) {
   return response;
 }
 
+// v10.5 : l'iPhone demande les sons « par morceaux » (en-tête Range). On répond avec le morceau
+// pris dans la copie gardée : les voix marchent aussi sans internet. Sans copie, le réseau répond.
+async function rangeFromCache(request) {
+  const hit = await caches.match(request.url, { ignoreSearch: true }).catch(() => null);
+  if (!hit || hit.status !== 200) return fetch(request);
+  try {
+    const buf = await hit.clone().arrayBuffer();
+    const total = buf.byteLength;
+    const m = /^bytes=(\d*)-(\d*)$/.exec((request.headers.get('range') || '').trim());
+    if (!m) return hit;
+    let start; let end;
+    if (m[1] === '') { start = Math.max(0, total - Number(m[2] || 0)); end = total - 1; } // « les N derniers octets »
+    else { start = Number(m[1]); end = m[2] === '' ? total - 1 : Math.min(total - 1, Number(m[2])); }
+    if (start >= total || start > end) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${total}` } });
+    const headers = new Headers(hit.headers);
+    headers.set('Content-Range', `bytes ${start}-${end}/${total}`);
+    headers.set('Accept-Ranges', 'bytes');
+    headers.set('Content-Length', String(end - start + 1));
+    if (!headers.get('Content-Type') && /\.mp3$/.test(new URL(request.url).pathname)) headers.set('Content-Type', 'audio/mpeg');
+    return new Response(buf.slice(start, end + 1), { status: 206, statusText: 'Partial Content', headers });
+  } catch {
+    return hit;
+  }
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
-  if (request.headers.has('range')) return; // lecture audio partielle : on laisse le navigateur faire
+  if (request.headers.has('range')) {
+    if (isStatic(url)) event.respondWith(rangeFromCache(request));
+    return;
+  }
   if (isStatic(url)) {
     event.respondWith((async () => {
       const hit = await caches.match(request);
       const fresh = fetch(request, { cache: 'no-cache' }).then((r) => saveCopy(request, r));
       if (hit) { event.waitUntil(fresh.catch(() => {})); return hit; }
-      return fresh.catch(() => caches.match('./index.html'));
+      // v10.5 : un son ou une image manquante hors ligne renvoie une vraie erreur (plus la page d'accueil à la place).
+      return fresh.catch(() => new Response('', { status: 503, statusText: 'Offline' }));
     })());
     return;
   }
@@ -108,6 +137,7 @@ self.addEventListener('fetch', (event) => {
     if (first) return first;
     const hit = await caches.match(request);
     if (hit) { event.waitUntil(network.catch(() => {})); return hit; }
-    return network.catch(() => caches.match('./index.html'));
+    return network.catch(async () => (request.mode === 'navigate' ? caches.match('./index.html') : null)
+      || new Response('', { status: 503, statusText: 'Offline' }));
   })());
 });

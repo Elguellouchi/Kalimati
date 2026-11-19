@@ -18,6 +18,8 @@ export const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8jLXfni_FP6x_NAq
 const SYNC_SETTINGS_KEY = 'cloudSyncConfig';
 const LAST_SYNC_KEY = 'cloudSyncLastState';
 const COHORT_OPTIN_KEY = 'clinicalCohortOptIn';
+const COHORT_RANDOM_ID_KEY = 'clinicalCohortRandomId'; // v10.5 : identifiant tiré au hasard (plus dérivé du prénom)
+const COHORT_OLD_ID_KEY = 'clinicalCohortOldIdCleaned';
 const SHARED_SETTING_KEYS = [
   'cols', 'toiletReminder', 'levels', 'stories',
   'atec_history', 'atecHistory', 'aacHistory', 'touch',
@@ -44,11 +46,11 @@ export async function sha256Hex(text) {
   return Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function deriveAesKey(passphrase, saltBytes) {
+async function deriveAesKey(passphrase, saltBytes, iterations = 100000) {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey('raw', enc.encode(passphrase.trim()), 'PBKDF2', false, ['deriveKey']);
   return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt: saltBytes, iterations: 100000, hash: 'SHA-256' },
+    { name: 'PBKDF2', salt: saltBytes, iterations, hash: 'SHA-256' },
     baseKey,
     { name: 'AES-GCM', length: 256 },
     false,
@@ -80,13 +82,17 @@ export async function decryptSyncBundle(bundleObj, familyKey) {
   }
   const salt = new Uint8Array(b64ToBuf(parsed.salt));
   const iv = new Uint8Array(b64ToBuf(parsed.iv));
-  const key = await deriveAesKey(familyKey, salt);
-  try {
-    const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, b64ToBuf(parsed.ciphertext));
-    return JSON.parse(new TextDecoder().decode(plainBuf));
-  } catch {
-    throw new Error('Clé familiale AES-256 incorrecte : déchiffrement refusé.');
+  // v10.5 : lit aussi les paquets d'une future version plus forte (champ « iterations »), sans rien changer à l'envoi.
+  const declared = Number(parsed.iterations);
+  const tries = Number.isInteger(declared) && declared >= 100000 && declared <= 2000000 && declared !== 100000 ? [declared, 100000] : [100000];
+  for (const iterations of tries) {
+    try {
+      const key = await deriveAesKey(familyKey, salt, iterations);
+      const plainBuf = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, b64ToBuf(parsed.ciphertext));
+      return JSON.parse(new TextDecoder().decode(plainBuf));
+    } catch { /* essai suivant */ }
   }
+  throw new Error('Clé familiale AES-256 incorrecte : déchiffrement refusé.');
 }
 
 export function generateSyncPassphrase() {
@@ -162,15 +168,43 @@ async function saveUnifiedAtecList(list) {
 }
 
 // ---------- Astuce cryptographique du fragment d'URL (#key=KALI-SYNC-...) ----------
-export async function initCloudSyncFromUrlAndAuto() {
-  if (typeof window === 'undefined') return;
+// v10.5 : la clé du lien magique est retirée de l'adresse tout de suite, avant toute autre action (lecture synchrone).
+// Elle n'est jamais envoyée au serveur web (le morceau après # reste dans le téléphone), et ne reste pas dans l'historique.
+let pendingMagicKey = null;
+export function captureMagicKeyFromUrl() {
+  if (typeof window === 'undefined') return null;
   const hash = window.location.hash || '';
   const match = hash.match(/[#&]key=(KALI-[A-Z0-9-]{8,40})/i);
-  if (match && match[1]) {
-    const importedKey = match[1].toUpperCase();
-    await saveCloudSyncConfig({ familyKey: importedKey, autoSyncWifi: true });
-    const cleanHash = hash.replace(/([#&])key=KALI-[A-Z0-9-]{8,40}/i, '').replace(/^#&/, '#');
+  if (!match || !match[1]) return pendingMagicKey;
+  pendingMagicKey = match[1].toUpperCase();
+  const cleanHash = hash.replace(/([#&])key=KALI-[A-Z0-9-]{8,40}/i, '').replace(/^#&/, '#');
+  try {
     window.history.replaceState(null, '', window.location.pathname + window.location.search + (cleanHash === '#' ? '' : cleanHash));
+  } catch { /* très ancien navigateur */ }
+  return pendingMagicKey;
+}
+
+function showMagicKeyWarning() {
+  if (typeof document === 'undefined') return;
+  const note = h('div', { class: 'magic-key-toast', role: 'status' },
+    '🔒 Clé de synchro enregistrée dans ce téléphone. Ne transférez pas ce lien : il contient la clé secrète de la famille.');
+  Object.assign(note.style, {
+    position: 'fixed', left: '12px', right: '12px', bottom: '96px', zIndex: '9999', padding: '12px 14px',
+    background: '#FFF6E5', color: '#5A3A00', border: '2px solid #E0A63B', borderRadius: '14px',
+    fontWeight: '700', boxShadow: '0 4px 14px rgba(0,0,0,.15)',
+  });
+  note.onclick = () => note.remove();
+  document.body.append(note);
+  setTimeout(() => note.remove(), 10000);
+}
+
+export async function initCloudSyncFromUrlAndAuto() {
+  if (typeof window === 'undefined') return;
+  const importedKey = captureMagicKeyFromUrl();
+  if (importedKey) {
+    pendingMagicKey = null;
+    await saveCloudSyncConfig({ familyKey: importedKey, autoSyncWifi: true });
+    showMagicKeyWarning();
   }
 
   const cfg = await getCloudSyncConfig();
@@ -255,6 +289,23 @@ export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
   };
 }
 
+// v10.5 (S17) : ce qui arrive de la synchro est vérifié avant d'entrer dans le téléphone.
+const SAFE_KEY = (k) => k !== '__proto__' && k !== 'constructor' && k !== 'prototype';
+const MEDIA_FIELDS = ['photo', 'video', 'audioFr', 'audioDr'];
+function cleanRecord(raw, { maxStr = 2000, media = false } = {}) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw) || typeof raw.id !== 'string' || !raw.id || raw.id.length > 120) return null;
+  const out = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (!SAFE_KEY(k)) continue;
+    if (media && MEDIA_FIELDS.includes(k)) { out[k] = typeof v === 'string' && v.startsWith('data:') ? v : null; continue; }
+    if (typeof v === 'string') out[k] = v.slice(0, maxStr);
+    else if (typeof v === 'number' || typeof v === 'boolean' || v === null) out[k] = v;
+    else if (typeof v === 'object') { try { out[k] = JSON.parse(JSON.stringify(v)); } catch { /* ignoré */ } }
+  }
+  return out;
+}
+const cleanList = (list, opts) => (Array.isArray(list) ? list.slice(0, 50000).map((x) => cleanRecord(x, opts)).filter(Boolean) : []);
+
 function mergeById(localList = [], remoteList = []) {
   const map = new Map();
   for (const item of localList) {
@@ -290,8 +341,7 @@ export async function mergeRemoteSyncPayload(remote) {
 
   const localCardMap = new Map(localCards.map((c) => [c.id, c]));
   let newOrUpdatedCards = 0;
-  for (const rc of (remote.cards || [])) {
-    if (!rc || !rc.id) continue;
+  for (const rc of cleanList(remote.cards, { maxStr: 400, media: true })) {
     const lc = localCardMap.get(rc.id);
     const hydrated = { ...rc };
     for (const f of ['photo', 'video', 'audioFr', 'audioDr']) {
@@ -310,10 +360,10 @@ export async function mergeRemoteSyncPayload(remote) {
   }
   await db.putCards(Array.from(localCardMap.values()));
 
-  const trialsRes = mergeById(localTrials, remote.trials || []);
-  const abcRes = mergeById(localAbc, remote.abcLogs || []);
-  const orthoRes = mergeById(localOrtho, remote.orthoLogs || []);
-  const schedRes = mergeById(localSched, remote.scheduleLogs || []);
+  const trialsRes = mergeById(localTrials, cleanList(remote.trials));
+  const abcRes = mergeById(localAbc, cleanList(remote.abcLogs));
+  const orthoRes = mergeById(localOrtho, cleanList(remote.orthoLogs));
+  const schedRes = mergeById(localSched, cleanList(remote.scheduleLogs));
 
   await Promise.all([
     db.putTrials(trialsRes.merged),
@@ -343,6 +393,8 @@ export async function mergeRemoteSyncPayload(remote) {
 
     for (const [k, val] of Object.entries(remote.settings)) {
       if (val === undefined || val === null) continue;
+      // v10.5 (S17) : seuls les réglages partagés connus sont acceptés (jamais la clé, l'adresse du serveur, etc.).
+      if (k !== 'profile' && !SHARED_SETTING_KEYS.includes(k)) continue;
       if (k === 'atec_history' || k === 'atecHistory' || k === 'lang' || k === 'clinic') {
         continue;
       }
@@ -363,7 +415,7 @@ export async function mergeRemoteSyncPayload(remote) {
 
   if (Array.isArray(remote.visuals) && remote.visuals.length) {
     for (const v of remote.visuals) {
-      if (v && v.key && typeof v.data === 'string' && v.data.startsWith('data:image/')) {
+      if (v && typeof v.key === 'string' && v.key.length <= 120 && typeof v.data === 'string' && v.data.startsWith('data:image/')) {
         const blob = await dataUrlToBlob(v.data);
         await db.putVisualOverride(v.key, blob, v.meta || {});
       }
@@ -502,6 +554,14 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
         },
       )
     ).catch(() => {});
+    // v10.5 : la ligne de l'ancien identifiant (tiré du prénom) est effacée une fois.
+    if (rpcReady && !(await db.getSetting(COHORT_OLD_ID_KEY))) {
+      const done = await supabaseFetch(`${baseUrl}/rest/v1/rpc/kalimati_cohort_delete`, cfg.supabaseAnonKey, {
+        method: 'POST',
+        body: JSON.stringify({ p_cohort_id: await legacyCohortId(), p_write_token: cohortToken }),
+      }).then((r) => r.ok).catch(() => false);
+      if (done) await db.setSetting(COHORT_OLD_ID_KEY, true);
+    }
   }
 
   const syncMeta = {
@@ -515,16 +575,76 @@ export async function syncNowWithTeam({ includeMedia = false } = {}) {
 }
 
 // ---------- Protocole d'Étude Clinique Longitudinale Anonymisée (T0, T+90, T+180) ----------
+// v10.5 (S10) : identifiant tiré au hasard une fois, gardé dans le téléphone. Avant, il venait du prénom (devinable).
+async function getOrCreateRandomCohortId() {
+  let id = await db.getSetting(COHORT_RANDOM_ID_KEY);
+  if (typeof id === 'string' && /^KALI-C-[A-Z0-9-]{10,30}$/.test(id)) return id;
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const rand = crypto.getRandomValues(new Uint8Array(12));
+  const seg = (s) => Array.from(rand.slice(s, s + 4), (b) => chars[b % chars.length]).join('');
+  id = `KALI-C-${seg(0)}-${seg(4)}-${seg(8)}`;
+  await db.setSetting(COHORT_RANDOM_ID_KEY, id);
+  return id;
+}
+
+// Ancien identifiant (v10.0 à v10.4), seulement pour effacer l'ancienne ligne du serveur.
+async function legacyCohortId() {
+  const activeInvite = await db.getSetting('activeInviteCode');
+  return `KALI-STUDY-${(await sha256Hex(`kalimati-cohort:${activeInvite || profile?.name || 'anon'}`)).slice(0, 10).toUpperCase()}`;
+}
+
+function toAgeBracket(rawAge) {
+  const n = Number((String(rawAge || '').match(/(\d+)/) || [])[1]);
+  if (!Number.isFinite(n) || n <= 0) return 'Non renseigné';
+  if (n < 4) return '< 4 ans';
+  if (n <= 6) return '4-6 ans';
+  if (n <= 9) return '7-9 ans';
+  if (n <= 12) return '10-12 ans';
+  return '13 ans et +';
+}
+
+// v10.5 (S12) : effacer du serveur. Seul un téléphone qui a la clé familiale peut le faire.
+async function rpcDelete(fnName, params) {
+  const cfg = await getCloudSyncConfig();
+  const baseUrl = cfg.supabaseUrl.replace(/\/$/, '');
+  const res = await supabaseFetch(`${baseUrl}/rest/v1/rpc/${fnName}`, cfg.supabaseAnonKey, { method: 'POST', body: JSON.stringify(params) });
+  if (res.status === 404) throw new Error('Le serveur n’a pas encore la mise à jour v10.5 (action d’Aziz dans Supabase).');
+  if (!res.ok) throw new Error(`Erreur serveur (${res.status})`);
+  return (await res.json().catch(() => false)) === true;
+}
+
+async function cohortToken(familyKey) {
+  return sha256Hex(`kalimati-cohort-write-v1:${String(familyKey || '').trim()}`);
+}
+
+export async function withdrawClinicalCohortData() {
+  const cfg = await getCloudSyncConfig();
+  await db.setSetting(COHORT_OPTIN_KEY, false);
+  const token = await cohortToken(cfg.familyKey);
+  const ids = [await db.getSetting(COHORT_RANDOM_ID_KEY), await legacyCohortId()].filter(Boolean);
+  let removed = false;
+  for (const id of ids) removed = (await rpcDelete('kalimati_cohort_delete', { p_cohort_id: id, p_write_token: token })) || removed;
+  return removed;
+}
+
+export async function deleteEncryptedRelayBundle() {
+  const cfg = await getCloudSyncConfig();
+  const key = String(cfg.familyKey || '').trim();
+  const removed = await rpcDelete('kalimati_relay_delete', {
+    p_room_hash: await sha256Hex(`kalimati-room-v1:${key}`),
+    p_write_token: await sha256Hex(`kalimati-relay-write-v1:${key}`),
+  });
+  return removed;
+}
 export async function computeClinicalCohortMetrics() {
-  const [trials, orthoLogs, abcLogs, atecList, activeInvite] = await Promise.all([
+  const [trials, orthoLogs, abcLogs, atecList, cohortId] = await Promise.all([
     db.getAllTrials(),
     db.getAllOrthoLogs(),
     db.getAllAbcLogs(),
     getUnifiedAtecList(),
-    db.getSetting('activeInviteCode'),
+    getOrCreateRandomCohortId(),
   ]);
 
-  const cohortHash = (await sha256Hex(`kalimati-cohort:${activeInvite || profile?.name || 'anon'}`)).slice(0, 10).toUpperCase();
   const firstAtec = atecList[0] || null;
   const latestAtec = atecList.length ? atecList[atecList.length - 1] : null;
   const atecDelta = (firstAtec && latestAtec && firstAtec !== latestAtec)
@@ -552,9 +672,9 @@ export async function computeClinicalCohortMetrics() {
   ].filter(Boolean)).size;
 
   return {
-    cohortId: `KALI-STUDY-${cohortHash}`,
-    generatedAt: new Date().toISOString(),
-    ageGroup: profile?.age || '8 ans',
+    cohortId,
+    generatedAt: new Date().toISOString().slice(0, 10), // v10.5 : le jour seulement
+    ageGroup: toAgeBracket(profile?.age), // v10.5 : tranche d'âge (plus l'âge exact)
     activeDays,
     totalAbaTrials: scoredTrials.length,
     autonomyRatePct: autonomyRate,
@@ -593,6 +713,21 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     }
   }
 
+  // Bouton en 2 touchers (pas de fenêtre du téléphone) : le 1er demande confirmation pendant 4 s.
+  const confirmBtn = (label, action) => {
+    let armed = null;
+    const b = btn(label, async () => {
+      if (!armed) {
+        b.textContent = 'Toucher encore pour confirmer';
+        armed = setTimeout(() => { armed = null; b.textContent = label; }, 4000);
+        return;
+      }
+      clearTimeout(armed); armed = null; b.textContent = label;
+      try { await action(); } catch (err) { body.querySelector('.sync-status')?.replaceChildren(`⚠️ ${err.message || err}`); }
+    }, 'ghost tiny');
+    return b;
+  };
+
   async function renderInner() {
     const [cfg, lastSync, metrics, cohortOptIn] = await Promise.all([
       getCloudSyncConfig(),
@@ -601,7 +736,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       db.getSetting(COHORT_OPTIN_KEY),
     ]);
 
-    const statusMsg = h('p', { class: 'note' },
+    const statusMsg = h('p', { class: 'note sync-status', role: 'status', 'aria-live': 'polite' },
       lastSync?.lastSyncAt
         ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
         : '🔒 Serveur relai Supabase Kalimati pré-configuré et chiffrement AES-256 actif. Touchez simplement « Synchroniser maintenant » !');
@@ -661,7 +796,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       const magicUrl = `https://elguellouchi.github.io/Kalimati/#key=${encodeURIComponent(k)}`;
       try {
         await navigator.clipboard.writeText(magicUrl);
-        statusMsg.textContent = '🔗 Lien magique #key= copié (enregistre la clé automatiquement à l’ouverture sans jamais l’envoyer au serveur web).';
+        statusMsg.textContent = '🔗 Lien magique copié. ⚠️ Il contient la clé secrète : envoyez-le en privé seulement, jamais dans un groupe.';
       } catch {
         statusMsg.textContent = `🔗 Lien magique : ${magicUrl}`;
       }
@@ -669,10 +804,11 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
 
     const shareTeamInstructionsWhatsApp = () => {
       const text = [
-        `Bonjour 👋,`,
-        `Pour synchroniser les progrès ABA, le planning et le cahier de liaison d'*${profile?.name || 'Abir'}* dans *Kalimati* :`,
-        `1. Ouvrez Kalimati -> Mode Parent -> Progrès -> ☁️ Synchronisation Équipe.`,
-        `2. Collez la clé secrète AES-256 (envoyée dans un second message séparé ou via le lien #key=) puis touchez « 🔄 Synchroniser maintenant ».`,
+        // v10.5 (S7) : message neutre, sans prénom ni mot médical.
+        'Bonjour,',
+        'Pour partager notre espace dans l’application Kalimati :',
+        '1. Ouvrez Kalimati -> Mode Parent -> Progrès -> Synchronisation Équipe.',
+        '2. Saisissez la clé familiale (envoyée à part, en privé) puis touchez « Synchroniser maintenant ».',
       ].join('\n');
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
     };
@@ -699,6 +835,8 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
         btn('🔗 Copier le lien magique #key=', copyMagicHashLink, 'ghost tiny'),
         btn('📋 Copier la clé seule', copyKeyOnly, 'ghost tiny'),
         btn('💬 Consigne WhatsApp (sans clé)', shareTeamInstructionsWhatsApp, 'ghost tiny')),
+      h('p', { class: 'note', style: { color: '#5A3A00', fontWeight: '700' } },
+        '⚠️ Le lien magique contient la clé secrète de la famille. Envoyez-le seulement en privé, à une personne de confiance. Jamais dans un groupe ni sur un réseau social.'),
       h('label', { class: 'check' }, autoWifiChk, ' Synchroniser automatiquement en arrière-plan à l’ouverture quand le Wi-Fi est actif'),
       h('label', { class: 'check' }, mediaChk, ' Inclure exceptionnellement les photos et voix parentales chiffrées dans cet envoi (par défaut : textes et journaux uniquement)'),
       h('details', {},
@@ -724,9 +862,19 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
           `Jours actifs : ${metrics.activeDays} j · Essais ABA : ${metrics.totalAbaTrials} (${metrics.autonomyRatePct ?? '—'} % en autonomie) · `,
           `LME / MLU : ${metrics.mluBaseline ?? '—'} → ${metrics.mluCurrent ?? '—'} mots/phrase · `,
           `ATEC : ${metrics.atecBaseline?.total ?? '—'} → ${metrics.atecLatest?.total ?? '—'}${metrics.atecDeltaPoints !== null ? ` (${metrics.atecDeltaPoints > 0 ? '+' : ''}${metrics.atecDeltaPoints} pts)` : ''}`),
-        h('label', { class: 'check' }, cohortChk, ' Participer de façon 100 % anonyme à l’étude clinique longitudinale Kalimati (aucun prénom, aucune photo, aucune voix — conforme Loi 09-08 CNDP)'),
+        h('label', { class: 'check' }, cohortChk, ' Participer à l’étude clinique Kalimati (facultatif). Envoyé : un numéro tiré au hasard, une tranche d’âge et des scores. Jamais de prénom, de photo ni de voix.'),
         h('div', { class: 'row wrap' },
-          btn('📥 Exporter le rapport clinique anonymisé (JSON)', () => exportClinicalCohortReportJson(), 'ghost tiny'))),
+          btn('📥 Exporter le rapport clinique anonymisé (JSON)', () => exportClinicalCohortReportJson(), 'ghost tiny'),
+          confirmBtn('🗑 Retirer mes scores de l’étude', async () => {
+            const ok = await withdrawClinicalCohortData();
+            cohortChk.checked = false;
+            statusMsg.textContent = ok ? '✅ Scores retirés du serveur. La participation est arrêtée.' : '✅ Participation arrêtée. Rien à effacer sur le serveur.';
+          }))),
+      h('div', { class: 'row wrap' },
+        confirmBtn('🗑 Effacer notre paquet chiffré du serveur', async () => {
+          const ok = await deleteEncryptedRelayBundle();
+          statusMsg.textContent = ok ? '✅ Paquet chiffré effacé du serveur. Les données du téléphone restent.' : 'Rien à effacer sur le serveur.';
+        })),
     );
   }
 

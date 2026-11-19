@@ -143,7 +143,7 @@ export function levelHeader(goalId, onChange) {
       h('div', { class: 'level-main' },
         h('strong', { class: 'level-badge' }, `🌟 Niveau ${s.currentLevel} / ${MAX_LEVEL}`),
         h('span', { class: `net ${online ? 'on' : 'off'}` }, online ? '🌐 Mode connecté enrichi' : '📴 Mode hors ligne'),
-        h('span', { class: 'level-stars', 'aria-label': `${s.starsInLevel} réussites sur ${TRIALS_PER_LEVEL}` },
+        h('span', { class: 'level-stars', role: 'status', 'aria-live': 'polite', 'aria-label': `${s.starsInLevel} réussites sur ${TRIALS_PER_LEVEL}` },
           Array.from({ length: TRIALS_PER_LEVEL }, (_, i) => (i < s.starsInLevel ? '⭐' : '☆')).join(' ')),
         h('small', { class: 'note' }, p.stageName)),
       h('div', { class: 'level-tools' },

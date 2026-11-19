@@ -1,6 +1,6 @@
 // 🧠 Moteur morphologique et syntaxique bilingue (Français + Darija marocaine + Code-Switching) — 100 % hors-ligne.
 // Version v10.0 :
-// 1. Conjugaison automatique des verbes (Présent, Passé, Futur) selon le sujet (Je/Moi, Papa/Il, Maman/Ghita/Elle) et après « Je veux / Bghit ».
+// 1. Conjugaison automatique des verbes (Présent, Passé, Futur) selon le sujet (Je/Moi, Papa/Il, Maman/Sœur/Elle) et après « Je veux / Bghit ».
 // 2. Insertion automatique du verbe sous-entendu après « Je veux » quand l'enfant pose un nom sans verbe :
 //    - Aliment : « Je veux » + « Pain » -> « Je veux manger du pain » (bghit nakoul l-khobz, verbCardId: 'c-actions-manger')
 //    - Boisson : « Je veux » + « Eau » -> « Je veux boire de l'eau » (bghit nchreb l-ma, verbCardId: 'c-actions-boire')
@@ -16,7 +16,7 @@ import * as db from '../db.js';
 import { h } from './util.js';
 
 let currentTense = 'present'; // 'past' | 'present' | 'future'
-let childGenderCached = 'girl'; // 'girl' | 'boy' (par défaut 'girl' pour Abir, configurable dans le profil)
+let childGenderCached = 'girl'; // 'girl' | 'boy' (configurable dans le profil)
 
 export async function loadMorphologyState() {
   const savedGender = await db.getSetting('childGender');
@@ -444,7 +444,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
     const nextItem = stripItems[i + 1];
     const nextCard = nextItem?.card || nextItem || null;
 
-    // Cas 1 : Carte Sujet / Personne (Abir/Moi, Papa, Maman, Ghita...)
+    // Cas 1 : Carte Sujet / Personne (Moi, Papa, Maman, Sœur...)
     if (SUBJECTS[card.id]) {
       const subj = SUBJECTS[card.id];
       const nextIsJeVeux = nextCard && (nextCard.id === 'c-base-je-veux' || cardSlugKey(nextCard) === 'je-veux');
@@ -455,9 +455,9 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       lastNounGender = null;
 
       // Conserve le sujet tiers (« Maman » + « Je veux » -> « Maman veut... ») ; évite seulement le doublon « Je Je veux »
-      const frWord = (nextIsJeVeux && activePerson === '1s') ? '' : subj.fr;
-      const drWord = subj.dr;
-      const arWord = subj.ar;
+      const frWord = (nextIsJeVeux && activePerson === '1s') ? '' : (card.id === 'c-personnes-moi' ? subj.fr : (card.fr || subj.fr));
+      const drWord = card.id === 'c-personnes-moi' ? subj.dr : (card.dr || subj.dr);
+      const arWord = card.id === 'c-personnes-moi' ? subj.ar : (card.ar || subj.ar);
 
       if (frWord) frParts.push(frWord);
       drParts.push(drWord);
@@ -578,8 +578,8 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       lastNounGender = nEntry.gender || 'm';
 
       let impliedVerbCardId = null;
-      let impLabelFr = '';
-      let impLabelDr = '';
+      let impliedFrWord = '';
+      let impliedDrWord = '';
       if (lastActionVerb === 'want') {
         const impliedKey = inferImpliedVerbKey(card, key);
         const impliedVerb = impliedKey ? VERBS[impliedKey] : null;
@@ -590,10 +590,10 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
           frParts.push(impFr);
           drParts.push(impDr);
           arParts.push(impAr);
+          impliedFrWord = impFr;
+          impliedDrWord = impDr;
           lastActionVerb = impliedKey;
           impliedVerbCardId = impliedVerb.cardId || null;
-          impLabelFr = `${impFr} `; // v10.0 : l'étiquette sous la carte montre aussi le verbe ajouté (« manger du pain »)
-          impLabelDr = `${impDr} `;
         }
       }
 
@@ -612,11 +612,14 @@ export function inflectStrip(stripItems = [], { tense = currentTense } = {}) {
       drParts.push(drNoun);
       arParts.push(arNoun);
 
+      // v10.0 : l'étiquette sous la carte garde le verbe sous-entendu (« manger du pain » / « nakoul l-khobz »)
       tokens.push({
         card,
         lang,
         impliedVerbCardId,
-        displayLabel: lang === 'dr' ? `${impLabelDr}${drNoun}` : `${impLabelFr}${frNoun}`,
+        displayLabel: lang === 'dr'
+          ? [impliedDrWord, drNoun].filter(Boolean).join(' ')
+          : [impliedFrWord, frNoun].filter(Boolean).join(' '),
       });
       continue;
     }

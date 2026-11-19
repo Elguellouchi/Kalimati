@@ -34,10 +34,10 @@ export function playBlob(blob, { rate = 1 } = {}) {
     const audio = new Audio(url);
     audio.playbackRate = rate;
     currentAudio = audio;
-    const done = () => { URL.revokeObjectURL(url); if (currentAudio === audio) currentAudio = null; resolve(); };
-    audio.onended = done;
-    audio.onerror = done;
-    audio.play().catch(done);
+    const done = (ok = true) => { URL.revokeObjectURL(url); if (currentAudio === audio) currentAudio = null; resolve(ok); };
+    audio.onended = () => done(true);
+    audio.onerror = () => done(false);
+    audio.play().catch(() => done(false));
   });
 }
 
@@ -140,8 +140,24 @@ export function defaultVoiceUrl(card, lang) {
   return text && defaultVoices[key][card.id] === text ? `./voix/${key}/${encodeURIComponent(card.id)}.mp3` : null;
 }
 
+// v10.5 : si le son ne part pas (hors ligne), on le relit depuis la copie gardée dans le téléphone.
+async function playCachedUrlAsBlob(url) {
+  try {
+    if (!('caches' in window)) return false;
+    const hit = await caches.match(url, { ignoreSearch: true });
+    if (!hit || !hit.ok) return false;
+    const blob = await hit.blob();
+    return blob && blob.size > 0 ? await playBlob(blob) : false;
+  } catch { return false; }
+}
+
 // Joue un fichier son ; renvoie false s'il n'a pas pu être lu (pour passer à la voix du téléphone).
-function playUrl(url) {
+async function playUrl(url) {
+  const ok = await playUrlDirect(url);
+  return ok || playCachedUrlAsBlob(url);
+}
+
+function playUrlDirect(url) {
   return new Promise((resolve) => {
     const audio = new Audio(url);
     currentAudio = audio;

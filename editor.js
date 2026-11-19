@@ -21,10 +21,10 @@ function template(draft) {
         <label class="btn">🤳 Visage<input type="file" accept="image/*" capture="user" id="ed-selfie" hidden></label>
         <label class="btn">🖼️ Galerie<input type="file" accept="image/*" id="ed-gallery" hidden></label>
         <button type="button" class="btn" id="ed-arasaac-open">🔍 Pictogramme (ARASAAC)</button>
-        <button type="button" class="btn ghost" id="ed-nophoto" aria-label="Retirer l’image de la carte">Retirer l'image</button>
+        <button type="button" class="btn ghost" id="ed-nophoto" aria-label="Retirer l'image de la carte">Retirer l'image</button>
       </div>
       <div class="ed-arasaac" id="ed-arasaac" hidden>
-        <div class="ed-row"><input id="ed-arasaac-q" placeholder="Mot à chercher" aria-label="Mot à chercher dans les pictogrammes ARASAAC"><button type="button" class="btn primary" id="ed-arasaac-go">Chercher</button></div>
+        <div class="ed-row"><input id="ed-arasaac-q" aria-label="Mot à chercher dans ARASAAC" placeholder="Mot à chercher"><button type="button" class="btn primary" id="ed-arasaac-go">Chercher</button></div>
         <p class="hint-muted">Seul le mot est envoyé à ARASAAC. ${ARASAAC_CREDIT}</p>
         <div class="ed-picto-grid" id="ed-arasaac-results"></div>
       </div>
@@ -57,8 +57,8 @@ function template(draft) {
       </fieldset>
       <p class="hint" id="ed-error" role="alert"></p>
       <div class="ed-row end">
-        ${draft.isNew ? '' : '<button type="button" class="btn danger" id="ed-delete" aria-label="Supprimer cette carte">Supprimer</button>'}
-        <button type="button" class="btn ghost" id="ed-cancel" aria-label="Annuler les changements">Annuler</button>
+        ${draft.isNew ? '' : '<button type="button" class="btn danger" id="ed-delete">Supprimer</button>'}
+        <button type="button" class="btn ghost" id="ed-cancel" aria-label="Annuler les modifications">Annuler</button>
         <button type="button" class="btn primary" id="ed-save" aria-label="Enregistrer la carte">Enregistrer</button>
       </div>
     </form>`;
@@ -97,14 +97,40 @@ function renderVoice(draft, lang, state) {
     stopSpeaking();
     sayDefault({ ...draft, fr: $('#ed-fr').value.trim() || draft.fr, ar: $('#ed-ar').value.trim() }, lang);
   };
-  box.querySelector('[data-act="rec"]').onclick = () => toggleRecording(draft, lang, state);
+  // === [DEBUT MODIF v10.5 : 4.64 · F13 — Confirmation en 2 touchers avant de remplacer ou supprimer une voix enregistrée] ===
+  const recBtn = box.querySelector('[data-act="rec"]');
+  let confirmRec = false;
+  recBtn.onclick = () => {
+    if (has && !recording && !confirmRec) {
+      confirmRec = true;
+      recBtn.textContent = "🎙️ Remplacer la voix actuelle ?";
+      setTimeout(() => { if (confirmRec) { confirmRec = false; recBtn.textContent = "🎙️ Réenregistrer"; } }, 4000);
+      return;
+    }
+    confirmRec = false;
+    toggleRecording(draft, lang, state);
+  };
   box.querySelector('[data-act="play"]').onclick = () => {
     const url = URL.createObjectURL(draft[key]);
     const audio = new Audio(url);
     audio.onended = () => URL.revokeObjectURL(url);
-    audio.play();
+    audio.onerror = () => URL.revokeObjectURL(url);
+    audio.play().catch(() => URL.revokeObjectURL(url));
   };
-  box.querySelector('[data-act="clear"]').onclick = () => { draft[key] = null; renderVoice(draft, lang, state); };
+  const clearVoiceBtn = box.querySelector('[data-act="clear"]');
+  let confirmClearVoice = false;
+  clearVoiceBtn.onclick = () => {
+    if (!confirmClearVoice) {
+      confirmClearVoice = true;
+      clearVoiceBtn.textContent = "Confirmer ✕ ?";
+      setTimeout(() => { if (confirmClearVoice) { confirmClearVoice = false; clearVoiceBtn.textContent = "✕"; } }, 4000);
+      return;
+    }
+    confirmClearVoice = false;
+    draft[key] = null;
+    renderVoice(draft, lang, state);
+  };
+  // === [FIN MODIF v10.5 : 4.64 · F13] ===
 }
 
 async function toggleRecording(draft, lang, state) {
@@ -207,14 +233,21 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
   setupArasaac(draft);
   setupLexicon();
 
+  // === [DEBUT MODIF v10.5 : 4.40 · A10 — Restauration du focus clavier à la fermeture de la modale] ===
+  const triggerEl = document.activeElement;
   const close = async () => {
     if (state.stop) {
       const blob = await state.stop();
       draft[state.recordingLang === 'dr' ? 'audioDr' : 'audioFr'] = blob;
       state.stop = null;
     }
+    stopSpeaking();
     dialog.close();
+    if (triggerEl && typeof triggerEl.focus === "function") {
+      try { triggerEl.focus(); } catch {}
+    }
   };
+  // === [FIN MODIF v10.5 : 4.40 · A10] ===
   let mediaJob = Promise.resolve();
   ['#ed-camera', '#ed-selfie', '#ed-gallery'].forEach((id) => { $(id).onchange = (e) => { mediaJob = onPhotoChosen(e.target, draft); }; });
   ['#ed-video-cam', '#ed-video-file'].forEach((id) => { $(id).onchange = (e) => { mediaJob = onVideoChosen(e.target, draft); }; });
@@ -224,20 +257,23 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
   $('#ed-cancel').onclick = close;
   const deleteButton = $('#ed-delete');
   if (deleteButton) {
-    // v10.4 : plus de fenêtre du téléphone. 1er toucher = « Confirmer la suppression ? » pendant 4 s, 2e toucher = suppression.
-    let armedTimer = null;
+    let confirmPending = false;
+    let confirmTimer = 0;
+    deleteButton.setAttribute('aria-label', 'Supprimer cette carte');
     deleteButton.onclick = async () => {
-      if (!armedTimer) {
+      if (!confirmPending) {
+        confirmPending = true;
         deleteButton.textContent = 'Confirmer la suppression ?';
-        deleteButton.setAttribute('aria-label', 'Toucher encore pour confirmer la suppression');
-        armedTimer = setTimeout(() => {
-          armedTimer = null;
+        deleteButton.classList.add('danger');
+        clearTimeout(confirmTimer);
+        confirmTimer = setTimeout(() => {
+          confirmPending = false;
           deleteButton.textContent = 'Supprimer';
-          deleteButton.setAttribute('aria-label', 'Supprimer cette carte');
+          deleteButton.classList.remove('danger');
         }, 4000);
         return;
       }
-      clearTimeout(armedTimer); armedTimer = null;
+      clearTimeout(confirmTimer);
       await close();
       onDelete(draft.id);
     };
@@ -251,7 +287,7 @@ export function openEditor(card, { defaultCat, onSave, onDelete }) {
     const row = Number($('#ed-row').value);
     const col = Number($('#ed-col').value);
     const cat = $('#ed-cat').value;
-    // Si le parent change le mot, la phrase dite d'origine (ex. « Ghita, ma sœur ») ne s'applique plus.
+    // Si le parent change le mot, la phrase dite d'origine (ex. « Ma sœur ») ne s'applique plus.
     const renamed = !isNew && fr !== card.fr;
     onSave({
       ...rest,

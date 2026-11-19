@@ -113,7 +113,7 @@ export function putTrials(trials) {
   return run('trials', 'readwrite', (s) => { trials.forEach((t) => s.put(t)); return null; });
 }
 
-// Enregistrements : voix d'Abir (jamais exportées) et vidéos modèles filmées par le parent
+// Enregistrements : voix de l'enfant (jamais exportées) et vidéos modèles filmées par le parent
 export const putRecording = (rec) => run('recordings', 'readwrite', (s) => s.put(rec));
 export const addRecording = putRecording;
 export const deleteRecording = (id) => run('recordings', 'readwrite', (s) => s.delete(id));
@@ -161,3 +161,7 @@ export function putOrthoLogs(logs) {
   return run('ortho_logs', 'readwrite', (s) => { logs.forEach((l) => s.put(l)); return null; });
 }
 export const getRecording = (id) => run('recordings', 'readonly', (s) => s.get(id));
+
+// === [DEBUT MODIF v10.5 : S9 / S12 — Suppression d'un réglage et stockage de clé WebCrypto non-exportable] ===
+export const deleteSetting = (key) => run('settings', 'readwrite', (s) => s.delete(key));
+// === [FIN MODIF v10.5 : S9 / S12] ===
