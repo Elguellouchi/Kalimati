@@ -17,7 +17,7 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isAmazighLang, isAmazighScript, cardWord, categoryName, ui, spokenUi } from './modules/languages.js';
-import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack } from './modules/voice-packs.js';
+import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack, amazighAutoStep } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
@@ -490,6 +490,7 @@ function homeScreen() {
 function amazighVoiceLine() {
   if (!isAmazighLang(state.lang)) return null;
   const line = h('div', { class: 'amz-status', id: 'amz-status', role: 'status' });
+  autoInstallAmazighVoicePack(state.lang); // v10.7.3 : aussi à chaque Accueil (sans effet si déjà fait ou en cours)
   fillAmazighVoiceLine(line);
   return line;
 }
@@ -503,11 +504,12 @@ function amazighPlayNote() {
   return `🔈 Dernier toucher : le son n’est pas parti (${last.why || 'raison inconnue'}).`;
 }
 
+let amazighLineTimer = null;
 function fillAmazighVoiceLine(line) {
   if (!line || !isAmazighLang(state.lang)) return;
   const s = amazighVoiceStatus(state.lang);
   const name = langInfo(state.lang).name;
-  const kind = s.trial ? ' (voix d’essai)' : '';
+  const kind = `${s.trial ? ' (voix d’essai)' : ''}${s.memoryOnly ? ', gardées pour cette ouverture (ce navigateur ne peut pas les garder : Safari le peut)' : ''}`;
   let text;
   let retry = false;
   if (s.downloading) text = `⏳ Voix ${name} : ${s.done} sur ${s.total} arrivées…`;
@@ -515,7 +517,14 @@ function fillAmazighVoiceLine(line) {
   else if (s.expected && s.pack && s.pack < s.expected) { text = `🔊 Voix ${name} : ${s.pack} cartes sur ${s.expected}${kind}.`; retry = !s.declined; }
   else if (s.ready) text = `🔊 Voix ${name} prêtes : ${s.ready} cartes${kind}.`;
   else if (s.declined) text = `🔇 Voix ${name} : pack supprimé. Pour le remettre : Progrès › Voix amazighes.`;
-  else if (s.waiting) text = `⏳ Voix ${name} : elles arrivent dans un instant…`;
+  else if (s.waiting) {
+    // v10.7.3 : si l'attente dure, on dit à quelle étape (pour comprendre un blocage) et on propose Réessayer.
+    const auto = amazighAutoStep(state.lang);
+    const waited = auto ? Math.round((Date.now() - auto.since) / 1000) : 0;
+    text = waited >= 10 ? `⏳ Voix ${name} : en attente depuis ${waited} s (étape : ${auto.step || '?'}).` : `⏳ Voix ${name} : elles arrivent dans un instant…`;
+    retry = waited >= 20;
+    if (!amazighLineTimer) amazighLineTimer = setTimeout(() => { amazighLineTimer = null; fillAmazighVoiceLine(document.getElementById('amz-status')); }, 3000);
+  }
   else if (s.failed) { text = `⚠️ Voix ${name} pas encore arrivées : ${s.failed}.`; retry = true; }
   else { text = `🔇 Voix ${name} pas encore dans le téléphone.`; retry = true; }
   const note = amazighPlayNote();
@@ -1015,6 +1024,9 @@ async function init() {
   });
   document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
+  // v10.7.3 : l'arrivée des voix amazighes part dès que l'écran est affiché (avant, elle attendait la fin
+  // du démarrage, qui pouvait rester bloquée sur iPhone : « elles arrivent dans un instant » sans fin).
+  setTimeout(() => { if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang); }, 800);
   // Détection automatique de ?invite=KALI-XXX, ?team=KALI-XXX ou ?admin=1
   const params = new URLSearchParams(window.location.search);
   if (params.get('admin') === '1') {

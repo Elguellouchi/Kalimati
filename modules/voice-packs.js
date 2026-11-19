@@ -31,6 +31,11 @@ export const parentCacheName = (lang) => `${VOICE_CACHE_PREFIX}parent-${lang}`;
 const packKey = (lang, cardId) => `./voix/${lang}/${encodeURIComponent(cardId)}.mp3`;
 const parentKey = (lang, cardId) => `./voix-parent/${lang}/${encodeURIComponent(cardId)}`;
 const hasCaches = () => typeof caches !== 'undefined';
+// v10.7.3 : Chrome (et les autres navigateurs que Safari) sur iPhone n'ont pas de « caches ».
+// Les voix du pack sont alors gardées en mémoire pour cette ouverture seulement (retéléchargées à la suivante,
+// fichiers du site seulement, jamais au toucher).
+const memoryOnly = new Map(); // variété -> Map(carte -> son)
+export const amazighVoicesMemoryOnly = () => !hasCaches();
 
 function safeAudioType(type) {
   const value = String(type || '').trim().toLowerCase();
@@ -100,6 +105,7 @@ export function loadAmazighVoices(lang) {
     const [parent, pack] = code
       ? await Promise.all([readCache(parentCacheName(code)), readCache(packCacheName(code), { mpeg: true })])
       : [new Map(), new Map()];
+    if (code && !hasCaches()) for (const [id, blob] of memoryOnly.get(code) || []) pack.set(id, blob);
     if (token !== loadToken) return;
     // v10.7.2 : pendant un téléchargement, les voix déjà arrivées sont gardées (elles parlent tout de suite).
     const extra = code ? arriving.get(code) : null;
@@ -127,6 +133,7 @@ export function amazighVoiceStatus(lang) {
     expected: info ? Number(info.expected) || 0 : 0,
     declined: Boolean(known.declined && known.declined[lang]),
     trial: Boolean(info && info.trial),
+    memoryOnly: !hasCaches(),
     failed: failures.get(lang) || null,
     // pas encore essayé depuis l'ouverture (l'arrivée automatique part 1,5 s après), ou essai en cours :
     waiting: (!autoState.has(lang) || autoState.get(lang).running) && !(typeof navigator !== 'undefined' && navigator.onLine === false),
@@ -190,7 +197,8 @@ async function savePackState(lang, info) {
 
 async function countPackVoices(lang) {
   try {
-    if (!hasCaches() || !(await caches.has(packCacheName(lang)))) return 0;
+    if (!hasCaches()) return (memoryOnly.get(lang) || new Map()).size;
+    if (!(await caches.has(packCacheName(lang)))) return 0;
     return (await (await caches.open(packCacheName(lang))).keys()).length;
   } catch {
     return 0;
@@ -250,7 +258,6 @@ const shortText = (value) => String(value || '').replace(/[<>]/g, '').slice(0, 8
 // v10.7.1 : packs d'essai publiés (voix de synthèse), à faire écouter par un locuteur natif (voix/amz-<variété>-index.json).
 export async function downloadAmazighVoicePack(lang, { onProgress, index: knownIndex = null } = {}) {
   if (!isAmazighLang(lang)) throw new Error('Variété amazighe inconnue.');
-  if (!hasCaches()) throw new Error('Ce navigateur ne peut pas garder de voix hors ligne.');
   const name = langInfo(lang).name;
   const index = knownIndex && knownIndex.lang === lang ? knownIndex : await fetchPackIndex(lang);
   const entries = index ? index.entries : {};
@@ -267,16 +274,24 @@ export async function downloadAmazighVoicePack(lang, { onProgress, index: knownI
   progress.set(lang, { done: 0, total: ids.length });
   emitProgress(true);
   try {
-    const cache = await caches.open(packCacheName(lang));
+    const noCache = { match: async () => undefined, put: async () => {} };
+    const cache = hasCaches() ? await caches.open(packCacheName(lang)) : noCache;
+    if (!hasCaches()) memoryOnly.set(lang, new Map());
     // v10.7.1 : des voix humaines importées (« Voix du Douar ») ne sont jamais remplacées par des voix d'essai.
-    const before = (await getInstalledVoicePacks().catch(() => ({})))[lang];
+    // v10.7.3 : la base du téléphone a 6 s pour répondre (sur iPhone, elle peut rester bloquée).
+    const before = (await within(getInstalledVoicePacks(), STEP_WAIT_MS, {}))[lang];
     const keepHuman = Boolean(before && before.source === 'douar');
     const version = String(Number(index.version) || 1);
     const sameVersion = Boolean(before && before.source === 'site' && String(Number(before.version) || 1) === version);
     // v10.7.2 : plusieurs voix à la fois (avant : une par une, 20 s ou plus sur téléphone) ; chaque carte parle
     // dès que sa voix est arrivée ; une voix déjà gardée (même version) n'est pas retéléchargée, donc un
     // téléchargement coupé (appli fermée, réseau perdu) reprend là où il s'était arrêté.
-    const keep = (id, blob) => { if (stopped.has(lang)) return; got.set(id, blob); if (memory.lang === lang) memory.pack.set(id, blob); };
+    const keep = (id, blob) => {
+      if (stopped.has(lang)) return;
+      got.set(id, blob);
+      if (!hasCaches()) memoryOnly.get(lang)?.set(id, blob);
+      if (memory.lang === lang) memory.pack.set(id, blob);
+    };
     let saved = 0;
     let done = 0;
     let next = 0;
@@ -316,18 +331,19 @@ export async function downloadAmazighVoicePack(lang, { onProgress, index: knownI
     await Promise.all(Array.from({ length: Math.min(PARALLEL_DOWNLOADS, ids.length) }, worker));
     // Pack supprimé par le parent pendant le téléchargement : on s'arrête là, sans rien remettre.
     if (stopped.has(lang)) {
-      await caches.delete(packCacheName(lang)).catch(() => {});
+      memoryOnly.delete(lang);
+      if (hasCaches()) await caches.delete(packCacheName(lang)).catch(() => {});
       if (memory.lang === lang) memory.pack = new Map();
       throw new Error('Téléchargement arrêté : pack supprimé.');
     }
     if (full) {
-      await caches.delete(packCacheName(lang)).catch(() => {});
+      if (hasCaches()) await caches.delete(packCacheName(lang)).catch(() => {});
       await savePackState(lang, null).catch(() => {});
       if (memory.lang === lang) memory.pack = new Map();
       throw fullMemoryError();
     }
     if (!saved) {
-      if (!(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
+      if (hasCaches() && !(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
       throw new Error('Le téléchargement n’a pas marché (internet coupé ?). Réessayez plus tard.');
     }
     const info = {
@@ -342,10 +358,10 @@ export async function downloadAmazighVoicePack(lang, { onProgress, index: knownI
     };
     // v10.7.2 : même si la base du téléphone refuse de noter l'état, les voix gardées restent utilisables.
     known.packs = { ...(known.packs || {}), [lang]: info };
-    try {
+    await within((async () => {
       await savePackState(lang, info);
       await setDeclined(lang, false);
-    } catch { /* l'état sera refait à la prochaine ouverture */ }
+    })(), STEP_WAIT_MS, null); // l'état sera refait à la prochaine ouverture
     if (memory.lang === lang) await loadAmazighVoices(lang);
     announce();
     return info;
@@ -361,6 +377,7 @@ export async function downloadAmazighVoicePack(lang, { onProgress, index: knownI
 export async function removeAmazighVoicePack(lang) {
   if (!isAmazighLang(lang)) return;
   if (progress.has(lang)) stopped.add(lang); // v10.7.2 : arrête aussi un téléchargement en cours
+  memoryOnly.delete(lang);
   if (hasCaches()) await caches.delete(packCacheName(lang)).catch(() => {});
   await savePackState(lang, null);
   await setDeclined(lang, true);
@@ -375,27 +392,47 @@ export async function removeAmazighVoicePack(lang) {
 // d'internet (3 essais au plus par ouverture, 15 s d'écart au moins).
 const MAX_AUTO_TRIES = 3;
 const RETRY_AFTER_MS = 15000;
-const autoState = new Map(); // variété -> { tries, at, complete, running }
+const STEP_WAIT_MS = 6000; // v10.7.3 : une étape bloquée (base ou mémoire du téléphone) ne bloque plus l'arrivée des voix
+const STUCK_AFTER_MS = 45000;
+const autoState = new Map(); // variété -> { tries, at, complete, running, step }
 let autoQueue = Promise.resolve(null);
+// Attend une promesse au plus ms millisecondes, sinon rend la valeur de repli.
+const within = (promise, ms, fallback) => Promise.race([
+  Promise.resolve(promise).catch(() => fallback),
+  new Promise((resolve) => setTimeout(() => resolve(fallback), ms)),
+]);
 export function autoInstallAmazighVoicePack(lang) {
-  if (!isAmazighLang(lang) || !hasCaches()) return Promise.resolve(null);
+  if (!isAmazighLang(lang)) return Promise.resolve(null);
   if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null);
-  const state = autoState.get(lang) || { tries: 0, at: 0, complete: false, running: false };
-  if (state.complete || state.running || state.tries >= MAX_AUTO_TRIES || (state.at && Date.now() - state.at < RETRY_AFTER_MS)) return Promise.resolve(null);
+  const state = autoState.get(lang) || { tries: 0, at: 0, complete: false, running: false, step: '' };
+  // v10.7.3 : un essai resté bloqué plus de 45 s (sans téléchargement en cours) est abandonné.
+  const stuck = state.running && !progress.has(lang) && Date.now() - state.at > STUCK_AFTER_MS;
+  if (stuck) state.running = false;
+  if (state.complete || state.running || state.tries >= MAX_AUTO_TRIES || (!stuck && state.at && Date.now() - state.at < RETRY_AFTER_MS)) return Promise.resolve(null);
   state.tries += 1;
   state.running = true;
   state.at = Date.now();
+  state.step = 'départ';
   autoState.set(lang, state);
-  // Une variété après l'autre (si le parent change vite de langue).
-  autoQueue = autoQueue.then(async () => {
+  const step = (name) => { state.step = name; emitProgress(true); };
+  // Une variété après l'autre (si le parent change vite de langue), sans attendre un essai bloqué.
+  const previous = within(autoQueue, STEP_WAIT_MS, null);
+  const run = previous.then(async () => {
     try {
-      const [installed, declined] = await Promise.all([getInstalledVoicePacks().catch(() => ({})), getDeclinedPacks()]);
+      step('réglages');
+      const [installed, declined] = await Promise.all([
+        within(getInstalledVoicePacks(), STEP_WAIT_MS, {}),
+        within(getDeclinedPacks(), STEP_WAIT_MS, {}),
+      ]);
       const info = installed[lang];
       if (declined[lang] || (info && info.source !== 'site')) { state.complete = true; emitProgress(true); return null; }
+      step('liste du site');
       const index = await fetchPackIndex(lang);
-      const stillThere = await countPackVoices(lang);
+      step('voix gardées');
+      const stillThere = await within(countPackVoices(lang), STEP_WAIT_MS, 0);
       if (!index) {
-        if (!stillThere) { failures.set(lang, 'pas d’internet, ou site injoignable'); emitProgress(true); }
+        if (!stillThere) failures.set(lang, 'pas d’internet, ou site injoignable');
+        emitProgress(true);
         return null;
       }
       const expected = Object.keys(index.entries).filter((id) => CARD_ID_RE.test(id)).slice(0, MAX_VOICES).length;
@@ -404,10 +441,11 @@ export function autoInstallAmazighVoicePack(lang) {
         state.complete = true;
         failures.delete(lang);
         // v10.7.1 n'écrivait pas le nombre attendu : on le note pour l'Accueil.
-        if (!Number(info.expected)) await savePackState(lang, { ...info, expected }).catch(() => {});
+        if (!Number(info.expected)) await within(savePackState(lang, { ...info, expected }), STEP_WAIT_MS, null);
         emitProgress(true);
         return null;
       }
+      step('téléchargement');
       const done = await downloadAmazighVoicePack(lang, { index });
       state.complete = Boolean(done && done.count >= expected);
       return done;
@@ -418,10 +456,19 @@ export function autoInstallAmazighVoicePack(lang) {
     } finally {
       state.running = false;
       state.at = Date.now();
+      state.step = '';
+      emitProgress(true);
     }
-  }).catch(() => null);
+  });
+  autoQueue = run.catch(() => null);
   return autoQueue;
 }
+
+// Étape en cours de l'arrivée automatique (pour l'Accueil, si elle dure).
+export const amazighAutoStep = (lang) => {
+  const state = autoState.get(lang);
+  return state && state.running ? { step: state.step, since: state.at } : null;
+};
 
 // v10.7.2 : bouton « Réessayer » de l'Accueil (même règles : jamais après une suppression par le parent).
 export function retryAmazighVoicePack(lang) {
