@@ -1484,3 +1484,10 @@ body.parent .parent-bar.open { max-height: 45dvh; overflow-y: auto; overscroll-b
 
 /* v10.5 (F02) : en mode enfant, la barre technique des niveaux (Niv. X / 1000, paliers) est cachée ; les étoiles restent. */
 body:not(.parent) .level-bar { display: none; }
+
+/* v10.5.1 : liste des objectifs. Le titre prend toute la largeur ; le statut est une petite pastille discrète à droite. */
+.goal-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-height: 56px; }
+.goal-row > strong { flex: 0 0 auto; min-width: 36px; }
+.goal-row > .goal-title { flex: 1 1 60%; min-width: 0; line-height: 1.3; overflow-wrap: anywhere; }
+.goal-row > .chip, .goal-row > .level-badge { flex: 0 0 auto; margin-left: auto; font-size: 12px; padding: 2px 8px; line-height: 1.4; }
+.goal-row > .chip.todo { background: transparent; border: 1px solid var(--line, #E2DED6); }
