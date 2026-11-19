@@ -12,561 +12,895 @@
   ],
   "repli_tachelhit": false,
   "licence": "CC-BY-NC 4.0 (Meta MMS-TTS), usage non commercial",
+  "vitesse": 0.85,
   "mots": {
     "c-base-je-veux": {
       "ecrit": "Xseɣ",
       "lu": "xseɣ",
-      "secondes": 0.27
+      "secondes": 0.31,
+      "pic_db": -15.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-oui": {
       "ecrit": "Wah",
       "lu": "wah",
-      "secondes": 0.27
+      "secondes": 0.36,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-non": {
       "ecrit": "Lla",
       "lu": "lla",
-      "secondes": 0.29
+      "secondes": 0.25,
+      "pic_db": -17.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-encore": {
       "ecrit": "Ɛawed",
       "lu": "awed",
-      "secondes": 0.34
+      "secondes": 0.23,
+      "pic_db": -10.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-fini": {
       "ecrit": "Ikemmel",
       "lu": "ikemmel",
-      "secondes": 0.58
+      "secondes": 0.53,
+      "pic_db": -13.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-aide-moi": {
       "ecrit": "Ɛawen-ayi",
       "lu": "awen ayi",
-      "secondes": 0.66
+      "secondes": 0.6,
+      "pic_db": -11.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-attends": {
       "ecrit": "Raja",
       "lu": "raja",
-      "secondes": 0.32
+      "secondes": 0.2,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-j-ai-mal": {
       "ecrit": "Iqreḥ-ayi",
       "lu": "iqreḥ ayi",
-      "secondes": 0.8
+      "secondes": 0.81,
+      "pic_db": -11.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-bonjour": {
       "ecrit": "Azul",
       "lu": "azul",
-      "secondes": 0.34
+      "secondes": 0.48,
+      "pic_db": -13.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-au-revoir": {
       "ecrit": "Bsslama",
       "lu": "bsslama",
-      "secondes": 0.74
+      "secondes": 0.6,
+      "pic_db": -12.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-viens-jouer": {
       "ecrit": "As-d ad nirar",
       "lu": "as d ad nirar",
-      "secondes": 0.86
+      "secondes": 0.78,
+      "pic_db": -10.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-pain": {
       "ecrit": "Aɣrum",
       "lu": "aɣrum",
-      "secondes": 0.49
+      "secondes": 0.5,
+      "pic_db": -12.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-pomme": {
       "ecrit": "Tadeffaḥt",
       "lu": "tadeffaḥt",
-      "secondes": 0.62
+      "secondes": 0.68,
+      "pic_db": -11.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-banane": {
       "ecrit": "Banan",
       "lu": "banan",
-      "secondes": 0.56
+      "secondes": 0.45,
+      "pic_db": -13.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-gateau": {
       "ecrit": "Taḥlawat",
       "lu": "taḥlawat",
-      "secondes": 0.62
+      "secondes": 0.63,
+      "pic_db": -13.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-yaourt": {
       "ecrit": "Danun",
       "lu": "danun",
-      "secondes": 0.52
+      "secondes": 0.43,
+      "pic_db": -12.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-riz": {
       "ecrit": "Rruz",
       "lu": "rruz",
-      "secondes": 0.38
+      "secondes": 0.26,
+      "pic_db": -16.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-biscuit": {
       "ecrit": "Biskwi",
       "lu": "biskwi",
-      "secondes": 0.57
+      "secondes": 0.52,
+      "pic_db": -14.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger--uf": {
       "ecrit": "Tamellalt",
       "lu": "tamellalt",
-      "secondes": 0.52
+      "secondes": 0.47,
+      "pic_db": -12.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-boire-eau": {
       "ecrit": "Aman",
       "lu": "aman",
-      "secondes": 0.35
+      "secondes": 0.37,
+      "pic_db": -14.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-boire-lait": {
       "ecrit": "Aɣi",
       "lu": "aɣi",
-      "secondes": 0.3
+      "secondes": 0.23,
+      "pic_db": -14.9,
+      "vitesse": 0.7,
+      "essais": 2
     },
     "c-boire-jus": {
       "ecrit": "Lɛaṣir",
       "lu": "laṣir",
-      "secondes": 0.52
+      "secondes": 0.49,
+      "pic_db": -10.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-chips": {
       "ecrit": "Cibs",
       "lu": "cibs",
-      "secondes": 0.26
+      "secondes": 0.36,
+      "pic_db": -10.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-fromage": {
       "ecrit": "Afermaj",
       "lu": "afermaj",
-      "secondes": 1.04
+      "secondes": 0.76,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-pancake": {
       "ecrit": "Bankik",
       "lu": "bankik",
-      "secondes": 0.45
+      "secondes": 0.45,
+      "pic_db": -12.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-manger-mcdo": {
       "ecrit": "Makdu",
       "lu": "makdu",
-      "secondes": 0.59
+      "secondes": 0.67,
+      "pic_db": -12.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-boire-coca-cola": {
       "ecrit": "Kuka",
       "lu": "kuka",
-      "secondes": 0.14
+      "secondes": 0.24,
+      "pic_db": -17.7,
+      "vitesse": 0.7,
+      "essais": 3
     },
     "c-jouer-trampoline": {
       "ecrit": "Trambulin",
       "lu": "trambulin",
-      "secondes": 0.82
+      "secondes": 0.76,
+      "pic_db": -10.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-ballon": {
       "ecrit": "Takurt",
       "lu": "takurt",
-      "secondes": 0.55
+      "secondes": 0.52,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-tablette": {
       "ecrit": "Tablit",
       "lu": "tablit",
-      "secondes": 0.42
+      "secondes": 0.38,
+      "pic_db": -11.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-dessin-anime": {
       "ecrit": "Rrusum",
       "lu": "rrusum",
-      "secondes": 0.58
+      "secondes": 0.55,
+      "pic_db": -12.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-poupee": {
       "ecrit": "Tamunt",
       "lu": "tamunt",
-      "secondes": 0.49
+      "secondes": 0.54,
+      "pic_db": -12.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-musique": {
       "ecrit": "Musiqa",
       "lu": "musiqa",
-      "secondes": 0.67
+      "secondes": 0.55,
+      "pic_db": -10.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-jouer-balancoire": {
       "ecrit": "Jellula",
       "lu": "jellula",
-      "secondes": 0.72
+      "secondes": 0.66,
+      "pic_db": -12.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-manger": {
       "ecrit": "Čč",
-      "lu": "čč",
-      "secondes": 0.3
+      "lu": "ečč",
+      "secondes": 0.4,
+      "pic_db": -13.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-boire": {
       "ecrit": "Sew",
       "lu": "sew",
-      "secondes": 0.31
+      "secondes": 0.35,
+      "pic_db": -12.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-jouer": {
       "ecrit": "Irar",
       "lu": "irar",
-      "secondes": 0.4
+      "secondes": 0.28,
+      "pic_db": -12.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-courir": {
       "ecrit": "Azzel",
       "lu": "azzel",
-      "secondes": 0.34
+      "secondes": 0.35,
+      "pic_db": -13.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-donner": {
       "ecrit": "Uš",
       "lu": "uch",
-      "secondes": 0.33
+      "secondes": 0.34,
+      "pic_db": -14.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-couper": {
       "ecrit": "Qess",
       "lu": "qess",
-      "secondes": 0.31
+      "secondes": 0.23,
+      "pic_db": -14.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-sauter": {
       "ecrit": "Nṭew",
       "lu": "nṭew",
-      "secondes": 0.44
+      "secondes": 0.36,
+      "pic_db": -12.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-laver": {
       "ecrit": "Ssired",
       "lu": "ssired",
-      "secondes": 0.35
+      "secondes": 0.45,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-dessiner": {
       "ecrit": "Rsem",
       "lu": "rsem",
-      "secondes": 0.53
+      "secondes": 1.0,
+      "pic_db": -11.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-ouvrir": {
       "ecrit": "Rzem",
       "lu": "rzem",
-      "secondes": 0.4
+      "secondes": 0.36,
+      "pic_db": -12.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-personnes-papa": {
       "ecrit": "Baba",
       "lu": "baba",
-      "secondes": 0.3
+      "secondes": 0.23,
+      "pic_db": -14.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-personnes-maman": {
       "ecrit": "Yemma",
       "lu": "yemma",
-      "secondes": 0.52
+      "secondes": 0.44,
+      "pic_db": -14.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-personnes-maitresse": {
       "ecrit": "Taselmadt",
       "lu": "taselmadt",
-      "secondes": 0.61
+      "secondes": 0.79,
+      "pic_db": -11.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-personnes-mamie": {
       "ecrit": "Ḥenna",
       "lu": "ḥenna",
-      "secondes": 0.42
+      "secondes": 0.32,
+      "pic_db": -14.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-personnes-papi": {
       "ecrit": "Jeddi",
       "lu": "jeddi",
-      "secondes": 0.42
+      "secondes": 0.43,
+      "pic_db": -16.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-toilettes": {
       "ecrit": "Bit lma",
       "lu": "bit lma",
-      "secondes": 0.64
+      "secondes": 0.61,
+      "pic_db": -13.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-dormir": {
       "ecrit": "Ṭṭeṣ",
       "lu": "ṭṭeṣ",
-      "secondes": 0.28
+      "secondes": 0.23,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-calin": {
       "ecrit": "Aḥbu",
       "lu": "aḥbu",
-      "secondes": 0.48
+      "secondes": 0.4,
+      "pic_db": -15.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-bain": {
       "ecrit": "Lḥammam",
       "lu": "lḥammam",
-      "secondes": 0.72
+      "secondes": 0.7,
+      "pic_db": -12.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-changer": {
       "ecrit": "Beddel",
       "lu": "beddel",
-      "secondes": 0.43
+      "secondes": 0.46,
+      "pic_db": -17.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-besoins-calme": {
       "ecrit": "Lehna",
       "lu": "lehna",
-      "secondes": 0.46
+      "secondes": 0.38,
+      "pic_db": -14.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-content": {
       "ecrit": "Ferḥeɣ",
       "lu": "ferḥeɣ",
-      "secondes": 0.4
+      "secondes": 0.38,
+      "pic_db": -10.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-triste": {
       "ecrit": "Ḥzeneɣ",
       "lu": "ḥzeneɣ",
-      "secondes": 0.43
+      "secondes": 0.56,
+      "pic_db": -13.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-en-colere": {
       "ecrit": "Zɛfeɣ",
       "lu": "zfeɣ",
-      "secondes": 0.43
+      "secondes": 0.34,
+      "pic_db": -14.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-peur": {
       "ecrit": "Ggedeɣ",
       "lu": "ggedeɣ",
-      "secondes": 0.56
+      "secondes": 0.42,
+      "pic_db": -13.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-fatigue": {
       "ecrit": "Uhleɣ",
       "lu": "uhleɣ",
-      "secondes": 0.49
+      "secondes": 0.34,
+      "pic_db": -15.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-emotions-fier": {
       "ecrit": "Zuxxeɣ",
       "lu": "zuxxeɣ",
-      "secondes": 0.35
+      "secondes": 0.32,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-grand": {
       "ecrit": "Ameqqran",
       "lu": "ameqqran",
-      "secondes": 0.73
+      "secondes": 0.56,
+      "pic_db": -11.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-petit": {
       "ecrit": "Ameẓẓyan",
       "lu": "ameẓẓyan",
-      "secondes": 0.55
+      "secondes": 0.55,
+      "pic_db": -11.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-rouge": {
       "ecrit": "Azeggʷaɣ",
       "lu": "azeggwaɣ",
-      "secondes": 0.77
+      "secondes": 0.64,
+      "pic_db": -11.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-bleu": {
       "ecrit": "Aziza",
       "lu": "aziza",
-      "secondes": 0.59
+      "secondes": 0.48,
+      "pic_db": -14.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-jaune": {
       "ecrit": "Awraɣ",
       "lu": "awraɣ",
-      "secondes": 0.45
+      "secondes": 0.37,
+      "pic_db": -13.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-vert": {
       "ecrit": "Azegzaw",
       "lu": "azegzaw",
-      "secondes": 0.68
+      "secondes": 0.64,
+      "pic_db": -10.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-chaud": {
       "ecrit": "Iḥma",
       "lu": "iḥma",
-      "secondes": 0.47
+      "secondes": 0.53,
+      "pic_db": -16.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-froid": {
       "ecrit": "Iṣemmeḍ",
       "lu": "iṣemmeḍ",
-      "secondes": 0.57
+      "secondes": 0.53,
+      "pic_db": -11.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-rond": {
       "ecrit": "Imdewwer",
       "lu": "imdewwer",
-      "secondes": 0.61
+      "secondes": 0.57,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-lieux-dehors": {
       "ecrit": "Berra",
       "lu": "berra",
-      "secondes": 0.27
+      "secondes": 0.26,
+      "pic_db": -13.3,
+      "vitesse": 0.7,
+      "essais": 2
     },
     "c-lieux-maison": {
       "ecrit": "Taddart",
       "lu": "taddart",
-      "secondes": 0.56
+      "secondes": 0.63,
+      "pic_db": -12.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-lieux-voiture": {
       "ecrit": "Ṭṭumubil",
       "lu": "ṭṭumubil",
-      "secondes": 0.69
+      "secondes": 0.62,
+      "pic_db": -10.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-lieux-parc": {
       "ecrit": "Jjerda",
       "lu": "jjerda",
-      "secondes": 0.59
+      "secondes": 0.54,
+      "pic_db": -9.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-lieux-ecole": {
       "ecrit": "Tinmel",
       "lu": "tinmel",
-      "secondes": 0.49
+      "secondes": 0.42,
+      "pic_db": -15.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-s-il-te-plait": {
       "ecrit": "Ɛafak",
       "lu": "afak",
-      "secondes": 0.47
+      "secondes": 0.52,
+      "pic_db": -10.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-merci": {
       "ecrit": "Tanemmirt",
       "lu": "tanemmirt",
-      "secondes": 0.49
+      "secondes": 0.47,
+      "pic_db": -12.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-c-est-quoi-": {
       "ecrit": "Minzi wa ?",
       "lu": "minzi wa ?",
-      "secondes": 0.54
+      "secondes": 0.67,
+      "pic_db": -14.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-ou-est-": {
       "ecrit": "Mani ?",
       "lu": "mani ?",
-      "secondes": 0.49
+      "secondes": 0.33,
+      "pic_db": -13.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-base-avec": {
       "ecrit": "Aked",
       "lu": "aked",
-      "secondes": 0.7
+      "secondes": 0.4,
+      "pic_db": -12.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-lire": {
       "ecrit": "Ɣer",
       "lu": "ɣer",
-      "secondes": 0.18
+      "secondes": 0.41,
+      "pic_db": -13.2,
+      "vitesse": 0.7,
+      "essais": 3
     },
     "c-actions-ecrire": {
       "ecrit": "Ari",
       "lu": "ari",
-      "secondes": 0.29
+      "secondes": 0.26,
+      "pic_db": -14.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-regarder": {
       "ecrit": "Xzer",
       "lu": "xzer",
-      "secondes": 0.2
+      "secondes": 0.22,
+      "pic_db": -16.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-ecouter": {
       "ecrit": "Sel",
       "lu": "sel",
-      "secondes": 0.23
+      "secondes": 0.39,
+      "pic_db": -12.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-actions-dormir": {
       "ecrit": "Ṭṭeṣ",
       "lu": "ṭṭeṣ",
-      "secondes": 0.22
+      "secondes": 0.23,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-dans": {
       "ecrit": "Deg",
       "lu": "deg",
-      "secondes": 0.41
+      "secondes": 0.33,
+      "pic_db": -13.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-sur": {
       "ecrit": "Xef",
       "lu": "xef",
-      "secondes": 0.39
+      "secondes": 0.28,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-sous": {
       "ecrit": "Saddo",
       "lu": "saddu",
-      "secondes": 0.53
+      "secondes": 0.54,
+      "pic_db": -8.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-beaucoup": {
       "ecrit": "Aṭṭas",
       "lu": "aṭṭas",
-      "secondes": 0.45
+      "secondes": 0.97,
+      "pic_db": -13.9,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-decrire-un-peu": {
       "ecrit": "Drus",
       "lu": "drus",
-      "secondes": 0.51
+      "secondes": 0.43,
+      "pic_db": -14.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-pack-the-menthe": {
       "ecrit": "Atay",
       "lu": "atay",
-      "secondes": 0.6
+      "secondes": 0.49,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-atay": {
       "ecrit": "Atay",
       "lu": "atay",
-      "secondes": 0.57
+      "secondes": 0.49,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-aghrum": {
       "ecrit": "Aɣrum n uferran",
       "lu": "aɣrum n uferran",
-      "secondes": 1.01
+      "secondes": 0.88,
+      "pic_db": -8.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-zzit": {
       "ecrit": "Zzit n uzemmur",
       "lu": "zzit n uzemmur",
-      "secondes": 0.93
+      "secondes": 0.83,
+      "pic_db": -12.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-tamment": {
       "ecrit": "Tamment",
       "lu": "tamment",
-      "secondes": 0.5
+      "secondes": 0.47,
+      "pic_db": -9.7,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-aghi": {
       "ecrit": "Aɣi",
       "lu": "aɣi",
-      "secondes": 0.26
+      "secondes": 0.23,
+      "pic_db": -14.9,
+      "vitesse": 0.7,
+      "essais": 2
     },
     "c-rural-tazart": {
       "ecrit": "Tazart",
       "lu": "tazart",
-      "secondes": 0.51
+      "secondes": 0.43,
+      "pic_db": -13.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-lluz": {
       "ecrit": "Lluz",
       "lu": "lluz",
-      "secondes": 0.35
+      "secondes": 0.43,
+      "pic_db": -15.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-tala": {
       "ecrit": "Tala",
       "lu": "tala",
-      "secondes": 0.31
+      "secondes": 0.28,
+      "pic_db": -10.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-anu": {
       "ecrit": "Anu",
       "lu": "anu",
-      "secondes": 0.28
+      "secondes": 0.32,
+      "pic_db": -13.3,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-ikerri": {
       "ecrit": "Ikerri",
       "lu": "ikerri",
-      "secondes": 0.57
+      "secondes": 0.57,
+      "pic_db": -10.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-taghatt": {
       "ecrit": "Taɣaṭṭ",
       "lu": "taɣaṭṭ",
-      "secondes": 0.55
+      "secondes": 0.46,
+      "pic_db": -12.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-aghyul": {
       "ecrit": "Aɣyul",
       "lu": "aɣyul",
-      "secondes": 0.58
+      "secondes": 0.59,
+      "pic_db": -12.4,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-tafunast": {
       "ecrit": "Tafunast",
       "lu": "tafunast",
-      "secondes": 0.57
+      "secondes": 0.56,
+      "pic_db": -10.6,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-tayazidt": {
       "ecrit": "Tyaziṭ",
       "lu": "tyaziṭ",
-      "secondes": 0.54
+      "secondes": 0.44,
+      "pic_db": -11.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-azemmur": {
       "ecrit": "Azemmur",
       "lu": "azemmur",
-      "secondes": 0.59
+      "secondes": 0.57,
+      "pic_db": -12.5,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-adrar": {
       "ecrit": "Adrar",
       "lu": "adrar",
-      "secondes": 0.32
+      "secondes": 0.3,
+      "pic_db": -13.8,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-iger": {
       "ecrit": "Iyar",
       "lu": "iyar",
-      "secondes": 0.36
+      "secondes": 0.31,
+      "pic_db": -13.1,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-ssug": {
       "ecrit": "Ssuq",
       "lu": "ssuq",
-      "secondes": 0.45
+      "secondes": 0.43,
+      "pic_db": -15.2,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-tamzgida": {
       "ecrit": "Tamzyida",
       "lu": "tamzyida",
-      "secondes": 0.73
+      "secondes": 0.69,
+      "pic_db": -11.0,
+      "vitesse": 0.85,
+      "essais": 1
     },
     "c-rural-aferran": {
       "ecrit": "Aferran",
       "lu": "aferran",
-      "secondes": 0.55
+      "secondes": 0.52,
+      "pic_db": -10.7,
+      "vitesse": 0.85,
+      "essais": 1
     }
   },
   "lettres_remplacees": {
@@ -574,5 +908,6 @@
     "š": "ch",
     "ʷ": "w",
     "o": "u"
-  }
+  },
+  "a_ecouter_d_abord": []
 }

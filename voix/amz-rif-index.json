@@ -2,8 +2,9 @@
   "lang": "rif",
   "version": 1,
   "count": 111,
-  "totalBytes": 210361,
+  "totalBytes": 335232,
   "source": "facebook/mms-tts-rif-script_latin",
+  "trial": true,
   "licence": "CC-BY-NC 4.0 (Meta MMS-TTS), usage non commercial",
   "entries": {
     "c-base-je-veux": "Xseɣ",

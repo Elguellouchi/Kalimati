@@ -1,9 +1,10 @@
 {
   "lang": "shi",
   "version": 1,
-  "count": 110,
-  "totalBytes": 227215,
+  "count": 111,
+  "totalBytes": 402912,
   "source": "facebook/mms-tts-shi",
+  "trial": true,
   "licence": "CC-BY-NC 4.0 (Meta MMS-TTS), usage non commercial",
   "entries": {
     "c-base-je-veux": "Riɣ",
@@ -40,6 +41,7 @@
     "c-jouer-poupee": "Taslit",
     "c-jouer-musique": "Aẓawan",
     "c-jouer-balancoire": "Jellula",
+    "c-actions-manger": "Čč",
     "c-actions-boire": "Su",
     "c-actions-jouer": "Urar",
     "c-actions-courir": "Azzel",
