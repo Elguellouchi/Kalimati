@@ -135,13 +135,15 @@ function amazighScriptBox() {
       select));
 }
 
-// v10.7 : voix amazighes. Packs vocaux à la carte (une seule variété, jamais téléchargés seuls) et « Voix du Douar ».
+// v10.7 : voix amazighes. Packs vocaux (une seule variété) et « Voix du Douar ».
+// v10.7.1 : packs d'essai publiés (voix de synthèse Meta MMS, licence non commerciale) ; celui de la variété
+// choisie arrive tout seul (voir autoInstallAmazighVoicePack). Un pack supprimé ici ne revient pas tout seul.
 function amazighVoicePacksBox() {
   const amzLangs = LANGS.filter((l) => isAmazighLang(l.code));
   const body = h('div', { class: 'stack' });
   const status = h('p', { class: 'note', role: 'status' });
   const wrap = h('details', { class: 'card-box' },
-    h('summary', {}, 'ⵣ Voix amazighes & « Voix du Douar » ', helpSpeaker('En amazigh, la carte dit votre voix. Enregistrez-la sur chaque carte, en mode parent. Vous pouvez aussi partager vos voix avec d’autres familles.')),
+    h('summary', {}, 'ⵣ Voix amazighes & « Voix du Douar » ', helpSpeaker('En amazigh, la carte dit votre voix si vous l’avez enregistrée, en mode parent. Sinon, elle dit une voix d’essai, faite par un robot. Vous pouvez aussi partager vos voix avec d’autres familles.')),
     body);
   let douarFile = null;
 
@@ -174,8 +176,11 @@ function amazighVoicePacksBox() {
           render();
         };
       }
+      // v10.7.1 : on dit clairement d'où viennent les voix (robot d'essai, accent, licence).
+      const accent = info && l.code !== 'shi' && /mms-tts-shi/.test(String(info.model || '')) ? ', accent tachelhit' : '';
+      const kind = info && info.trial ? ` (${info.source === 'douar' ? 'voix du Douar et ' : ''}voix d’essai, robot${accent})` : '';
       return h('div', { class: 'row spread wrap amz-pack-row' },
-        h('div', {}, h('strong', {}, `${l.flag} ${l.name}`), h('small', { class: 'lang-sub' }, info ? `✅ ${info.count} voix gardées dans le téléphone` : l.sub)),
+        h('div', {}, h('strong', {}, `${l.flag} ${l.name}`), h('small', { class: 'lang-sub' }, info ? `✅ ${info.count} voix gardées dans le téléphone${kind}` : l.sub)),
         h('div', { class: 'row' }, dl, rm));
     });
 
@@ -230,8 +235,9 @@ function amazighVoicePacksBox() {
 
     body.replaceChildren(
       h('p', { class: 'note' }, 'En amazigh, la carte dit la voix enregistrée en mode parent (éditeur de la carte). Sans voix, elle reste muette : en mode parent, elle porte la pastille « 🎙️ » suivie de la variété (par exemple 🎙️ SHI). Ces voix restent dans le téléphone : elles ne sont pas dans la sauvegarde.'),
-      h('h4', {}, '📥 Packs vocaux (une seule variété, sur demande)'),
-      h('p', { class: 'note' }, 'Pas encore publiés : les mots doivent d’abord être relus par des locuteurs natifs.'),
+      h('h4', {}, '📥 Packs de voix d’essai (une variété à la fois)'),
+      h('p', { class: 'note' }, 'Voix faites par un robot, en attendant de vraies voix. Elles peuvent mal prononcer : un locuteur natif doit les écouter. Le pack de la langue choisie arrive tout seul. Votre voix enregistrée passe toujours avant.'),
+      h('p', { class: 'note' }, 'Origine : synthèse vocale Meta MMS-TTS (facebook/mms-tts), licence CC BY-NC 4.0 : usage non commercial seulement.'),
       ...rows,
       usage ? h('p', { class: 'note' }, `Mémoire utilisée par Kalimati : ${usage.usageMb} Mo.`) : null,
       h('h4', {}, '🤝 « Voix du Douar » : partager vos voix avec d’autres familles'),

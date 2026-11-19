@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-7';
+const CACHE = 'kalimati-v10-7-1';
 const FILES = [
   './', './index.html', './boot-guard.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -126,6 +126,12 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
   if (request.headers.has('range')) {
     if (isStatic(url)) event.respondWith(rangeFromCache(request));
+    return;
+  }
+  // v10.7.1 : les fichiers des packs amazighs viennent toujours du site (sinon « Mettre à jour » reprenait
+  // l'ancienne voix gardée dans le pack). Les cartes, elles, jouent la voix gardée en mémoire : rien ne part au toucher.
+  if (isAmazighVoice(request.url)) {
+    event.respondWith(fetch(request, { cache: 'no-cache' }).catch(() => new Response('', { status: 503, statusText: 'Offline' })));
     return;
   }
   if (isStatic(url)) {

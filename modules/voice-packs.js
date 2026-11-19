@@ -1,8 +1,11 @@
 // v10.7 : voix amazighes (dossier Drive « kalimati-amazigh-final », relu et corrigé).
 // Rien ne part sur internet quand l'enfant touche une carte. Ordre de lecture :
 //   1) la voix enregistrée par le parent dans l'éditeur de la carte ;
-//   2) un pack vocal installé à la demande (téléchargé, ou importé depuis un fichier « Voix du Douar ») ;
+//   2) un pack vocal installé (téléchargé depuis le site Kalimati, ou importé depuis un fichier « Voix du Douar ») ;
 //   3) sinon la carte reste muette : aucune voix du téléphone ne sait lire l'amazigh.
+// v10.7.1 : le site publie des packs d'essai (voix de synthèse Meta MMS, licence non commerciale), à faire
+// écouter par un locuteur natif. Le pack de la variété choisie se télécharge tout seul une fois (fichiers du
+// site seulement : rien ne part du téléphone), sauf si le parent l'a supprimé ou a importé « Voix du Douar ».
 // Les voix sont gardées dans le téléphone (CacheStorage), jamais sur les cartes : elles ne partent ni dans la
 // sauvegarde ni dans la synchro. Elles sortent seulement par « Exporter Voix du Douar », après la case
 // « voix d'adultes seulement », et jamais pour les cartes personnelles (Moi, Sœur / Frère, Thérapeute).
@@ -13,6 +16,7 @@ import { isAmazighLang, langInfo } from './languages.js';
 
 export const VOICE_CACHE_PREFIX = 'kalimati-amazigh-voices-';
 const PACK_STATE_KEY = 'amazighVoicePacks';
+const PACK_DECLINED_KEY = 'amazighVoicePacksDeclined'; // v10.7.1 : packs supprimés par le parent (pas de retour automatique)
 export const DOUAR_FORMAT = 'kalimati-voicepack-v1';
 const MAX_IMPORT_BYTES = 40 * 1024 * 1024; // un fichier « Voix du Douar » : 40 Mo au plus
 const MAX_VOICE_BYTES = 1536 * 1024; // une voix : 1,5 Mo au plus
@@ -147,28 +151,67 @@ async function countPackVoices(lang) {
   }
 }
 
-// Télécharge le pack d'une seule variété (jamais automatiquement). Le pack n'existe sur le site
-// qu'après la relecture des mots par des locuteurs natifs (voix/amz-<variété>-index.json).
-export async function downloadAmazighVoicePack(lang, { onProgress } = {}) {
+async function getDeclinedPacks() {
+  const saved = await db.getSetting(PACK_DECLINED_KEY).catch(() => null);
+  return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+}
+
+async function setDeclined(lang, declined) {
+  const state = await getDeclinedPacks();
+  if (declined) state[lang] = true; else delete state[lang];
+  await db.setSetting(PACK_DECLINED_KEY, state).catch(() => {});
+}
+
+// Un fichier du site, 20 s au plus (un réseau bloqué ne laisse pas le téléchargement en attente sans fin).
+const FETCH_WAIT_MS = 20000;
+async function fetchWithin(url) {
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = controller ? setTimeout(() => controller.abort(), FETCH_WAIT_MS) : null;
+  try {
+    return await fetch(url, { cache: 'no-cache', signal: controller ? controller.signal : undefined });
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+// Liste des voix publiée sur le site (voix/amz-<variété>-index.json), ou null.
+async function fetchPackIndex(lang) {
+  try {
+    const response = await fetchWithin(`./voix/amz-${lang}-index.json`);
+    if (!response.ok) return null;
+    const index = await response.json();
+    return index && index.lang === lang && index.entries && typeof index.entries === 'object' && !Array.isArray(index.entries) ? index : null;
+  } catch {
+    return null;
+  }
+}
+
+// Voix d'essai fabriquées par une machine (synthèse) : à faire écouter par un locuteur natif.
+const isTrialIndex = (index) => Boolean(index && (index.trial === true || /mms|synth/i.test(String(index.source || ''))));
+const shortText = (value) => String(value || '').replace(/[<>]/g, '').slice(0, 80);
+
+// Télécharge le pack d'une seule variété (bouton de Progrès, ou une fois tout seul : voir autoInstallAmazighVoicePack).
+// v10.7.1 : packs d'essai publiés (voix de synthèse), à faire écouter par un locuteur natif (voix/amz-<variété>-index.json).
+export async function downloadAmazighVoicePack(lang, { onProgress, index: knownIndex = null } = {}) {
   if (!isAmazighLang(lang)) throw new Error('Variété amazighe inconnue.');
   if (!hasCaches()) throw new Error('Ce navigateur ne peut pas garder de voix hors ligne.');
   const name = langInfo(lang).name;
-  let index = null;
-  try {
-    const response = await fetch(`./voix/amz-${lang}-index.json`, { cache: 'no-cache' });
-    if (response.ok) index = await response.json();
-  } catch { index = null; }
-  const entries = index && index.lang === lang && index.entries && typeof index.entries === 'object' ? index.entries : {};
+  const index = knownIndex && knownIndex.lang === lang ? knownIndex : await fetchPackIndex(lang);
+  const entries = index ? index.entries : {};
   const ids = Object.keys(entries).filter((id) => CARD_ID_RE.test(id)).slice(0, MAX_VOICES);
   if (!ids.length) {
     throw new Error(`Pas encore de pack vocal ${name} (ou pas d’internet). En attendant : enregistrez votre voix sur les cartes, ou importez un fichier « Voix du Douar ».`);
   }
   const cache = await caches.open(packCacheName(lang));
+  // v10.7.1 : des voix humaines importées (« Voix du Douar ») ne sont jamais remplacées par des voix d'essai.
+  const before = (await getInstalledVoicePacks().catch(() => ({})))[lang];
+  const keepHuman = Boolean(before && before.source === 'douar');
   let saved = 0;
   for (let i = 0; i < ids.length; i += 1) {
     const key = packKey(lang, ids[i]);
     try {
-      const response = await fetch(key, { cache: 'no-cache' });
+      if (keepHuman && await cache.match(key)) { saved += 1; if (onProgress) onProgress(i + 1, ids.length); continue; }
+      const response = await fetchWithin(key);
       if (response.ok) {
         const blob = await response.blob();
         if (blob.size && blob.size <= MAX_VOICE_BYTES) {
@@ -191,20 +234,54 @@ export async function downloadAmazighVoicePack(lang, { onProgress } = {}) {
     if (!(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
     throw new Error('Le téléchargement n’a pas marché (internet coupé ?). Réessayez plus tard.');
   }
-  const info = { version: Number(index.version) || 1, count: await countPackVoices(lang), source: 'site', installedAt: new Date().toISOString() };
+  const info = {
+    version: Number(index.version) || 1,
+    count: await countPackVoices(lang),
+    source: keepHuman ? 'douar' : 'site',
+    trial: isTrialIndex(index),
+    model: shortText(index.source),
+    licence: shortText(index.licence),
+    installedAt: new Date().toISOString(),
+  };
   await savePackState(lang, info);
+  await setDeclined(lang, false);
   if (memory.lang === lang) await loadAmazighVoices(lang);
   announce();
   return info;
 }
 
 // Supprime le pack d'une variété. Les voix enregistrées par le parent restent.
+// v10.7.1 : le pack supprimé ne revient pas tout seul (seulement avec le bouton « Télécharger »).
 export async function removeAmazighVoicePack(lang) {
   if (!isAmazighLang(lang)) return;
   if (hasCaches()) await caches.delete(packCacheName(lang)).catch(() => {});
   await savePackState(lang, null);
+  await setDeclined(lang, true);
   if (memory.lang === lang) memory.pack = new Map();
   announce();
+}
+
+// v10.7.1 : sans pack dans le téléphone, celui de la variété choisie se télécharge tout seul, une fois par
+// ouverture de l'appli, en arrière-plan. Seulement des fichiers du site Kalimati (rien ne part du téléphone).
+// Jamais par-dessus un pack « Voix du Douar », ni après une suppression par le parent. Aucun message d'erreur.
+const autoTried = new Set();
+let autoQueue = Promise.resolve(null);
+export function autoInstallAmazighVoicePack(lang) {
+  if (!isAmazighLang(lang) || !hasCaches() || autoTried.has(lang)) return Promise.resolve(null);
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return Promise.resolve(null);
+  autoTried.add(lang);
+  // Une variété après l'autre (si le parent change vite de langue).
+  autoQueue = autoQueue.then(async () => {
+    const [installed, declined] = await Promise.all([getInstalledVoicePacks().catch(() => ({})), getDeclinedPacks()]);
+    const info = installed[lang];
+    if (declined[lang] || (info && info.source !== 'site')) return null;
+    const index = await fetchPackIndex(lang);
+    if (!index) return null;
+    const stillThere = info ? await countPackVoices(lang) : 0;
+    if (info && stillThere && (Number(info.version) || 1) >= (Number(index.version) || 1)) return null;
+    return downloadAmazighVoicePack(lang, { index });
+  }).catch(() => null);
+  return autoQueue;
 }
 
 // ---------- « Voix du Douar » : partage de voix d'adultes entre familles (fichier .json) ----------
@@ -278,7 +355,10 @@ export async function importDouarVoicePack(file) {
     if (!(await countPackVoices(lang))) await caches.delete(packCacheName(lang)).catch(() => {});
     throw new Error('Aucune voix utilisable dans ce fichier.');
   }
-  await savePackState(lang, { version: 1, count: await countPackVoices(lang), source: 'douar', installedAt: new Date().toISOString() });
+  // v10.7.1 : si des voix d'essai (robot) étaient déjà là, on le garde en mémoire (Progrès le dit).
+  const before = (await getInstalledVoicePacks().catch(() => ({})))[lang];
+  const trial = Boolean(before && before.trial);
+  await savePackState(lang, { version: Number(before?.version) || 1, count: await countPackVoices(lang), source: 'douar', trial, model: trial ? shortText(before.model) : '', installedAt: new Date().toISOString() });
   if (memory.lang === lang) await loadAmazighVoices(lang);
   announce();
   return { lang, importedCount: imported, skipped };

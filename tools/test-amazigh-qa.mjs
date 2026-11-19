@@ -9,6 +9,8 @@
  *  4. Conjugaison amazighe aux 3 temps (verbe seul, « je veux » + nom) et français / darija inchangés.
  *  5. Service worker : nouvelle version, modules amazighs, caches des voix gardés.
  *  6. Liste des cartes de l'outil PC (tools/amazigh-cards.json) à jour avec le lexique.
+ *  7. (v10.7.1) Packs de voix d'essai publiés : un son par carte, même mot que le lexique, taille raisonnable,
+ *     aucune carte personnelle, licence indiquée.
  */
 
 import assert from 'node:assert/strict';
@@ -144,7 +146,7 @@ async function main() {
 
   await check('Service worker : nouvelle version, modules amazighs, police, caches des voix gardés', () => {
     const sw = read('sw.js');
-    const version = /const CACHE = 'kalimati-v(\d+)-(\d+)';/.exec(sw);
+    const version = /const CACHE = 'kalimati-v(\d+)-(\d+)(?:-\d+)?';/.exec(sw);
     assert.ok(version && (Number(version[1]) > 10 || (Number(version[1]) === 10 && Number(version[2]) >= 7)), 'CACHE doit être v10-7 ou plus');
     assert.match(sw, /kalimati-amazigh-voices-/);
     assert.match(sw, /\.\/modules\/amazigh-lexicon\.js/);
@@ -159,6 +161,34 @@ async function main() {
     const saved = JSON.parse(read('tools/amazigh-cards.json'));
     assert.deepEqual(saved.cards, JSON.parse(JSON.stringify(fresh)), 'relancez : node tools/export-amazigh-cards.mjs');
     assert.equal(fresh.some((c) => /^c-personnes-(moi|ghita|hosna)$/.test(c.id)), false, 'carte personnelle dans la liste');
+  });
+
+  await check('Packs de voix d’essai : un son par carte, même mot que le lexique, licence indiquée', () => {
+    const saved = JSON.parse(read('tools/amazigh-cards.json'));
+    const byId = new Map(saved.cards.map((c) => [c.id, c]));
+    let packs = 0;
+    for (const lang of VARIETIES) {
+      const rel = `voix/amz-${lang}-index.json`;
+      if (!fs.existsSync(path.join(ROOT, rel))) continue;
+      packs += 1;
+      const index = JSON.parse(read(rel));
+      assert.equal(index.lang, lang, `${rel} : mauvaise variété`);
+      const ids = Object.keys(index.entries || {});
+      assert.ok(ids.length > 0 && ids.length <= 600, `${rel} : nombre de voix`);
+      assert.equal(index.count, ids.length, `${rel} : count faux`);
+      for (const id of ids) {
+        assert.ok(byId.has(id), `${rel} : carte inconnue ${id}`);
+        assert.equal(/^c-personnes-(moi|ghita|hosna)$/.test(id), false, `${rel} : carte personnelle ${id}`);
+        assert.equal(index.entries[id], byId.get(id)[lang].lat, `${rel} : ${id} ne dit plus le mot du lexique (voix à refaire)`);
+        const size = fs.statSync(path.join(ROOT, `voix/${lang}/${id}.mp3`)).size;
+        assert.ok(size > 1000 && size <= 1536 * 1024, `voix/${lang}/${id}.mp3 : taille ${size}`);
+      }
+      if (/mms/i.test(String(index.source || ''))) {
+        assert.match(String(index.licence || ''), /NC/, `${rel} : licence non commerciale à indiquer`);
+        assert.ok(fs.existsSync(path.join(ROOT, 'voix/LICENCE-voix-amazighes.txt')), 'voix/LICENCE-voix-amazighes.txt absent');
+      }
+    }
+    console.log(`   (${packs} pack(s) de voix vérifié(s))`);
   });
 
   console.log(`\n🎉 Contrôles amazighs réussis (${passed}/${passed}).`);

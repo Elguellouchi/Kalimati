@@ -17,7 +17,7 @@ import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isAmazighLang, isAmazighScript, cardWord, categoryName, ui, spokenUi } from './modules/languages.js';
-import { loadAmazighVoices, amazighVoiceFor } from './modules/voice-packs.js';
+import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded } from './modules/aac-plus.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
@@ -645,6 +645,8 @@ async function setLang(code) {
   document.documentElement.lang = (langInfo(state.lang).tts || 'fr').split('-')[0]; // v10.5 (A21)
   // v10.7 : voix amazighes de la variété choisie, gardées en mémoire (le son part tout de suite au toucher).
   loadAmazighVoices(state.lang).then(() => { if (isAmazighLang(state.lang) && state.parent) renderView(); }).catch(() => {});
+  // v10.7.1 : le pack de voix d'essai de cette variété arrive tout seul, en arrière-plan (fichiers du site seulement).
+  if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang);
   // v10.5.2 : l'écran change tout de suite ; l'enregistrement suit (avant, une écriture bloquée sur iPhone empêchait le changement).
   renderAll();
   await db.setSetting('lang', state.lang).catch((err) => console.error('[Kalimati] langue non enregistrée', err));
@@ -956,6 +958,7 @@ async function init() {
       await loadLevels();
       state.lang = langInfo((await db.getSetting('lang')) || state.lang).code;
       loadAmazighVoices(state.lang).catch(() => {});
+      if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang);
       state.cards = await loadCards();
       const ids = new Set(state.cards.map((c) => c.id));
       state.strip = state.strip.filter((item) => ids.has(item.card.id));
@@ -989,6 +992,11 @@ async function init() {
   setInterval(checkReminder, REMINDER_CHECK_MS);
   // v10.1 : lien #key=KALI-SYNC-… (clé gardée dans le téléphone) + synchro auto si le parent l'a activée. Ne bloque jamais l'ouverture.
   initCloudSyncFromUrlAndAuto().catch(() => {});
+  // v10.7.1 : en amazigh, le pack de voix d'essai de la variété choisie arrive tout seul, après l'ouverture
+  // (une fois par ouverture ; seulement des fichiers du site Kalimati, rien ne part du téléphone).
+  const amazighPackSoon = () => { if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang); };
+  setTimeout(amazighPackSoon, 1500);
+  window.addEventListener('online', amazighPackSoon);
   // v9.16.1 : on vérifie toujours le service worker sur le serveur, et on recharge une fois quand une nouvelle version prend la main.
   if ('serviceWorker' in navigator) {
     const hadController = Boolean(navigator.serviceWorker.controller);
