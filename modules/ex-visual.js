@@ -115,7 +115,9 @@ export function buildPuzzle(area, source, pieces, onDone) {
 function b2(ctx) {
   const area = h('div', { class: 'puzzle-area' });
   const result = h('div', { class: 'stack' });
-  const photos = ctx.cards.filter((c) => c.photo && !String(c.photo.type).includes('gif'));
+  // === [DEBUT MODIF v10.9-lot-A : Pépite 2 — Exclure les cartes masquées] ===
+  const photos = (ctx.cards || []).filter((c) => !c.hidden && c.photo && !String(c.photo.type).includes('gif'));
+  // === [FIN MODIF v10.9-lot-A] ===
   const sourceSelect = h('select', {}, SCENES.map((s) => h('option', { value: `e:${s}` }, `${s} Image`)),
     photos.map((c) => h('option', { value: `p:${c.id}` }, `📷 ${c.fr}`)));
   const countSelect = h('select', {}, h('option', { value: 6 }, '6 pièces (2×3)'), h('option', { value: 8 }, '8 pièces (2×4)'));
@@ -173,7 +175,9 @@ function b3() {
 function pairsExercise(goalId, spoken) {
   return () => trialLoop((next) => {
     const pair = pick(PAIRS);
-    const others = sample(PAIRS.filter((p) => p.id !== pair.id), 2).map((p) => ({ emoji: p.b.emoji, label: p.b.fr, correct: false }));
+    // === [DEBUT MODIF v10.9-lot-A : Pépite 27 — 4 candidats pour adaptation 2..4 dans choiceBoard] ===
+    const others = sample(PAIRS.filter((p) => p.id !== pair.id), 3).map((p) => ({ emoji: p.b.emoji, label: p.b.fr, correct: false }));
+    // === [FIN MODIF v10.9-lot-A] ===
     const after = h('div', { class: 'row center' });
     const ask = spoken ? `Montre-moi ce qui va avec ${pair.a.fr}` : 'Qu’est-ce qui va avec ?';
     if (spoken) setTimeout(() => speak(ask), 300);

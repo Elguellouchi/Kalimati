@@ -10,6 +10,8 @@ import { evaluate } from './progress.js';
 import { nour } from './nour.js';
 import { starBar } from './rewards-kids.js';
 import { renderVisual } from './visuals.js';
+// v10.9 (lot A) : jeux = cartes non masquées seulement ; minuteurs d'aide coupés en quittant l'écran.
+import { setPlayableCards, playableCards, setActiveGameId, stopAllChoiceTimers } from './widgets.js';
 import { emotionStudio, photoGallery } from './ex-emotions.js';
 import { EXERCISES as A } from './ex-coop.js';
 import { EXERCISES as B } from './ex-visual.js';
@@ -62,7 +64,14 @@ export function createNavigator(app) {
   const history = [];
   let cleanups = [];
 
-  const runCleanups = () => { cleanups.forEach((fn) => { try { fn(); } catch { /* écran déjà fermé */ } }); cleanups = []; stopSpeaking(); };
+  const runCleanups = () => {
+    // === [DEBUT MODIF v10.9-lot-A : Arrêt immédiat des minuteurs d'aide et de démo en quittant l'écran] ===
+    stopAllChoiceTimers();
+    // === [FIN MODIF v10.9-lot-A] ===
+    cleanups.forEach((fn) => { try { fn(); } catch { /* écran déjà fermé */ } });
+    cleanups = [];
+    stopSpeaking();
+  };
   const show = (screen) => { runCleanups(); app.container.replaceChildren(screen()); app.container.scrollTop = 0; };
   const go = (screen) => { history.push(screen); show(screen); };
   const back = () => { history.pop(); show(history[history.length - 1]); };
@@ -71,7 +80,11 @@ export function createNavigator(app) {
     h('div', { class: 'nav-btns' }, app.goHome ? btn('🏠 Accueil', () => { runCleanups(); app.goHome(); }, 'home-btn') : null,
       history.length > 1 ? btn('← Retour', back, 'back-btn') : null),
     title ? h('div', {}, h('h2', {}, title), sub ? h('p', { class: 'note' }, sub) : null) : null);
-  const context = () => ({ lang: app.state.lang, parent: app.state.parent, cards: app.state.cards, onCleanup: (fn) => cleanups.push(fn) });
+  // v10.9 (lot A, pépite 2) : les jeux ne reçoivent que les cartes non masquées dans Parler.
+  const context = () => {
+    setPlayableCards(app.state.cards);
+    return { lang: app.state.lang, parent: app.state.parent, cards: playableCards(app.state.cards), onCleanup: (fn) => cleanups.push(fn) };
+  };
   const photoHint = () => (app.state.parent ? h('p', { class: 'photo-hint' }, '📸 Mode parent : touchez le petit 📷 d’une image pour mettre une vraie photo.') : null);
 
   // v9.12 : un seul ami par écran. Le bandeau en haut de chaque espace ; l'autocollant de l'ami après 3 essais notés.
@@ -99,10 +112,11 @@ export function createNavigator(app) {
     const goal = goalById(goalId);
     let local = []; // nettoyages propres à l'exercice affiché (micro, caméra, minuteurs)
     const mount = () => {
+      setActiveGameId(goalId); // v10.9 : démo muette et règle des 8 essais propres à chaque jeu
       const ctx = { ...context(), goalId, onCleanup: (fn) => local.push(fn) };
       try { return exerciseFor(goalId)(ctx); } catch (error) { return h('p', { class: 'note' }, `Exercice indisponible : ${error.message}`); }
     };
-    const unmount = () => { local.forEach((fn) => { try { fn(); } catch { /* déjà fermé */ } }); local = []; stopSpeaking(); };
+    const unmount = () => { stopAllChoiceTimers(); local.forEach((fn) => { try { fn(); } catch { /* déjà fermé */ } }); local = []; stopSpeaking(); };
     const holder = h('div', { class: 'exercise-body' }, mount());
     // Changer de niveau relance l'exercice avec les nouveaux paramètres.
     const remount = () => { unmount(); holder.replaceChildren(mount()); };
@@ -190,8 +204,8 @@ export function createNavigator(app) {
       h('div', { class: 'card-box stack' },
         h('p', { class: 'ask' }, '🔒 L’atelier orthophonie se fait avec un adulte.'),
         h('p', { class: 'note' }, 'Adulte : restez appuyé 3 secondes sur le cadenas en haut, puis rouvrez l’atelier.'))));
-  const hygieneHome = (initialId = null) => h('div', { class: 'screen' }, header('🫧 Hygiène & Soins du corps', 'Douche, shampoing, ongles, dents, mains, visage, nez, coiffure, ablutions'), friendBanner('hygiene'), adultClinicBar(), photoHint(), hygieneHubScreen(context(), initialId), missionReward('mchicha'));
-  const studioScreen = () => h('div', { class: 'screen' }, header('😊 Studio des émotions'), friendBanner('emotions'), photoHint(), emotionStudio(context()), missionReward('hmama'));
+  const hygieneHome = (initialId = null) => (setActiveGameId('hygiene-hub'), h('div', { class: 'screen' }, header('🫧 Hygiène & Soins du corps', 'Douche, shampoing, ongles, dents, mains, visage, nez, coiffure, ablutions'), friendBanner('hygiene'), adultClinicBar(), photoHint(), hygieneHubScreen(context(), initialId), missionReward('mchicha')));
+  const studioScreen = () => (setActiveGameId('emotions-studio'), h('div', { class: 'screen' }, header('😊 Studio des émotions'), friendBanner('emotions'), photoHint(), emotionStudio(context()), missionReward('hmama')));
   const galleryScreen = () => h('div', { class: 'screen' }, header('📸 Personnaliser avec nos vraies photos'),
     app.state.parent ? photoGallery() : h('p', { class: 'ask' }, '🔒 Réservé aux adultes : restez appuyé sur le cadenas en haut à droite.'));
 

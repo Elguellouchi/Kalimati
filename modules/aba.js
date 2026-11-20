@@ -4,6 +4,8 @@ import * as db from '../db.js';
 import { addStar } from './rewards-kids.js';
 import { h, btn, uid, dayKey, weekKey, percent } from './util.js';
 import { PROFIL, LEGACY_PROFIL, NEUTRAL } from './profil.js';
+// v10.9 (lot A) : mode calme, délai d'aide et nombre de choix rangés dans le profil ; réussite « avec aide » notée.
+import { loadLotASettings, syncLotAFromProfile, consumeLastChoiceOutcome } from './widgets.js';
 
 export const INTERVENANTS = [
   { id: 'psy', get label() { return profile.psy ? `👩‍⚕️ ${profile.psy} (Psychologue)` : '👩‍⚕️ Psychologue / Thérapeute'; } },
@@ -60,15 +62,23 @@ export async function loadContext() {
     await db.setSetting('profileOrigin', origin);
   }
   Object.assign(profile, saved || {});
+  try { await loadLotASettings(profile); } catch { /* réglages lot A : valeurs par défaut */ }
 }
 export const saveClinic = () => db.setSetting('clinic', { ...clinic });
-export const saveProfile = (values) => { Object.assign(profile, values); return db.setSetting('profile', { ...profile }); };
+export const saveProfile = (values) => { Object.assign(profile, values); syncLotAFromProfile(profile); return db.setSetting('profile', { ...profile }); };
 
 const listeners = new Set();
 export function onTrial(listener) { listeners.add(listener); return () => listeners.delete(listener); }
 
 // result : 'plus' (autonome) | 'prompt' (guidé) | 'minus' (non réussi) | 'log' (simple pointage)
 export async function recordTrial(goalId, result, { item = null, prompt = null, meta = {} } = {}) {
+  // v10.9 : réussite après l'aide visuelle (avant toute erreur) = « avec aide » ('prompt'), jamais « premier coup ».
+  const outcome = consumeLastChoiceOutcome(goalId);
+  if (outcome && outcome.helped && !outcome.erred) {
+    if (result === 'plus') result = 'prompt';
+    prompt = prompt || 'aide-visuelle';
+    meta = { ...meta, aide: 'avec_aide', score: 0.5 };
+  }
   const now = new Date();
   const trial = {
     id: uid('t'), goalId, ts: now.getTime(), day: dayKey(now), week: weekKey(now),

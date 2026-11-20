@@ -26,11 +26,26 @@ function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
   const inputs = Object.fromEntries(fields.map(([key]) => [key, h('input', { value: profile[key] || '', maxlength: 30 })]));
   const saved = h('span', { class: 'note' });
+  // v10.9 (lot A) : mode calme, aide avant l'erreur et nombre de choix dans les jeux.
+  const calm = h('input', { type: 'checkbox' });
+  calm.checked = Boolean(profile.calmMode);
+  calm.onchange = () => saveProfile({ calmMode: calm.checked });
+  const options = (list, current) => list.map(([value, label]) => {
+    const o = h('option', { value }, label);
+    if (String(current) === String(value)) o.selected = true;
+    return o;
+  });
+  const hintSel = h('select', {}, options([['3', '3 secondes'], ['5', '5 secondes (conseillé)'], ['8', '8 secondes'], ['0', 'Pas d’aide']], profile.hintDelaySec ?? 5));
+  const choiceSel = h('select', {}, options([['auto', 'Automatique (2 à 4 selon les 8 derniers essais)'], ['2', 'Toujours 2'], ['3', 'Toujours 3'], ['4', 'Toujours 4']], profile.fixedChoiceCount ?? 'auto'));
+  const lotA = () => ({ calmMode: calm.checked, hintDelaySec: Number(hintSel.value), fixedChoiceCount: choiceSel.value === 'auto' ? 'auto' : Number(choiceSel.value) });
   return h('details', { class: 'card-box' },
     h('summary', {}, '👧 Profil de l’enfant (reste dans ce téléphone)'),
     h('div', { class: 'stack' }, fields.map(([key, label]) => h('label', { class: 'field' }, label, inputs[key])),
+      h('label', { class: 'row' }, calm, ' 🌿 Mode calme (pas de petits sons, animations lentes ; la voix reste)'),
+      h('label', { class: 'field' }, '👆 Aide avant l’erreur dans les jeux (la bonne image grossit doucement)', hintSel),
+      h('label', { class: 'field' }, '🎯 Nombre d’images à choisir dans les jeux', choiceSel),
       h('div', { class: 'row' }, btn('Enregistrer le profil', async () => {
-        await saveProfile(Object.fromEntries(fields.map(([key]) => [key, inputs[key].value.trim()])));
+        await saveProfile({ ...Object.fromEntries(fields.map(([key]) => [key, inputs[key].value.trim()])), ...lotA() });
         saved.textContent = 'Enregistré ✅';
       }, 'primary'), saved)));
 }

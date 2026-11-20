@@ -247,7 +247,7 @@ function pragmaticWorkshop(ctx) {
       h('p', { class: 'chip-fn' }, `${fn.emoji} ${fn.label}`),
       h('div', { class: 'big-card' }, h('span', { class: 'emoji dttc-emoji' }, sc.scene), h('span', { class: 'label' }, sc.text)),
       h('p', { class: 'ask' }, 'Qu’est-ce que je fais ?', btn('🔊', () => speak(question), 'ghost tiny')),
-      choiceBoard({ cols: 3, praise: 'Bravo !',
+      choiceBoard({ cols: 3, praise: 'Bravo !', assessment: true,
         choices: choices.map((c) => ({ correct: c.correct, label: c.fr, render: () => h('span', { class: 'emoji' }, c.emoji) })),
         onAnswer: (first) => {
           setTimeout(sayOk, 900);
@@ -292,7 +292,7 @@ function phonoWorkshop(ctx) {
     const tone = pick(TONES);
     sayTone(tone);
     root.replaceChildren(tabs(), h('p', { class: 'ask' }, 'Écoute. C’est…', btn('🔊 Réécouter', () => sayTone(tone), 'ghost tiny')),
-      choiceBoard({ cols: 3, praise: 'Bravo !', choices: TONES.map((t) => ({ correct: t === tone, label: t.label, render: () => h('span', { class: 'emoji' }, t.emoji) })),
+      choiceBoard({ cols: 3, praise: 'Bravo !', assessment: true, choices: TONES.map((t) => ({ correct: t === tone, label: t.label, render: () => h('span', { class: 'emoji' }, t.emoji) })),
         onAnswer: (first) => { logOrtho({ protocol: 'phono', target: tone.id, phoneme: 'prosodie', result: first ? 'exact' : 'fail' }); nextBtn(); } }), after);
   }
   function round() {
@@ -303,7 +303,7 @@ function phonoWorkshop(ctx) {
     const [word, other] = Math.random() < 0.5 ? [a, b] : [b, a];
     speak(word[0], { rate: 0.75 });
     root.replaceChildren(tabs(), h('p', { class: 'ask' }, 'Écoute bien. Montre l’image du mot.', btn('🔊 Réécouter', () => speak(word[0], { rate: 0.75 }), 'ghost tiny')),
-      choiceBoard({ cols: 2, praise: 'Bravo !', choices: [word, other].map((w) => ({ correct: w === word, label: w[0], render: () => h('span', { class: 'emoji dttc-emoji' }, w[1]) })),
+      choiceBoard({ cols: 2, praise: 'Bravo !', assessment: true, choices: [word, other].map((w) => ({ correct: w === word, label: w[0], render: () => h('span', { class: 'emoji dttc-emoji' }, w[1]) })),
         onAnswer: (first) => { logOrtho({ protocol: 'phono', target: word[0], phoneme: contrast, result: first ? 'exact' : 'fail' }); nextBtn(); } }), after);
   }
   round();

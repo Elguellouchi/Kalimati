@@ -12,7 +12,9 @@ import { answerKey } from './ex-verbal.js';
 
 const emotionChoices = (target) => [
   { vkey: target.vkey, label: target.fr, correct: true },
-  ...sample(EMOTIONS.filter((e) => e.id !== target.id), 2).map((e) => ({ vkey: e.vkey, label: e.fr, correct: false })),
+  // === [DEBUT MODIF v10.9-lot-A : Pépite 27 — 4 candidats pour adaptation 2..4 dans choiceBoard] ===
+  ...sample(EMOTIONS.filter((e) => e.id !== target.id), 3).map((e) => ({ vkey: e.vkey, label: e.fr, correct: false })),
+  // === [FIN MODIF v10.9-lot-A] ===
 ];
 const nextBtn = (next) => btn('➜ Encore', next, 'primary');
 

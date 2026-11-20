@@ -134,8 +134,25 @@ export async function startListening({ onLevel, record = false } = {}) {
 // Petits sons doux (jamais de buzzer) : notes courtes, volume faible, attaque et fin progressives.
 // Sur téléphone, le contexte audio naît « en pause » : on le réveille à chaque toucher (unlockSounds) et avant chaque note.
 let audioContext = null;
+// === [DEBUT MODIF v10.9-lot-A : Pépite 3 — Mode calme (coupe playBeep, playClap et musiques, garde la voix)] ===
+let calmModeMuted = false;
+let soundPlayedCount = 0;
+
+export function setCalmModeAudio(muted) {
+  calmModeMuted = Boolean(muted);
+}
+export function isCalmModeAudio() {
+  return calmModeMuted;
+}
+export function getSoundPlayedCount() {
+  return soundPlayedCount;
+}
+export function resetSoundPlayedCount() {
+  soundPlayedCount = 0;
+}
+// === [FIN MODIF v10.9-lot-A] ===
 function soundContext() {
-  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  const AudioCtx = (typeof window !== 'undefined') && (window.AudioContext || window.webkitAudioContext);
   if (!AudioCtx) return null;
   audioContext = audioContext || new AudioCtx();
   if (audioContext.state !== 'running') audioContext.resume().catch(() => {});
@@ -151,7 +168,11 @@ export function unlockSounds() {
   source.start(0);
 }
 function softNote(frequency, start, duration) {
-  if (!soundContext()) return;
+  // === [DEBUT MODIF v10.9-lot-A : Pépite 3 — Mode calme coupe les petits sons et musiques] ===
+  if (calmModeMuted) return false;
+  soundPlayedCount += 1;
+  // === [FIN MODIF v10.9-lot-A] ===
+  if (!soundContext()) return true;
   const t = audioContext.currentTime + start;
   const osc = audioContext.createOscillator();
   const gain = audioContext.createGain();
@@ -163,9 +184,15 @@ function softNote(frequency, start, duration) {
   osc.connect(gain).connect(audioContext.destination);
   osc.start(t);
   osc.stop(t + duration + 0.02);
+  return true;
 }
 export const playBeep = () => softNote(523, 0, 0.25);
-export const playClap = () => { softNote(523, 0, 0.2); softNote(659, 0.16, 0.2); softNote(784, 0.32, 0.35); };
+export const playClap = () => {
+  const a = softNote(523, 0, 0.2);
+  const b = softNote(659, 0.16, 0.2);
+  const c = softNote(784, 0.32, 0.35);
+  return Boolean(a || b || c);
+};
 
 export function blobToDataUrl(blob) {
   return new Promise((resolve, reject) => {

@@ -166,12 +166,31 @@ export const CATALOG = CATS.flatMap((c) => c.items.map(([fr, emoji, color = '', 
 
 export const conceptById = (id) => CATALOG.find((c) => c.id === id) || null;
 
+// === [DEBUT MODIF v10.9-lot-A : Pépite 2 — Filtrage des mots masqués dans Parler pour les jeux] ===
+let hiddenConceptSlugs = new Set();
+
+export function setHiddenConceptSlugs(slugsOrSet) {
+  hiddenConceptSlugs = new Set(Array.from(slugsOrSet || [], (s) => slug(s)));
+}
+
+export function isConceptHidden(concept) {
+  if (!concept) return false;
+  if (concept.hidden === true) return true;
+  const s = slug(concept.fr || concept.label || concept.id || '');
+  return Boolean(s && hiddenConceptSlugs.has(s));
+}
+// === [FIN MODIF v10.9-lot-A] ===
+
 // Les mots les plus quotidiens d'abord : les petits niveaux tirent dans le début de chaque catégorie.
 export function conceptsForLevel(share, filter = () => true) {
-  return CATS.flatMap((c) => {
+  const raw = CATS.flatMap((c) => {
     const n = Math.max(3, Math.ceil(c.items.length * share));
     return CATALOG.filter((x) => x.cat === c.id).slice(0, n);
   }).filter(filter);
+  // === [DEBUT MODIF v10.9-lot-A : Pépite 2 — Exclure les cartes masquées sans jamais vider l'écran] ===
+  const visible = raw.filter((c) => !isConceptHidden(c));
+  return visible.length > 0 ? visible : raw.slice(0, 1);
+  // === [FIN MODIF v10.9-lot-A] ===
 }
 
 // Fonctions (« sert à… ») et sous-groupes utilisés par le tri et les consignes.

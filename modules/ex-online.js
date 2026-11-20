@@ -15,7 +15,9 @@ import { LETTERS as PEI_LETTERS } from './content.js';
 
 const params = (goalId) => levelParams(levelOf(goalId).currentLevel);
 const pool = (goalId, filter) => conceptsForLevel(params(goalId).catalogShare, filter);
-const cap = (n, max) => Math.max(2, Math.min(max, n));
+// === [DEBUT MODIF v10.9-lot-A : Pépite 27 — Fournir 4 candidats à choiceBoard pour l’adaptation 2..4] ===
+const cap = (n, max) => Math.max(4, Math.min(max, n));
+// === [FIN MODIF v10.9-lot-A] ===
 const nextBtn = (next) => btn('➜ Essai suivant', next, 'primary');
 // Un mot hors catalogue (paires, etc.) devient un « concept » : ses pictogrammes sont cherchés par son nom.
 const asConcept = (x) => ({ id: slug(x.fr), fr: x.fr, emoji: x.emoji, wiki: x.fr.charAt(0).toUpperCase() + x.fr.slice(1) });
@@ -34,7 +36,8 @@ function b1() {
     const answerVariant = mode === 'dessin' ? rInt(rand, 1, 5) : 0;
     const close = items.filter((c) => c.cat === target.cat && c.id !== target.id);
     const far = items.filter((c) => c.cat !== target.cat);
-    const others = rSample(rand, p.closeDistractors && close.length >= p.choices - 1 ? close : far, p.choices - 1);
+    const candN = Math.max(4, p.choices) - 1;
+    const others = rSample(rand, p.closeDistractors && close.length >= candN ? close : far, candN);
     prefetch([target, ...others]);
     const choice = (c, correct) => ({ correct, render: () => conceptVisual(c, { style: answerStyle, variant: answerVariant }) });
     const after = h('div', { class: 'row center' });
