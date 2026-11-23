@@ -1,11 +1,11 @@
 {
   "name": "kalimati",
-  "version": "10.31.0",
+  "version": "10.32.0",
   "private": true,
   "type": "module",
   "description": "Application de communication alternative et de suivi éducatif, utilisable hors ligne.",
   "scripts": {
-    "test": "node tools/test-version.mjs && node tools/test-locales.mjs && node tools/test-i18n.mjs && node tools/test-clinic-i18n.mjs && node tools/test-clinique.mjs && node tools/test-cabinet.mjs && node tools/test-update.mjs && node tools/test-card-migration.mjs && node tools/test-error-log.mjs && node tools/test-sync-merge.mjs && node tools/test-backup-crypto.mjs && node tools/test-lot-a.mjs && node tools/test-amazigh-qa.mjs && node tools/test-clinical-mode.mjs && node tools/test-privacy-network.mjs && node tools/test-pepites.mjs && node tools/test-theme.mjs && node tools/test-i18n-ar.mjs && node tools/test-i18n-world.mjs",
+    "test": "node tools/test-version.mjs && node tools/test-locales.mjs && node tools/test-i18n.mjs && node tools/test-clinic-i18n.mjs && node tools/test-clinique.mjs && node tools/test-cabinet.mjs && node tools/test-update.mjs && node tools/test-card-migration.mjs && node tools/test-error-log.mjs && node tools/test-sync-merge.mjs && node tools/test-backup-crypto.mjs && node tools/test-lot-a.mjs && node tools/test-amazigh-qa.mjs && node tools/test-clinical-mode.mjs && node tools/test-privacy-network.mjs && node tools/test-pepites.mjs && node tools/test-theme.mjs && node tools/test-i18n-ar.mjs && node tools/test-i18n-world.mjs && node tools/test-picto.mjs",
     "build:locales": "node tools/build-locales.mjs"
   }
 }

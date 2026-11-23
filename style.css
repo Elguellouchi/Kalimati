@@ -2402,3 +2402,21 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
   .space-btn .emoji { font-size: 20px; }
 }
 @media (max-width: 360px) { .coach-sentence { display: none; } }
+
+/* v10.32 — Phrase écrite par l'adulte → images (pépite DictaPicto). */
+.picto-box .picto-input { width: 100%; min-height: 56px; font: inherit; font-size: 16px; padding: 8px 10px; border-radius: 12px; border: 2px solid var(--line); background: var(--surface); color: inherit; box-sizing: border-box; }
+.picto-line { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 8px 0; min-height: 8px; }
+.picto-line .card.picto-card { width: 66px; height: 76px; padding: 3px; aspect-ratio: auto; }
+.picto-line .card.picto-card > .visual { --vs: 34px; }
+.picto-line .card.picto-card .label { font-size: 11px; }
+.picto-word { display: inline-flex; align-items: center; min-height: 40px; padding: 4px 10px; border: 2px dashed var(--line); border-radius: 12px; font-weight: 700; }
+.picto-card.speaking, .picto-word.speaking { outline: 4px solid var(--accent, #176B62); outline-offset: 2px; }
+.picto-overlay { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; justify-content: center; gap: 18px; padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom)); background: var(--bg, #fff); overflow-y: auto; }
+.picto-big-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.picto-big-line .card.picto-card.big { width: clamp(96px, 28vw, 150px); height: auto; aspect-ratio: 1 / 1.1; }
+.picto-big-line .card.picto-card.big > .visual { --vs: clamp(52px, 16vw, 90px); }
+.picto-big-line .card.picto-card.big .label { font-size: clamp(14px, 4vw, 20px); }
+.picto-word.big { font-size: clamp(16px, 4.5vw, 24px); min-height: 56px; }
+.picto-card.picto-extra { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-style: dashed; }
+.picto-card.picto-extra .picto-emoji { font-size: 30px; line-height: 1; }
+.picto-big-line .picto-card.picto-extra.big .picto-emoji { font-size: clamp(48px, 15vw, 84px); }

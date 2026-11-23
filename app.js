@@ -25,6 +25,7 @@ import { loadAacPlus, learnTap, suggestionsFor, touchSettingsBox, scanSpeed, cle
 import { bindTap, tapFeedback, resetTapMemory } from './modules/tap-engine.js';
 // v10.23 (pépite 1) : deux langues simultanées sur la même grille, sans déplacer une seule carte.
 import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/twin-language.js';
+import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
@@ -618,6 +619,7 @@ function renderTalk() {
     askRow,
     searchBox, exploreBtn, exploreNote,
     personalise,
+    textToPictoBox(),
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? twinBox() : null,
     state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
@@ -844,6 +846,70 @@ async function showBackupAge() {
 // v10.6 (P3.f) : vocabulaire de base dévoilé par paliers. Seulement sur demande de l'adulte.
 // Les cartes gardent leur place ; on masque ou montre seulement les 21 mots du plan.
 let motorPlanNote = '';
+// v10.32 (pépite DictaPicto) : l'adulte écrit une phrase, l'enfant la voit en images et l'entend
+// avec les voix des cartes (fichiers sons : marche aussi quand l'iPhone est en mode silencieux).
+// Rien n'est envoyé ni gardé : la phrase reste seulement à l'écran.
+let pictoDraft = '';
+function textToPictoBox() {
+  const input = h('textarea', { rows: 2, class: 'picto-input', placeholder: 'Ex. : On va à l’école en voiture', 'aria-label': 'Phrase à montrer en images', value: pictoDraft });
+  input.value = pictoDraft;
+  const line = h('div', { class: 'picto-line', 'aria-live': 'polite' });
+  let items = [];
+  let playing = 0;
+  // Carte de Kalimati : sa voix (parent, livrée ou téléphone). Mot de secours : le mot écrit, dit par la voix du téléphone.
+  const sayPicto = (item) => (item.card.extra ? speak(item.text, { lang: state.lang === 'dr' || isAmazighLang(state.lang) ? 'fr' : state.lang }) : sayCard(item.card, state.lang));
+  const pictoEl = (item, big) => {
+    if (!item.card) return h('span', { class: `picto-word${big ? ' big' : ''}` }, item.text);
+    if (item.card.extra) {
+      return h('button', { type: 'button', class: `card small picto-card picto-extra${big ? ' big' : ''}`, 'aria-label': item.text, onclick: () => { unlockAudio(); stopSpeaking(); sayPicto(item); } },
+        h('span', { class: 'picto-emoji', 'aria-hidden': 'true' }, item.card.emoji), h('span', { class: 'label' }, item.text));
+    }
+    const el = cardElement(item.card, { small: !big, className: `picto-card${big ? ' big' : ''}` });
+    el.onclick = () => { unlockAudio(); stopSpeaking(); sayCard(item.card, state.lang); };
+    return el;
+  };
+  const playAll = async (holder) => {
+    unlockAudio(); stopSpeaking();
+    const token = ++playing;
+    const els = [...holder.children];
+    for (let i = 0; i < items.length; i += 1) {
+      if (token !== playing || !holder.isConnected) break;
+      if (!items[i].card) continue;
+      els.forEach((e, j) => e.classList.toggle('speaking', j === i));
+      try { await sayPicto(items[i]); } catch (err) { console.error('[Kalimati] image parlée', err); }
+    }
+    els.forEach((e) => e.classList.remove('speaking'));
+  };
+  const playBtn = btn('▶ Écouter', () => playAll(line), 'primary tiny');
+  const bigBtn = btn('🔍 Montrer en grand', () => {
+    const big = h('div', { class: 'picto-big-line' }, items.map((it) => pictoEl(it, true)));
+    const close = () => { playing += 1; stopSpeaking(); overlay.remove(); document.removeEventListener('keydown', onKey); };
+    const onKey = (e) => { if (e.key === 'Escape') close(); };
+    const overlay = h('div', { class: 'picto-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': 'Phrase en images' },
+      big, h('div', { class: 'row center' }, btn('▶ Écouter', () => playAll(big), 'primary'), btn('✕ Fermer', close, 'ghost')));
+    document.addEventListener('keydown', onKey);
+    document.body.append(overlay);
+    playAll(big);
+  }, 'ghost tiny');
+  const note = h('p', { class: 'note' }, '');
+  const draw = () => {
+    pictoDraft = input.value;
+    const index = buildIndex([...state.cards.filter((c) => !c.hidden), ...extraConcepts()], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar]));
+    items = matchPictos(input.value, index);
+    line.replaceChildren(...items.map((it) => pictoEl(it, false)));
+    const found = items.filter((it) => it.card).length;
+    playBtn.disabled = !found; bigBtn.disabled = !found;
+    const missing = items.filter((it) => !it.card).map((it) => it.text);
+    note.textContent = !input.value.trim() ? 'Écrivez une phrase : chaque mot connu devient une image.'
+      : (missing.length ? `Sans image : ${missing.join(', ')}. Vous pouvez créer ces cartes en mode parent (＋ Ajouter).` : 'Tous les mots ont une image ✔');
+  };
+  let timer = 0;
+  input.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(draw, 150); });
+  draw();
+  return h('details', { class: 'card-box picto-box', open: pictoDraft ? true : null }, h('summary', {}, '🔤 Écrire une phrase en images'),
+    input, line, h('div', { class: 'row wrap' }, playBtn, bigBtn, btn('Effacer', () => { input.value = ''; draw(); input.focus(); }, 'ghost tiny')), note);
+}
+
 function motorPlanBox() {
   const status = h('p', { class: 'note', role: 'status' }, motorPlanNote);
   return h('details', { class: 'card-box touch-box', open: motorPlanNote ? true : null },
