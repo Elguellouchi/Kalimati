@@ -49,7 +49,8 @@ has('style.css', /\.sched-row\.annulled/, 'le style de l’étape annulée doit 
 has('modules/aac-plus.js', /export const TREMOR_PX = 14/, 'seuil anti-tremblement de 14 px attendu');
 has('modules/aac-plus.js', /_movedPx/, 'trackPress doit mesurer le glissement du doigt');
 has('modules/aac-plus.js', /steadyHandEnabled/, 'le réglage anti-tremblement doit être exposé');
-has('app.js', /_movedPx > TREMOR_PX/, 'app.js doit ignorer une carte touchée après un glissement');
+has('modules/tap-engine.js', /movedPx > TREMOR_PX/, 'le moteur tactile central doit ignorer une carte touchée après un glissement');
+has('app.js', /bindTap\(/, 'les cartes du tableau passent par le moteur tactile central');
 has('modules/aac-plus.js', /echoPracticeEnabled/, 'le mode écho doit être exposé');
 
 // --- 6. Cœur CAA : pépites 11, 16, 17, 23, 29 --------------------------------------

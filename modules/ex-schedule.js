@@ -100,13 +100,15 @@ const SURPRISE_ID = 'surprise';
 const OVERRIDES_ID = 'day_overrides';
 
 // v7 (Aegon) : Tableau « J'attends / Je me calme » (inspiré de Choiceworks Waiting & Coping Board)
-const COPING_CHOICES = [
-  ['🫁', 'Respirer doucement (3 fois)', 'Ntnffes b chwiya', 'نتنفس بشوية', 'breath'],
-  ['🎧', 'Mettre mon casque anti-bruit', 'Ndir l casque', 'ندير الكاسك', 'action'],
-  ['🧸', 'Serrer ma peluche / un câlin', 'N3enneq l mouna', 'نعنق المونة', 'action'],
-  ['🔢', 'Compter jusqu’à 10', 'N7seb 7ta l 3achra', 'نحسب حتى لعشرة', 'count'],
-  ['💧', 'Boire une gorgée d’eau', 'Nchreb chwiya d l ma', 'نشرب شوية د الما', 'action'],
-  ['🎵', 'Écouter une chanson douce', 'Nsme3 mousi9a', 'نسمع موسيقى', 'action'],
+// v10.23 (pépite 4) : la sixième colonne dit dans quelles zones du quadrillage des émotions le moyen aide
+// (modules/mood-meter.js). Rien n'est noté : c'est l'enfant qui choisit.
+export const COPING_CHOICES = [
+  ['🫁', 'Respirer doucement (3 fois)', 'Ntnffes b chwiya', 'نتنفس بشوية', 'breath', ['green', 'yellow', 'red', 'blue']],
+  ['🎧', 'Mettre mon casque anti-bruit', 'Ndir l casque', 'ندير الكاسك', 'action', ['yellow', 'red']],
+  ['🧸', 'Serrer ma peluche / un câlin', 'N3enneq l mouna', 'نعنق المونة', 'action', ['red', 'blue']],
+  ['🔢', 'Compter jusqu’à 10', 'N7seb 7ta l 3achra', 'نحسب حتى لعشرة', 'count', ['yellow', 'red']],
+  ['💧', 'Boire une gorgée d’eau', 'Nchreb chwiya d l ma', 'نشرب شوية د الما', 'action', ['yellow', 'red', 'blue']],
+  ['🎵', 'Écouter une chanson douce', 'Nsme3 mousi9a', 'نسمع موسيقى', 'action', ['green', 'blue']],
 ];
 
 const READING = [['0', '🖼️ Image + texte'], ['1', '🌫️ Image estompée'], ['2', '🔤 Texte seul']];

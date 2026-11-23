@@ -132,6 +132,18 @@ const TX = {
     ruptureBtn: '⚠️ Rupture / opposition',
     rupturesLabel: 'Ruptures : ',
     finishSession: '✔ Terminer et enregistrer la séance',
+    // v10.23 (pépites 6 et 4) : quadrillage des émotions 2×2 et moyens pour se sentir mieux.
+    moodTitle: '🧭 Mon énergie et mon cœur',
+    moodAsk: 'Ça va comment en toi, là, maintenant ?',
+    moodAxes: 'En haut mon corps est réveillé, en bas mon corps est posé. À gauche c’est difficile, à droite c’est agréable.',
+    moodYellow: '☀️ Réveillé et bien',
+    moodRed: '🌋 Réveillé et difficile',
+    moodGreen: '🌿 Posé et bien',
+    moodBlue: '🌧️ Posé et difficile',
+    moodCoping: 'Quand je suis {word}, je peux :',
+    moodChosen: 'On le fait ensemble 🤝',
+    moodBack: '← Choisir autre chose',
+    moodNote: 'Aucun point, aucun chrono : c’est toi qui sens. Rien ne quitte ce téléphone.',
   },
 };
 

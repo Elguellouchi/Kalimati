@@ -11,15 +11,16 @@ import { SITUATIONS, SEQUENCES, TACT_ITEMS, VERBS, PAIRS, FUNCTION_BASKETS, CATE
 import { answerKey } from './ex-verbal.js';
 import { cardWord } from './languages.js';
 import { tx, emotionLabel, situationLabel } from './section-i18n.js';
+import { moodMeterView } from './mood-meter.js';
 
 // Mot de l'émotion selon la langue (darija écrite, ou dictionnaire des cartes pour les autres langues).
 const EMOTION_WORD = { content: 'Content', triste: 'Triste', colere: 'En colère', peur: 'Peur', fatigue: 'Fatigué', calme: 'Calme', fier: 'Fier' };
-function emotionWord(emotion, lang) {
+// v10.23 (pépite 6) : le mot de l'émotion est aussi celui du quadrillage (modules/mood-meter.js).
+export function emotionWord(emotion, lang) {
   if (lang === 'dr') return emotionLabel(emotion, lang);
   const dictFr = EMOTION_WORD[emotion.id];
   return dictFr ? cardWord({ fr: dictFr }, lang) : emotionLabel(emotion, lang);
 }
-
 const emotionChoices = (target, lang) => [
   { vkey: target.vkey, label: emotionWord(target, lang), correct: true },
   // === [DEBUT MODIF v10.9-lot-A : Pépite 27 — 4 candidats pour adaptation 2..4 dans choiceBoard] ===
@@ -107,8 +108,10 @@ function mirror(ctx) {
 
 export function emotionStudio(ctx) {
   const L = ctx.lang;
-  return h('div', { class: 'stack emotion-studio' },
-    modeTabs([[tx('studioShow', L), () => receptive(ctx)], [tx('studioLife', L), () => situations(ctx)], [tx('studioMirror', L), () => mirror(ctx)]]));
+  const modes = [[tx('studioShow', L), () => receptive(ctx)], [tx('studioLife', L), () => situations(ctx)], [tx('studioMirror', L), () => mirror(ctx)],
+    // v10.23 (pépites 6 et 4) : quatrième mode = le quadrillage 2×2 et les moyens de se sentir mieux.
+    [tx('moodTitle', L), () => moodMeterView(ctx, { wordOf: (emotion) => emotionWord(emotion, ctx.lang) })]];
+  return h('div', { class: 'stack emotion-studio' }, modeTabs(modes));
 }
 
 // ---------- 📸 Personnaliser avec nos vraies photos ----------

@@ -99,6 +99,7 @@ export const CLINIC_DR = {
   'quickNon': 'La',
   'quickHelp': '3awnini',
   'quickJoke': 'Hadi ġir de7ka ! 😄',
+  'quickOups': 'Wa 3fwan, ghlte ! 🙈',
   'askFeel': 'Kifach 7assa ?',
   'askWant': 'Chno bġiti ?',
   'askWhere': 'Fin bġiti tmchi ?',

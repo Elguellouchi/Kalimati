@@ -1,4 +1,4 @@
-// Kalimati v10.19 (page « Je parle » repensée : grands départs, catégories illustrées, conjugaison visible et outils adulte repliés).
+// Kalimati v10.23 (moteur tactile central, barre de mots rapides toujours visible, deux langues sur la même grille).
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
 import * as db from './db.js';
@@ -20,7 +20,11 @@ import { logOrtho } from './modules/ex-ortho.js';
 import { LANGS, langInfo, isAmazighLang, isAmazighScript, isExtraLang, cardWord, cardSpeechText, categoryName, ui, spokenUi } from './modules/languages.js';
 import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack, amazighAutoStep } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
-import { loadAacPlus, learnTap, suggestionsFor, trackPress, touchAllowed, touchSettingsBox, scanSpeed, clearConfirmNeeded, steadyHandEnabled, echoPracticeEnabled, TREMOR_PX } from './modules/aac-plus.js';
+import { loadAacPlus, learnTap, suggestionsFor, touchSettingsBox, scanSpeed, clearConfirmNeeded, echoPracticeEnabled } from './modules/aac-plus.js';
+// v10.23 (Sprint 1) : un seul moteur tactile pour toute l'application (Sprint 1).
+import { bindTap, tapFeedback, resetTapMemory } from './modules/tap-engine.js';
+// v10.23 (pépite 1) : deux langues simultanées sur la même grille, sans déplacer une seule carte.
+import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/twin-language.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
@@ -46,10 +50,10 @@ const CORE_CAT = 'base';
 const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
-const EXPORTED_SETTINGS = ['lang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
+const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
   'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -95,9 +99,16 @@ function fillLabel(el, text, lang) {
 function cardElement(card, { small = false, lang = state.lang, className = '' } = {}) {
   const category = CATEGORIES.find((c) => c.id === card.cat);
   const gram = GRAMMAR[card.gram] || GRAMMAR.noun;
-  const ariaLabel = card.hidden && state.parent ? `${label(card, lang)} (carte masquée)` : label(card, lang);
+  // v10.23 (pépite 1) : le mot de l'autre langue du binôme, sous le mot parlé. Rien ne se déplace :
+  // la position vient de l'id de la carte, donc les deux langues partagent le même plan moteur.
+  const other = small ? null : twinOf(state.twin, lang);
+  const twinText = other ? cardWord(card, other, { scriptMode: state.amazighScript }) : '';
+  const main = label(card, lang);
+  const showTwin = twinText && twinText !== main;
+  const ariaLabel = `${main}${showTwin ? ` · ${twinText}` : ''}${card.hidden && state.parent ? ' (carte masquée)' : ''}`;
   const button = h('button', { type: 'button', class: `card${small ? ' small' : ''}${className ? ` ${className}` : ''}${card.hidden ? ' is-hidden' : ''}`, 'aria-label': ariaLabel },
-    cardVisual(card), labelElement(label(card, lang), lang),
+    cardVisual(card), labelElement(main, lang),
+    showTwin ? h('span', { class: 'twin-label', dir: langInfo(other).rtl ? 'rtl' : 'ltr' }, twinText) : null,
     card.sub && !small ? h('span', { class: 'sub' }, card.sub) : null,
     card.video ? h('span', { class: 'badge video' }, '▶') : null);
   button.dataset.cardId = card.id;
@@ -138,27 +149,13 @@ function playCardVideo(card) {
   closeBtn.focus();
 }
 
-// Filtre anti-rebond : ignore un second toucher involontaire (< 450 ms) sur la même carte, tout en laissant enchaîner deux cartes différentes sans délai.
-const SAME_CARD_COOLDOWN_MS = 450;
-let lastCardTap = { key: null, at: 0 };
-
-// pressMs : durée d'appui (option « toucher adapté »). Mode « Je montre » : l'adulte montre les mots sans remplir la phrase de l'enfant.
-function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
+// v10.23 (Sprint 1) : appui trop court, doigt qui glisse, double toucher — tout est décidé une seule fois,
+// dans modules/tap-engine.js, pour la grille, la barre de mots rapides et les suggestions.
+// Mode « Je montre » : l'adulte montre les mots sans remplir la phrase de l'enfant.
+function onCardTap(card, element) {
   // v10.15 : pendant « Explorer 30 s », le parent touche une carte pour la faire parler (pas d'éditeur).
   if (state.parent) { if (exploreActive()) { stopSpeaking(); sayCard(card, state.lang); return; } editCard(card); return; }
-  if (!touchAllowed(pressMs)) return;
-  // v10.15 : anti-tremblement (pépite 21) — un doigt qui glisse de plus de 14 px ne choisit pas la carte.
-  if (steadyHandEnabled() && element && element._movedPx > TREMOR_PX) { recordRejectedTap({ cardId: card?.id, space: state.space }); return; } // v10.15
-  const now = performance.now();
-  // Identité de la carte : son id, sinon l'élément affiché (évite de bloquer deux cartes différentes sans id).
-  const tapKey = (card && card.id != null) ? card.id : element;
-  if (tapKey === lastCardTap.key && now - lastCardTap.at < SAME_CARD_COOLDOWN_MS) { recordRejectedTap({ cardId: card?.id, space: state.space }); return; } // v10.8
-  lastCardTap = { key: tapKey, at: now };
-  element.classList.remove('pressed');
-  void element.offsetWidth;
-  element.classList.add('pressed', 'card-just-tapped');
-  clearTimeout(element._tapFeedbackTimer);
-  element._tapFeedbackTimer = setTimeout(() => element.classList.remove('card-just-tapped'), SAME_CARD_COOLDOWN_MS);
+  tapFeedback(element);
   stopSpeaking();
   sayCard(card, state.lang);
   if (state.modeling) {
@@ -173,6 +170,17 @@ function onCardTap(card, element, pressMs = Number.MAX_SAFE_INTEGER) {
   if (state.strip.length < MAX_STRIP) state.strip = [...state.strip, { card, lang: state.lang }];
   renderStrip();
 }
+
+// v10.23 (Sprint 1) : une seule fabrique de cartes touchables — la grille, les suggestions et la barre
+// de mots rapides appliquent donc exactement le même toucher, au même endroit.
+const tappableCard = (card, options = {}) => {
+  const el = cardElement(card, options);
+  return bindTap(el, () => onCardTap(card, el), {
+    key: card && card.id != null ? card.id : el,
+    skip: () => state.parent,
+    onRejected: () => recordRejectedTap({ cardId: card?.id, space: state.space }),
+  });
+};
 
 // ---------- Bande de phrase (chaque mot garde sa langue : code-switching) ----------
 // v9.13 : le moteur hors-ligne (modules/morphology.js) conjugue et accorde la phrase. En français, en darija
@@ -214,6 +222,14 @@ function renderStrip() {
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = langInfo(state.lang).short;
   $('#btn-lang').setAttribute('aria-label', `Langue : ${langInfo(state.lang).name}. Changer de langue`);
+  // v10.23 (pépite 1) : un seul bouton pour passer de la langue de la maison à celle de l'école.
+  const twinBtn = $('#btn-twin');
+  if (twinBtn) {
+    const other = twinOf(state.twin, state.lang);
+    twinBtn.hidden = !other;
+    twinBtn.textContent = other ? langInfo(other).short : '';
+    twinBtn.setAttribute('aria-label', other ? `Passer à la langue jumelle : ${langInfo(other).name}. Les cartes ne bougent pas.` : 'Langue jumelle');
+  }
   const talk = document.querySelector('.talk');
   if (talk) talk.classList.toggle('has-phrase', state.strip.length > 0);
   renderSuggestions();
@@ -323,12 +339,7 @@ function renderSuggestions() {
   const row = document.getElementById('suggest-row');
   if (!row) return;
   const next = state.modeling ? [] : suggestionsFor(state.strip, state.cards);
-  row.replaceChildren(...(next.length ? [h('span', { class: 'suggest-label' }, '💡'), ...next.map((card) => {
-    const el = cardElement(card, { small: true });
-    const press = trackPress(el);
-    el.onclick = () => onCardTap(card, el, press());
-    return el;
-  })] : []));
+  row.replaceChildren(...(next.length ? [h('span', { class: 'suggest-label' }, '💡'), ...next.map((card) => tappableCard(card, { small: true }))] : []));
   row.hidden = !next.length;
 }
 
@@ -394,6 +405,10 @@ function setupStrip() {
     undoTimer = setTimeout(endUndo, 4000);
   };
   $('#btn-lang').onclick = openLangPicker;
+  // v10.23 (pépite 1) : basculer ne touche ni les positions ni la phrase — chaque mot déjà posé garde sa langue,
+  // donc l'enfant peut mélanger les deux langues dans une même phrase (code-switching).
+  const twinBtn = $('#btn-twin');
+  if (twinBtn) twinBtn.onclick = () => { const next = twinSwap(state.twin, state.lang); if (next && next !== state.lang) setLang(next); };
 }
 
 // ---------- Espace Parler ----------
@@ -500,12 +515,7 @@ function stopScan() { if (scanTimer) { clearInterval(scanTimer); scanTimer = 0; 
 
 function renderTalk() {
   stopScan();
-  const tappable = (card, options) => {
-    const el = cardElement(card, options);
-    const press = trackPress(el);
-    el.onclick = () => onCardTap(card, el, press());
-    return el;
-  };
+  const tappable = tappableCard;
   const pickCard = (id) => state.cards.find((c) => c.id === id && visibleFor(c));
   // v10.19 : six grands mots pour commencer, puis une rangée rapide pour continuer.
   const STARTER_IDS = ['c-base-je-veux', 'c-base-aide-moi', 'c-base-encore', 'c-base-fini', 'c-base-oui', 'c-base-non'];
@@ -517,8 +527,6 @@ function renderTalk() {
   const noPhrase = state.strip.length === 0;
   const starterRow = state.parent ? null : h('div', { class: 'quick-pills talk-start', 'aria-label': 'Pour commencer' },
     starterCards.map((card) => tappable(card, { className: 'starter' })));
-  const quickRow = state.parent ? null : h('div', { class: 'talk-quick', 'aria-label': 'Mots rapides' },
-    quickCards.map((card) => tappable(card, { small: true, className: 'quick-card' })));
   // L'adulte peut ouvrir les outils sans quitter la page ; rien n'est imposé à l'enfant.
   const modelToggle = state.parent ? null : h('button', { type: 'button', class: `btn ghost tiny model-toggle${state.modeling ? ' on' : ''}`,
     onclick: () => { state.modeling = !state.modeling; state.model = []; renderView(); renderSuggestions(); } },
@@ -531,9 +539,18 @@ function renderTalk() {
     const words = state.lang === 'dr' ? clinicT(key, 'dr') : fr;
     speak(String(words).replace(/^[^\p{L}\p{N}]+/u, ''), { lang: state.lang });
   };
-  const funRow = state.parent ? null : h('div', { class: 'talk-fun', 'aria-label': 'Aides rapides' },
-    h('button', { type: 'button', class: 'talk-chip', onclick: () => sayPill('quickWait', 'Attends, je prépare ma phrase !') }, `⏳ ${clinicT('quickWait', state.lang)}`),
-    h('button', { type: 'button', class: 'talk-chip', onclick: () => sayPill('quickJoke', 'C’est une blague !') }, `😄 ${clinicT('quickJoke', state.lang)}`));
+  // v10.23 (pépite 2) : la barre des mots essentiels reste à l'écran en permanence — elle ne vide jamais
+  // la phrase en cours. L'enfant peut dire « Non », « Attends » ou « Oups » au milieu d'une phrase.
+  // Sur petit écran, les trois aides passent seules sur une deuxième ligne : elles ne doivent jamais
+  // se retrouver hors écran, sinon le mot qui répare redevient introuvable.
+  const railChip = (emoji, key, fr) => h('button', { type: 'button', class: 'rail-chip', onclick: () => sayPill(key, fr) },
+    `${emoji} ${clinicT(key, state.lang)}`);
+  const rail = state.parent ? null : h('div', { class: 'talk-rail', 'aria-label': 'Mots rapides, toujours visibles' },
+    h('div', { class: 'rail-help' },
+      railChip('⏳', 'quickWait', 'Attends, je prépare ma phrase !'),
+      railChip('😄', 'quickJoke', 'C’est une blague !'),
+      railChip('🙈', 'quickOups', 'Oups, je me suis trompé !')),
+    h('div', { class: 'rail-cards' }, quickCards.map((card) => tappable(card, { small: true, className: 'quick-card' }))));
   // v10.15 (pépite 23) : questions de l'adulte — un toucher filtre la catégorie des réponses.
   const askRow = h('div', { class: 'ask-pills', 'aria-label': 'Questions' },
     ASK_PILLS.map(([emoji, key, fr, cat]) => h('button', { type: 'button', class: `ask-pill${state.cat === cat ? ' active' : ''}`, onclick: () => { sayPill(key, fr); state.cat = cat; renderView(); } },
@@ -602,9 +619,10 @@ function renderTalk() {
     searchBox, exploreBtn, exploreNote,
     personalise,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
+    state.parent ? twinBox() : null,
     state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
-  const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}` },
-    friend, starterRow, quickRow, funRow, tabs, boardHead, suggest, grid, adultTools);
+  const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}${rail ? ' has-rail' : ''}` },
+    friend, starterRow, tabs, boardHead, suggest, grid, adultTools, rail);
   const ms = scanSpeed();
   if (!state.parent && ms > 0) {
     const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');
@@ -619,7 +637,7 @@ function renderTalk() {
       }, ms);
       view.addEventListener('click', (e) => {
         // v10.4 : un onglet, un mot rapide ou une suggestion se touchent normalement pendant le balayage.
-        if (e.target.closest('.model-toggle, .tab, .tabs, .suggest-row, .friend-banner, .quick-pills, .ask-pills, .talk-quick, .talk-fun, .talk-adult, .clinic-search, .explore-toggle')) return;
+        if (e.target.closest('.model-toggle, .tab, .tabs, .suggest-row, .friend-banner, .quick-pills, .ask-pills, .talk-rail, .talk-adult, .clinic-search, .explore-toggle')) return;
         const activeEl = targets[idx];
         if (activeEl && e.target.closest('.card') !== activeEl) {
           e.preventDefault();
@@ -840,6 +858,33 @@ function motorPlanBox() {
         renderView();
       }, 'ghost tiny'))),
     status);
+}
+
+// v10.23 (pépite 1) : le parent choisit les deux langues de l'enfant (maison + école). Le choix ne déplace
+// aucune carte — le plan moteur reste le seul repère de l'enfant.
+function twinBox() {
+  const home = state.twin ? state.twin.a : state.lang;
+  const school = state.twin ? state.twin.b : suggestPartner(state.lang);
+  const pickA = h('select', { 'aria-label': 'Première langue' },
+    LANGS.map((l) => h('option', { value: l.code, selected: l.code === home }, `${l.flag} ${l.name}`)));
+  const pickB = h('select', { 'aria-label': 'Deuxième langue' },
+    LANGS.map((l) => h('option', { value: l.code, selected: l.code === school }, `${l.flag} ${l.name}`)));
+  const apply = async (on) => {
+    const a = pickA.value;
+    const b = on && a === pickB.value ? LANGS.find((l) => l.code !== a).code : pickB.value;
+    state.twin = on ? { a, b } : null;
+    try { await saveTwin(state.twin); } catch (err) { console.error('[Kalimati] langue jumelle non enregistrée', err); }
+    renderAll();
+  };
+  return h('details', { class: 'card-box twin-box' }, h('summary', {}, '🗣️ Deux langues sur la même grille'),
+    h('p', { class: 'note' }, 'L’enfant voit les deux mots sur chaque carte et change de langue d’un seul toucher (bouton à côté de celle qu’il parle). Les cartes ne bougent pas : c’est toujours la même place pour le même mot.'),
+    h('label', { class: 'check' }, 'Parler dans deux langues : ',
+      h('input', { type: 'checkbox', checked: state.twin ? 'checked' : null, onchange: (e) => apply(e.target.checked) })),
+    h('div', { class: 'row wrap' },
+      h('label', { class: 'check' }, 'Langue 1 : ', pickA),
+      h('label', { class: 'check' }, 'Langue 2 : ', pickB),
+      btn('Changer les deux langues', () => apply(Boolean(state.twin)), 'ghost tiny')),
+    h('p', { class: 'note' }, 'Dans une même phrase, chaque mot garde la langue avec laquelle il a été touché.'));
 }
 
 function renderAll() {
@@ -1321,6 +1366,7 @@ async function init() {
   nav.attach($('#view'));
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   setActiveLang(state.lang);
+  state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
   // v10.7 : écriture amazighe choisie (tifinagh + latin par défaut) et voix amazighes en mémoire (sans bloquer l'ouverture).
   const savedScript = await db.getSetting('amazighScript').catch(() => null);
@@ -1373,6 +1419,7 @@ async function init() {
       await loadLevels();
       state.lang = langInfo((await db.getSetting('lang')) || state.lang).code;
       setActiveLang(state.lang);
+      state.twin = await loadTwin(); // v10.23 (pépite 1) : le binôme de langues vient de la sauvegarde
       loadAmazighVoices(state.lang).catch(() => {});
       if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang);
       state.cards = await loadCards();

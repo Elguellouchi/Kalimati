@@ -87,7 +87,8 @@ export function keyFor(item) {
 const SKIN = '#F2C9A0';
 const HAIR = '#4A2E1F';
 const INK = '#3A2A22';
-const ZONE = { green: '#CFEBD2', blue: '#CFE3F5', yellow: '#FBEBB5', red: '#F7CFC9' };
+// v10.23 (pépite 6) : les quatre couleurs des zones servent aussi au quadrillage des émotions (2×2).
+export const ZONE = { green: '#CFEBD2', blue: '#CFE3F5', yellow: '#FBEBB5', red: '#F7CFC9' };
 
 const EYES = {
   open: `<ellipse cx="76" cy="104" rx="13" ry="15" fill="#fff"/><ellipse cx="124" cy="104" rx="13" ry="15" fill="#fff"/>

@@ -112,6 +112,8 @@ export const CLINIC_FR = {
   quickNon: 'Non',
   quickHelp: 'Aide-moi',
   quickJoke: 'C’est une blague ! 😄',
+  // v10.23 (pépite 2) : le mot qui répare sans rien effacer.
+  quickOups: 'Oups, je me suis trompé ! 🙈',
   askFeel: 'Comment te sens-tu ?',
   askWant: 'Que veux-tu ?',
   askWhere: 'Où veux-tu aller ?',

@@ -129,6 +129,19 @@ export const TX_DR = {
   'ruptureBtn': '⚠️ T9ta3 / 3nad',
   'rupturesLabel': 'T9ta3:',
   'finishSession': '✔ Saliw w sjlo l7issa',
+  // v10.23 (pépites 6 et 4) : quadrillage des émotions — écrit à la main en attendant le prochain
+  // passage de tools/gen-darija-i18n.mjs (la parité français / darija est contrôlée par tools/test-i18n.mjs).
+  'moodTitle': '🧭 Lwe7d w lbeed dyali',
+  'moodAsk': 'Kifach 7as b rasek daba?',
+  'moodAxes': 'F l3leya: goudi we7d. F l7ta: goudi 7ednine. F liser: s3ib. F lyemin: mzyan.',
+  'moodYellow': '☀️ We7d w mzyan',
+  'moodRed': '🌋 We7d w s3ib',
+  'moodGreen': '🌿 7ednine w mzyan',
+  'moodBlue': '🌧️ 7ednine w s3ib',
+  'moodCoping': 'Mennek kan {word}, nqder:',
+  'moodChosen': "Ndirha b3ediyeta 🤝",
+  'moodBack': '← Khtar wa7ed akhor',
+  'moodNote': 'Bla ncom, bla chrono: nta li 7as. Walou kayherj men had lphone.',
 };
 export const EMOTION_DR = {
   'content': 'Fer7ana',
