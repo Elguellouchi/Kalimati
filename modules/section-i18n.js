@@ -13,6 +13,15 @@ import { getDarijaScript } from './languages.js';
 import * as DR_LATIN from './section-i18n-dr.js';
 import * as DR_ARABE from './section-i18n-dr-ar.js';
 import * as ARABE from './section-i18n-ar.js';
+// v10.28 : langues du monde, générées par tools/gen-world-i18n.mjs (OpenAI, sur le PC).
+import * as EN from './i18n-en.js';
+import * as ES from './i18n-es.js';
+import * as DE from './i18n-de.js';
+import * as IT from './i18n-it.js';
+import * as PT from './i18n-pt.js';
+import * as NL from './i18n-nl.js';
+import * as TR from './i18n-tr.js';
+import * as ZH from './i18n-zh.js';
 
 const TX = {
   fr: {
@@ -166,6 +175,14 @@ const TX = {
 const LANGUES = {
   dr: () => (getDarijaScript() === 'latin' ? { mod: DR_LATIN, suf: 'DR' } : { mod: DR_ARABE, suf: 'DRA' }),
   ar: () => ({ mod: ARABE, suf: 'AR' }),
+  en: () => ({ mod: EN, suf: 'EN' }),
+  es: () => ({ mod: ES, suf: 'ES' }),
+  de: () => ({ mod: DE, suf: 'DE' }),
+  it: () => ({ mod: IT, suf: 'IT' }),
+  pt: () => ({ mod: PT, suf: 'PT' }),
+  nl: () => ({ mod: NL, suf: 'NL' }),
+  tr: () => ({ mod: TR, suf: 'TR' }),
+  zh: () => ({ mod: ZH, suf: 'ZH' }),
 };
 
 const LOTS = new Map();

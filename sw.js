@@ -16,6 +16,7 @@ const FILES = [
   './modules/section-i18n.js', './modules/section-i18n-dr.js',
   // v10.24 : darija en lettres arabes et arabe standard, hors ligne eux aussi
   './modules/section-i18n-dr-ar.js', './modules/section-i18n-ar.js', './modules/clinic-i18n-dr-ar.js', './modules/clinic-i18n-ar.js',
+  './modules/i18n-en.js', './modules/i18n-es.js', './modules/i18n-de.js', './modules/i18n-it.js', './modules/i18n-pt.js', './modules/i18n-nl.js', './modules/i18n-tr.js', './modules/i18n-zh.js',
   // v10.15 : ateliers cliniques et leurs libellés darija (générée hors ligne par OpenAI)
   './modules/clinique.js', './modules/clinic-i18n.js', './modules/clinic-i18n-dr.js',
   // v10.16 : espace thérapeute et fiches de suivi pseudonymisées (100 % locales)

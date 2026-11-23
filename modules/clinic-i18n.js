@@ -5,10 +5,19 @@
 import { CLINIC_DR } from './clinic-i18n-dr.js';
 import { CLINIC_DRA } from './clinic-i18n-dr-ar.js';
 import { CLINIC_AR } from './clinic-i18n-ar.js';
+import { CLINIC_EN } from './i18n-en.js';
+import { CLINIC_ES } from './i18n-es.js';
+import { CLINIC_DE } from './i18n-de.js';
+import { CLINIC_IT } from './i18n-it.js';
+import { CLINIC_PT } from './i18n-pt.js';
+import { CLINIC_NL } from './i18n-nl.js';
+import { CLINIC_TR } from './i18n-tr.js';
+import { CLINIC_ZH } from './i18n-zh.js';
 import { getDarijaScript } from './languages.js';
 
 // v10.24 : l'atelier se lit dans l'écriture choisie au réglage parent, et l'arabe ne tombe plus en français.
-const TABLES = { dr: () => (getDarijaScript() === 'latin' ? CLINIC_DR : CLINIC_DRA), ar: () => CLINIC_AR };
+const TABLES = { dr: () => (getDarijaScript() === 'latin' ? CLINIC_DR : CLINIC_DRA), ar: () => CLINIC_AR,
+  en: () => CLINIC_EN, es: () => CLINIC_ES, de: () => CLINIC_DE, it: () => CLINIC_IT, pt: () => CLINIC_PT, nl: () => CLINIC_NL, tr: () => CLINIC_TR, zh: () => CLINIC_ZH };
 
 export const CLINIC_FR = {
   clinic: 'Ateliers',

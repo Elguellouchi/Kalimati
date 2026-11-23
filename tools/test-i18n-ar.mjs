@@ -43,7 +43,7 @@ check(tx('orthoTitle', 'ar') !== tx('orthoTitle', 'fr'), `« Atelier Orthophonie
 check(sectionLabel(SECTIONS[0], 'ar') !== SECTIONS[0].name, `Domaine A en arabe : ${sectionLabel(SECTIONS[0], 'ar')}`);
 check(goalTitle(GOALS[0], 'ar') !== GOALS[0].title, 'Titre de jeu en arabe');
 check(clinicT('tClinic', 'ar') !== CLINIC_FR.tClinic, `Ateliers en arabe : ${clinicT('tClinic', 'ar')}`);
-check(tx('orthoTitle', 'es') === tx('orthoTitle', 'fr'), 'Espagnol : pas de traduction inventée (français en attendant)');
+check(tx('orthoTitle', 'shi') === tx('orthoTitle', 'fr'), 'Amazigh : pas de traduction inventée (français en attendant)');
 check(tx('orthoTitle', 'dr') !== tx('orthoTitle', 'fr'), 'La darija reste traduite');
 
 if (failed) { console.error(`\n❌ ${failed} contrôle(s) arabe en échec.`); process.exit(1); }
