@@ -4,6 +4,7 @@ import { WARDROBE, cleanWardrobe, coinsLeft, buyItem, toggleWear } from '../modu
 import { cleanVideos, videoProblem, videoBlobKey, newVideoId, VIDEO_SETTING_KEY } from '../modules/model-videos.js';
 import { smoothMouth, maskPose, countBursts, MASKS } from '../modules/voice-mask-data.js';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 
 const ok = (m) => console.log(`✓ ${m}`);
 
@@ -39,7 +40,7 @@ assert.match(videoProblem({ type: 'video/mp4', size: 500 * 1024 * 1024 }), /trop
 assert.equal(videoProblem({ type: 'video/quicktime', size: 5e6 }), '');
 ok('vidéo vérifiée avant enregistrement');
 // La vidéo ne part ni dans la sauvegarde ni dans la synchro.
-const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const app = appSource(); // v10.42 : app.js + ses modules découpés
 const exported = app.match(/const EXPORTED_SETTINGS = \[([\s\S]*?)\];/)[1];
 assert.ok(!exported.includes(VIDEO_SETTING_KEY) && !exported.includes('modelVideo'));
 const sync = readFileSync(new URL('../modules/cloud-sync.js', import.meta.url), 'utf8');

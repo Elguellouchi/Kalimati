@@ -14,6 +14,7 @@
 import * as db from '../db.js';
 import { isAmazighLang, langInfo } from './languages.js';
 import { logDiagnostic, LOG_TYPES } from './error-log.js';
+import { perChildKey } from './child-profiles.js';
 
 export const VOICE_CACHE_PREFIX = 'kalimati-amazigh-voices-';
 const PACK_STATE_KEY = 'amazighVoicePacks';
@@ -28,7 +29,9 @@ const PRIVATE_CARD_RE = /^c-personnes-(?!papa$|maman$|papi$|mamie$|maitresse$)/;
 const shareableId = (id) => CARD_ID_RE.test(id) && id.startsWith('c-') && !PRIVATE_CARD_RE.test(id);
 
 export const packCacheName = (lang) => `${VOICE_CACHE_PREFIX}${lang}`;
-export const parentCacheName = (lang) => `${VOICE_CACHE_PREFIX}parent-${lang}`;
+// v10.42 (Lot 4.3) : la voix du parent appartient à un enfant. Premier enfant : nom d'avant (rien ne se perd) ;
+// les autres enfants ont leur propre armoire (« …parent-shi:<enfant> »), jamais partagée.
+export const parentCacheName = (lang) => perChildKey(`${VOICE_CACHE_PREFIX}parent-${lang}`);
 const packKey = (lang, cardId) => `./voix/${lang}/${encodeURIComponent(cardId)}.mp3`;
 const parentKey = (lang, cardId) => `./voix-parent/${lang}/${encodeURIComponent(cardId)}`;
 const hasCaches = () => typeof caches !== 'undefined';

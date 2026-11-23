@@ -10,9 +10,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readSource } from './app-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const read = (rel) => readSource(rel); // v10.42 : « app.js » = app.js + ses modules découpés
 const load = (rel) => import(pathToFileURL(path.join(ROOT, rel)).href);
 
 // util.js protège les prototypes DOM au chargement : on fournit les bases minimales sous Node.

@@ -2,6 +2,7 @@
 // majuscules des noms allemands, classificateurs chinois.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { appSource } from './app-source.mjs';
 for (const name of ['Element', 'DocumentFragment', 'Document', 'HTMLElement']) if (!globalThis[name]) globalThis[name] = class {};
 if (!globalThis.navigator) globalThis.navigator = { userAgent: 'node' };
 globalThis.document = { documentElement: { dir: 'ltr' } };
@@ -71,7 +72,7 @@ document.documentElement.dir = 'rtl';
 assert.equal(mirrorArrows('Suivante →'), 'Suivante ←');
 assert.equal(mirrorArrows('← Retour'), '→ Retour');
 document.documentElement.dir = 'ltr';
-const app = readFileSync(new URL('../app.js', import.meta.url), 'utf8');
+const app = appSource(); // v10.42 : app.js + ses modules découpés
 assert.match(app, /document\.documentElement\.dir = langInfo\(state\.lang\)\.rtl \? 'rtl' : 'ltr'/);
 const css = readFileSync(new URL('../style.css', import.meta.url), 'utf8');
 assert.ok(!/text-align:\s*left/.test(css), 'text-align: left reste dans style.css');

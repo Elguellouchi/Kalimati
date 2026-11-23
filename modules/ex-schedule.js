@@ -13,7 +13,7 @@ import { sequenceBoard, praise, bigCard } from './widgets.js';
 import { getTimerShowNumbers, timerVisualState } from './timer.js';
 import { SEQUENCES } from './content.js';
 import { tx, routineLabel } from './section-i18n.js';
-import { formatDarijaText, isDarijaArabicScript } from './languages.js';
+import { formatDarijaText, isDarijaArabicScript, isExtraLang } from './languages.js';
 
 // ---------- Étapes et routines par défaut ----------
 const S = (id, fr, dr, ar, emoji, minutes, extra = {}) => ({ id, fr, dr, ar, emoji, minutes, hidden: false, ...extra });
@@ -209,6 +209,13 @@ export function scheduleView(ctx) {
   // Sur téléphone, le son et la voix ne partent que s'ils sont lancés pendant le toucher :
   // on félicite et on annonce l'étape suivante tout de suite, puis on enregistre.
   function cheer(next) {
+    // v10.42 (Lot 4.2) : une langue du monde est dite dans sa langue, jamais en français.
+    const lang = ctx.lang();
+    if (isExtraLang(lang)) {
+      if (!next) { speak(tx('allDone', lang), { lang }); return; }
+      sayStep(next, lang); // voix du parent dans cette langue, sinon voix du téléphone
+      return;
+    }
     const dr = ctx.lang() === 'dr';
     const arabic = dr && hasArabicVoice();
     if (!next) {

@@ -5,9 +5,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { migrateCards, isLegacySelfDuplicate, planPersonRename } from '../modules/card-migration.js';
+import { readSource } from './app-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const read = (rel) => readSource(rel); // v10.42 : « app.js » = app.js + ses modules découpés
 
 const SELF = 'c-personnes-moi';
 const NAME = 'Enfant A';

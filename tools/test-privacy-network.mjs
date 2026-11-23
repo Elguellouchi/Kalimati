@@ -85,7 +85,7 @@ async function runDynamicServerAndGuardTest() {
       const res = await fetch(`${BASE_URL}/app.js`).catch(() => null);
       if (res && res.ok) {
         const appJs = await res.text();
-        assert(appJs.includes('setLang'), 'Serveur local tools/serve.mjs sert bien app.js');
+        assert(appJs.includes('createBackupUi'), 'Serveur local tools/serve.mjs sert bien app.js'); // v10.42 : setLang vit dans modules/backup-ui.js
       }
     }
   } finally {

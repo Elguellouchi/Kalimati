@@ -8,9 +8,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readSource } from './app-source.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const read = (rel) => readSource(rel); // v10.42 : « app.js » = app.js + ses modules découpés
 const { APP_VERSION, CACHE_VERSION } = await import(pathToFileURL(path.join(ROOT, 'modules/version.js')).href);
 
 const expectedCache = `kalimati-${APP_VERSION.replace(/\./g, '-')}`;

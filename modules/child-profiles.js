@@ -67,6 +67,10 @@ export function renameChild(id, name, emoji) {
 export function removeChild(id) {
   if (id === MAIN_ID || id === activeChildId()) return Promise.resolve(false);
   saveChildren(listChildren().filter((c) => c.id !== id));
+  // v10.42 (Lot 4.3) : ses voix enregistrées (armoires « …:<enfant> ») partent avec lui.
+  try {
+    if (globalThis.caches) caches.keys().then((names) => names.filter((n) => n.endsWith(`:${id}`)).forEach((n) => caches.delete(n))).catch(() => {});
+  } catch { /* pas d'armoire à voix */ }
   return new Promise((resolve) => {
     try {
       const req = indexedDB.deleteDatabase(dbNameFor(id));

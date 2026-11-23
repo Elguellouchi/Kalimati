@@ -17,13 +17,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readSource } from './app-source.mjs';
 
 // Les modules de l'appli attendent un navigateur : petits remplaçants, seulement pour les lire ici.
 for (const name of ['Element', 'DocumentFragment', 'Document', 'HTMLElement']) if (!globalThis[name]) globalThis[name] = class {};
 if (!globalThis.navigator) globalThis.navigator = { userAgent: 'node' };
 
 const ROOT = process.env.KALIMATI_QA_ROOT || path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const read = (rel) => readSource(rel); // v10.42 : « app.js » = app.js + ses modules découpés
 const load = (rel) => import(pathToFileURL(path.join(ROOT, rel)).href);
 const VARIETIES = ['shi', 'tzm', 'rif', 'zgh'];
 

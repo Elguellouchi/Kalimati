@@ -4,13 +4,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readSource } from './app-source.mjs';
 import {
   FOLLOWUP_KIND, CODE_RE, newFollowupCode, normalizeFollowup, ageBandOf, summaryOf, weatherOf,
   sectionAverages, collectiveKpis, avsRows, sparklinePaths, seriesOf,
 } from '../modules/followup-schema.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+const read = (rel) => readSource(rel); // v10.42 : « app.js » = app.js + ses modules découpés
 const has = (rel, pattern, message) => assert.match(read(rel), pattern, message);
 const lacks = (rel, pattern, message) => assert.doesNotMatch(read(rel), pattern, message);
 
