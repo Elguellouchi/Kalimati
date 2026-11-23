@@ -7,7 +7,8 @@ import { openEditor } from './editor.js';
 import { unlockSounds, resizePhoto } from './media.js';
 import { buildBackupFile, deliverBackup, readBackup, encryptBackupFile, BACKUP_PASSWORD_MIN } from './backup.js';
 import { h, btn } from './modules/util.js';
-import { loadContext, recordTrial, todayTrials, firstName, profile } from './modules/aba.js';
+import { loadContext, recordTrial, todayTrials, firstName, profile, saveProfile } from './modules/aba.js';
+import { listChildren, activeChildId, MAIN_ID } from './modules/child-profiles.js';
 import { nour } from './modules/nour.js';
 import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/grid-layout.js';
 import { createNavigator } from './modules/spaces.js';
@@ -1757,6 +1758,11 @@ async function init() {
   $('#calm').onclick = () => openCalm(state.lang);
   state.cols = (await db.getSetting('cols')) || 4;
   await loadContext();
+  // v10.36 : un nouvel enfant ouvert pour la première fois reçoit le prénom écrit dans « Enfants sur ce téléphone ».
+  try {
+    const child = listChildren().find((c) => c.id === activeChildId());
+    if (child && child.id !== MAIN_ID && child.name && !profile.name) await saveProfile({ name: child.name });
+  } catch (err) { console.error('[Kalimati] prénom du nouvel enfant', err); }
   try { setDiagnosticForbiddenNames([firstName()]); } catch { /* pas de prénom */ } // v10.8
   await loadFriendsState().catch(() => {});
   await loadMorphologyState().catch(() => {});

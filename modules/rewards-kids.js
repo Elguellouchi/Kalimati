@@ -7,8 +7,9 @@ import { h, btn } from './util.js';
 import { speak } from '../speech.js';
 import { playClap } from '../media.js';
 import { tx, themeText } from './section-i18n.js';
+import { perChildKey } from './child-profiles.js';
 
-const KEY = 'kalimati-rewards-v1';
+const KEY = perChildKey('kalimati-rewards-v1'); // v10.36 : étoiles propres à chaque enfant
 const GOAL = 5;
 const EVENT = 'kalimati:stars';
 

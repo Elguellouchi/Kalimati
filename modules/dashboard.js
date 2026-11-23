@@ -25,6 +25,7 @@ import { networkModeBox } from './team-mode.js';
 import { followupShareBox } from './followup.js';
 import { getTimerShowNumbers, setTimerShowNumbers, TIMER_SETTING_KEY } from './timer.js';
 import { updateBox } from './app-update.js';
+import { childrenBox } from './children-box.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
@@ -423,6 +424,7 @@ export function dashboardScreen(nav) {
       safePart('Mode Regard', () => eyeTrackingAndPacksBox({ onCardsAdded: () => document.dispatchEvent(new CustomEvent('kalimati-data-updated')) })),
       // v9.15 : synchro équipe chiffrée (Supabase) + suivi clinique. Rien ne part sans le bouton « Synchroniser ».
       safePart('Synchronisation', () => cloudSyncAndCohortBox({ onMerged: () => document.dispatchEvent(new CustomEvent('kalimati-data-updated')) })),
+      safePart('Enfants', () => childrenBox()),
       safePart('Profil', () => profileForm()),
       safePart('Mise à jour', () => updateBox()),
       safePart('À propos', () => aboutBox()),

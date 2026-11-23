@@ -2,8 +2,10 @@
 // v2 : objectifs du PEI, essais ABA notés, enregistrements. v3 : photos personnalisées (visual_overrides).
 // Les montées de version gardent toutes les cartes et tous les essais existants.
 import { GOALS } from './modules/goals.js';
+import { activeDbName } from './modules/child-profiles.js';
 
-const DB_NAME = 'kalimati';
+// v10.36 : un enfant = une base. Le premier enfant garde « kalimati » (données d'origine intactes).
+const DB_NAME = activeDbName();
 const DB_VERSION = 10;
 
 let dbPromise = null;
