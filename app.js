@@ -29,6 +29,7 @@ import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/
 import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.js';
 import { PLACES, PLACE_SETTING_KEY, cleanCustomBoards, newBoardId, boardItems, passingCard } from './modules/place-boards.js';
 import { tipOfDay } from './modules/caregiver-tips.js';
+import { TALK_MODES, TALK_MODE_KEY, normalizeTalkMode, showsHints, showsCoach, cardsForIntent } from './modules/talk-modes.js';
 import { GRID_SIZES, SCENE_SETTING_KEY, sceneImageKey, newSceneId, cleanScenes, EXPLORE_SCENES, cellBox } from './modules/scenes.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
@@ -56,9 +57,9 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards', 'visualScenes'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards', 'visualScenes', 'talkMode'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [] };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [], talkMode: 'coach', intent: null };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -333,7 +334,7 @@ function coachBar() {
 function renderMorphSlot() {
   const slot = document.getElementById('morph-slot');
   if (!slot) return;
-  const show = morphLangOk(state.strip) && ['talk', 'home'].includes(state.space) && !state.modeling;
+  const show = morphLangOk(state.strip) && ['talk', 'home'].includes(state.space) && !state.modeling && showsCoach(state.talkMode);
   const bar = show ? coachBar() : null;
   slot.replaceChildren(...(bar ? [bar] : []));
   slot.hidden = !bar;
@@ -343,9 +344,17 @@ function renderMorphSlot() {
 function renderSuggestions() {
   const row = document.getElementById('suggest-row');
   if (!row) return;
-  const next = state.modeling ? [] : suggestionsFor(state.strip, state.cards);
+  const next = state.modeling || !showsHints(state.talkMode) ? [] : suggestionsFor(state.strip, state.cards);
   row.replaceChildren(...(next.length ? [h('span', { class: 'suggest-label' }, '💡'), ...next.map((card) => tappableCard(card, { small: true }))] : []));
   row.hidden = !next.length;
+  // v10.37 (mode Aide / Coach) : les cartes probables brillent dans la grille, sans prendre de place.
+  document.querySelectorAll('.talk > .grid .card.hint-glow').forEach((el) => el.classList.remove('hint-glow', 'hint-first'));
+  if (state.strip.length) {
+    next.forEach((card, i) => document.querySelectorAll(`.talk > .grid .card[data-card-id="${CSS.escape(card.id)}"]`).forEach((el) => {
+      el.classList.add('hint-glow');
+      if (i === 0 && showsCoach(state.talkMode)) el.classList.add('hint-first');
+    }));
+  }
 }
 
 // Ligne « Je montre » : les mots montrés par l'adulte, à réécouter.
@@ -499,6 +508,13 @@ function flashSearch(card) {
 function runSearch(query) {
   const q = String(query || '').trim().toLowerCase();
   if (!q) return '';
+  // v10.37 (recherche par intention) : « il a soif » montre Eau, Lait, Jus… d'un coup.
+  const intentCards = cardsForIntent(q, state.cards.filter(visibleFor), (c) => [label(c, state.lang), c.fr, c.dr]);
+  if (intentCards.length) {
+    if (!state.parent) { state.intent = { title: String(query).trim().slice(0, 40), cards: intentCards }; state.place = 'intent'; renderView(); }
+    else { state.cat = intentCards[0].cat; renderView(); flashSearch(intentCards[0]); }
+    return `💡 ${intentCards.map((c) => label(c, state.lang)).join(', ')}`;
+  }
   const found = state.cards.find((c) => [label(c, state.lang), c.fr, c.dr].filter(Boolean).some((text) => String(text).toLowerCase().includes(q)));
   if (!found) return clinicT('searchNotFound', state.lang);
   state.cat = found.cat;
@@ -568,7 +584,7 @@ function renderTalk() {
     if (msg) { searchNote.hidden = false; searchNote.textContent = msg; }
   };
   searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
-  const searchBox = state.parent ? h('div', { class: 'clinic-search' }, h('div', { class: 'row' }, searchInput, btn(clinicT('search', state.lang), doSearch, 'ghost tiny')), searchNote) : null;
+  const searchBox = !state.modeling ? h('div', { class: 'clinic-search' }, h('div', { class: 'row' }, searchInput, btn(clinicT('search', state.lang), doSearch, 'ghost tiny')), searchNote) : null;
   const exploring = exploreActive();
   const exploreBtn = state.parent ? h('button', { type: 'button', class: `btn ghost tiny explore-toggle${exploring ? ' on' : ''}`, onclick: toggleExplore },
     exploring ? `⏹ ${clinicT('exploreOn', state.lang)}` : `👁️ ${clinicT('explore', state.lang)}`) : null;
@@ -634,6 +650,7 @@ function renderTalk() {
     askRow,
     searchBox, exploreBtn, exploreNote,
     personalise,
+    talkModeBox(),
     textToPictoBox(),
     state.parent ? placeEditorBox() : null,
     state.parent ? sceneEditorBox() : null,
@@ -936,6 +953,11 @@ function placeBoardView(grid, tappable) {
       placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
   }
   if (String(state.place).startsWith('explore:') || String(state.place).startsWith('scene:')) return sceneView(grid);
+  if (state.place === 'intent' && state.intent) {
+    state.intent.cards.forEach((card) => grid.append(tappable(card)));
+    return h('div', { class: 'place-head' }, h('strong', {}, `💡 ${state.intent.title}`),
+      placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; state.intent = null; renderView(); }));
+  }
   const board = allPlaceBoards().find((b) => b.id === state.place);
   if (!board) { state.place = null; return null; }
   const items = boardItems(board, state.cards.filter((c) => !c.hidden), (c) => [label(c), c.fr, c.dr, c.ar]);
@@ -1128,6 +1150,19 @@ function sceneEditorBox() {
     h('div', { class: 'row wrap' }, word, btn('Mettre ce mot', putWord, 'ghost tiny')), msg,
     btn('Enregistrer la scène', save, 'primary tiny'),
     list.length ? h('ul', { class: 'place-list' }, list) : null);
+}
+
+// v10.37 : choix Simple / Aide / Coach (gardé dans le téléphone, et dans la sauvegarde).
+function talkModeBox() {
+  return h('div', { class: 'talk-mode-box', role: 'radiogroup', 'aria-label': 'Façon de parler' },
+    h('strong', {}, 'Façon de parler : '),
+    TALK_MODES.map((m) => h('button', { type: 'button', role: 'radio', 'aria-checked': String(state.talkMode === m.id), class: `talk-mode-btn${state.talkMode === m.id ? ' on' : ''}`, title: m.desc,
+      onclick: async () => {
+        state.talkMode = m.id;
+        try { await db.setSetting(TALK_MODE_KEY, m.id); } catch (err) { console.error('[Kalimati] mode non enregistré', err); }
+        renderMorphSlot(); renderView();
+      } }, `${m.emoji} ${m.title}`)),
+    h('p', { class: 'note' }, (TALK_MODES.find((m) => m.id === state.talkMode) || TALK_MODES[2]).desc));
 }
 
 function textToPictoBox() {
@@ -1730,6 +1765,7 @@ async function init() {
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
   state.placeBoards = cleanCustomBoards(await db.getSetting(PLACE_SETTING_KEY).catch(() => null)); // v10.33 : tableaux express
   state.scenes = cleanScenes(await db.getSetting(SCENE_SETTING_KEY).catch(() => null)); // v10.34 : scènes sur photo
+  state.talkMode = normalizeTalkMode(await db.getSetting(TALK_MODE_KEY).catch(() => null)); // v10.37 : Simple / Aide / Coach
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
   // v10.24 : écriture de la darija choisie par le parent (lettres arabes par défaut). Elle doit être
   // connue avant le premier écran : sinon les mots s'affichent en arabizi une seconde puis sautent.
