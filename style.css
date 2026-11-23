@@ -2494,6 +2494,4 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .talk-mode-btn { min-height: 44px; padding: 4px 12px; border-radius: 999px; border: 2px solid var(--line); background: var(--surface); color: inherit; font: inherit; font-weight: 700; }
 .talk-mode-btn.on { border-color: #176B62; background: #176B62; color: #fff; }
 .grid .card.hint-glow { box-shadow: 0 0 0 4px #F4B40099, 0 2px 0 rgb(0 0 0 / .1); }
-.grid .card.hint-first { animation: hint-pulse 1.6s ease-in-out 3; }
-@keyframes hint-pulse { 50% { box-shadow: 0 0 0 7px #F4B400CC; } }
-@media (prefers-reduced-motion: reduce) { .grid .card.hint-first { animation: none; } }
+.grid .card.hint-first { box-shadow: 0 0 0 6px #F4B400CC, 0 2px 0 rgb(0 0 0 / .1); } /* fixe : aucune animation (charte calme) */
