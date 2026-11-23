@@ -590,7 +590,7 @@ function renderTalk() {
     h('span', { class: 'talk-board-emoji', 'aria-hidden': 'true' }, CATEGORY_EMOJI[state.cat] || '💬'),
     h('h2', { class: 'talk-board-title' }, categoryName(activeCategory, state.lang)),
     h('span', { class: 'talk-board-count' }, `${boardCards.filter(visibleFor).length}`));
-  const grid = h('div', { class: `grid${exploring ? ' exploring' : ''}`, style: { '--cols': state.cols } });
+  const grid = h('div', { class: `grid${exploring ? ' exploring' : ''}`, style: { '--cols': state.cols, '--cat-board': activeCategory.color } });
   for (const card of boardCards) {
     const el = tappable(card);
     el.style.gridRow = String(card.gridRow);

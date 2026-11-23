@@ -1750,7 +1750,8 @@ body.uppercase .phrase-card {
 .quick-pill, .ask-pill { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; border-radius: 999px; border: 2px solid var(--brand); background: var(--surface); color: var(--brand); font: inherit; font-weight: 800; cursor: pointer; }
 .quick-pill:active, .ask-pill:active { transform: scale(.97); }
 .ask-pill { border-color: #2BA69B; color: #176B62; }
-.ask-pill.active { background: #2BA69B; color: #fff; }
+.ask-pill.active { background: #176B62; border-color: #176B62; color: #fff; }
+@media (prefers-color-scheme: dark) { .ask-pill { color: #8FE0C4; } .ask-pill.active { background: #8FE0C4; color: #08231C; } }
 
 /* Mode écho : « À toi ! » 2,5 s, oreille qui bouge. */
 .echo-cue { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px); opacity: 0; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; background: #2BA69B; color: #fff; font-weight: 800; font-size: 1.1rem; box-shadow: 0 10px 26px rgba(23, 107, 98, .35); pointer-events: none; transition: opacity .3s ease, transform .3s ease; }
@@ -2324,3 +2325,79 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
   .morph-sentence-preview strong { font-size: 14px; }
   .morph-sentence-preview small { font-size: 11.5px; }
 }
+
+/* ============================================================
+   v10.30 — Page Parler repensée pour téléphone (vidéo d'Aziz : après « Je veux »,
+   la fenêtre des choix ne faisait plus que 40 px entre les catégories et la barre du bas).
+   Inspiré de Proloquo2Go, TD Snap et Cboard : un écran fixe, sans défilement de page.
+     1. la phrase en haut (ardoise) ;
+     2. une ligne de mots de base toujours là (Je veux, Aide-moi, Encore, Fini, Oui, Non) ;
+     3. les dossiers de couleur ;
+     4. la grille des choix prend TOUT le reste et défile seule.
+   La barre des mots rapides du bas disparaît sur téléphone : la ligne de base la remplace.
+   ============================================================ */
+@media (max-width: 600px) {
+  /* Écran fixe pour l'enfant ; en mode parent ou « Je montre », la page défile comme avant (outils adulte ouverts). */
+  body:not(.parent) .view:has(> .talk:not(.modeling)) { overflow: hidden; display: flex; flex-direction: column; }
+  .view > .talk { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 4px 0 0; }
+  .view > .talk > * { flex: 0 0 auto; }
+  .talk > .friend-banner, .talk > .talk-rail, .talk > .talk-quick, .talk > .talk-board-head { display: none !important; }
+  /* Mots de base : six cartes sur une ligne, même après « Je veux ». */
+  .talk > .talk-start, .talk.has-phrase > .talk-start {
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; padding: 0 8px 6px;
+  }
+  .talk > .talk-start .card.starter {
+    aspect-ratio: auto; height: 62px; padding: 3px 2px 2px; border-width: 3px; border-radius: 12px;
+    box-shadow: 0 2px 0 rgb(0 0 0 / .10);
+  }
+  .talk > .talk-start .card.starter > .visual { --vs: 28px; }
+  .talk > .talk-start .card.starter .label { font-size: 11px; font-weight: 800; padding: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  /* Dossiers de couleur : une ligne d'onglets colorés. */
+  .talk > .talk-cats { position: static; padding: 4px 8px 6px; gap: 6px; border-bottom: 0; background: transparent; }
+  .talk > .talk-cats .talk-cat { width: 66px; min-height: 52px; padding: 3px; border-radius: 14px; }
+  .talk > .talk-cats .talk-cat-emoji { font-size: 20px; }
+  .talk > .talk-cats .talk-cat-name { font-size: 10.5px; }
+  .talk > .talk-cats .talk-cat.active { transform: none; }
+  /* La grille des choix prend toute la place restante et défile seule : les choix restent visibles. */
+  .talk > .grid {
+    flex: 1 1 auto; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
+    gap: 6px; padding: 6px 8px 10px; margin: 0 6px; border-radius: 14px;
+    background: var(--surface); box-shadow: inset 0 0 0 3px var(--cat-board, var(--line));
+  }
+  .talk > .grid .card { aspect-ratio: 1 / 1.06; padding: 5px 3px 3px; border-width: 4px; }
+  .talk > .grid .card > .visual { --vs: clamp(30px, 9.5vw, 48px); }
+  .talk > .grid .card .label { font-size: 13px; }
+  .talk > .suggest-row { margin: 0 8px 4px; }
+  .talk > .talk-adult { margin: 4px 8px 4px; }
+  .talk > .talk-adult:not([open]) > summary { min-height: 32px; padding: 4px 10px; font-size: 12px; }
+  /* Phrase en haut plus basse : une ligne de cartes, ▶ à côté. */
+  :root .top #strip-cards { min-height: 58px; }
+  :root .top .strip-cards .card.small { width: 50px; height: 54px; padding: 2px; }
+  :root .top .strip-cards .card.small > .visual { --vs: 24px; }
+  :root .top .strip-cards .card.small .label { font-size: 10px; }
+  :root .top #btn-play { min-height: 58px; }
+  :root .top :is(#btn-back, #btn-clear, #btn-lang, #btn-twin, #toilet, #calm, #lock) { height: 40px; min-height: 40px; }
+  /* Temps du verbe et phrase entendue : une seule ligne qui défile de côté. */
+  .morph-slot { padding: 2px 8px 2px; }
+  .morph-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .morph-bar::-webkit-scrollbar { display: none; }
+  .morph-tenses { flex-wrap: nowrap; flex: none; }
+  .morph-tense-btn { min-height: 34px; padding: 2px 8px; white-space: nowrap; }
+  .morph-sentence-preview { flex: 1 0 140px; min-height: 34px; padding: 2px 10px; }
+  .morph-sentence-preview small { display: none; }
+  .spaces { padding-top: 4px; padding-bottom: max(6px, env(safe-area-inset-bottom, 0px)); }
+  :root .top #strip-cards > .card { width: 50px !important; height: 54px !important; min-width: 0 !important; min-height: 0 !important; }
+  /* Coach de conjugaison : temps et phrase sur une seule ligne. */
+  .coach { flex-direction: row; align-items: center; gap: 6px; }
+  .coach-row { flex: none; gap: 4px; }
+  .coach-icon { font-size: 15px; }
+  .coach-tenses { flex: none; overflow: visible; padding: 0; gap: 4px; }
+  .coach-tense { min-height: 36px; padding: 2px 7px; font-size: 12px; }
+  .coach-sentence { flex: 1 1 0; min-width: 0; width: auto; min-height: 36px; padding: 2px 8px; border-radius: 12px; justify-content: center; }
+  .coach-sentence strong { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+  .coach-sentence small { display: none; }
+  /* Barre des espaces un peu plus fine. */
+  .space-btn { min-height: 48px; padding: 4px 2px; line-height: 1.1; }
+  .space-btn .emoji { font-size: 20px; }
+}
+@media (max-width: 360px) { .coach-sentence { display: none; } }
