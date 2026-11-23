@@ -111,6 +111,19 @@ async function migrate() {
 }
 
 // ---------- Fabrication du paquet hors-ligne ----------
+// v10.40+ (Lot 3) : les notes de relecture (« grammar », « disambiguation ») restent dans les fichiers
+// JSON pour l'orthophoniste ; l'appli n'emporte que ce qui sert à afficher et à dire le mot.
+function runtimeLexicon(lexicon) {
+  const out = {};
+  for (const [id, value] of Object.entries(lexicon)) {
+    if (typeof value === 'string') { out[id] = value; continue; }
+    const { grammar, disambiguation, ...keep } = value;
+    const keys = Object.keys(keep);
+    out[id] = keys.length === 1 && keys[0] === 'label' ? keep.label : keep;
+  }
+  return out;
+}
+
 function buildBundle() {
   const files = fs.readdirSync(LOCALES_DIR).filter((f) => f.endsWith('.json')).sort();
   if (!files.length) throw new Error('aucun locales/*.json : lancez d’abord « node tools/build-locales.mjs --migrate »');
@@ -121,7 +134,7 @@ function buildBundle() {
     locales[locale.code] = {
       ui: locale.ui || {},
       categories: locale.categories || [],
-      lexicon: locale.lexicon || {},
+      lexicon: runtimeLexicon(locale.lexicon || {}),
       ...(locale.lexiconSource ? { lexiconSource: locale.lexiconSource } : {}),
       // v10.24 : la darija s'affiche en lettres arabes ; les lettres latines restent disponibles si le
       // parent les préfère (Réglages parent → Écriture darija). Ces deux tables ne concernent qu'elle.

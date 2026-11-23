@@ -39,127 +39,491 @@
     "Luoghi"
   ],
   "lexicon": {
-    "c-base-je-veux": "Voglio",
-    "c-base-oui": "Sì",
-    "c-base-non": "No",
-    "c-base-encore": "Ancora",
-    "c-base-fini": "Finito",
-    "c-base-aide-moi": "Aiutami",
-    "c-base-attends": "Aspetta",
-    "c-base-j-ai-mal": "Mi fa male",
-    "c-base-bonjour": "Ciao",
-    "c-base-au-revoir": "Arrivederci",
-    "c-base-viens-jouer": "Vieni a giocare",
-    "c-manger-pain": "Pane",
-    "c-manger-pomme": "Mela",
-    "c-manger-banane": "Banana",
-    "c-manger-gateau": "Torta",
-    "c-manger-yaourt": "Yogurt",
-    "c-manger-riz": "Riso",
-    "c-manger-biscuit": "Biscotto",
-    "c-manger--uf": "Uovo",
-    "c-boire-eau": "Acqua",
-    "c-boire-lait": "Latte",
-    "c-boire-jus": "Succo",
-    "c-manger-chips": "Patatine",
-    "c-manger-fromage": "Formaggio",
-    "c-manger-pancake": "Pancake",
-    "c-manger-mcdo": "McDonald's",
-    "c-boire-coca-cola": "Coca-Cola",
-    "c-jouer-trampoline": "Trampolino",
-    "c-jouer-ballon": "Palla",
-    "c-jouer-tablette": "Tablet",
-    "c-jouer-dessin-anime": "Cartone animato",
-    "c-jouer-poupee": "Bambola",
-    "c-jouer-musique": "Musica",
-    "c-jouer-balancoire": "Altalena",
-    "c-actions-manger": "Mangiare",
-    "c-actions-boire": "Bere",
-    "c-actions-jouer": "Giocare",
-    "c-actions-courir": "Correre",
-    "c-actions-donner": "Dare",
-    "c-actions-couper": "Tagliare",
-    "c-actions-sauter": "Saltare",
-    "c-actions-laver": "Lavare",
-    "c-actions-dessiner": "Disegnare",
-    "c-actions-ouvrir": "Aprire",
-    "c-personnes-sibling": "Sorella / Fratello",
-    "c-personnes-papa": "Papà",
-    "c-personnes-maman": "Mamma",
-    "c-personnes-maitresse": "Maestra",
-    "c-personnes-mamie": "Nonna",
-    "c-personnes-papi": "Nonno",
-    "c-besoins-toilettes": "Bagno",
-    "c-besoins-dormir": "Dormire",
-    "c-actions-dormir": "Dormire",
-    "c-besoins-calin": "Abbraccio",
-    "c-besoins-bain": "Bagnetto",
-    "c-besoins-changer": "Cambiarmi",
+    "c-base-je-veux": {
+      "label": "Voglio",
+      "grammar": "personne",
+      "disambiguation": "Demander quelque chose pour soi (début de phrase)."
+    },
+    "c-base-oui": {
+      "label": "Sì",
+      "grammar": "mot social",
+      "disambiguation": "Accepter, dire d’accord."
+    },
+    "c-base-non": {
+      "label": "No",
+      "grammar": "mot social",
+      "disambiguation": "Refuser, dire pas d’accord."
+    },
+    "c-base-encore": {
+      "label": "Ancora",
+      "grammar": "adjectif",
+      "disambiguation": "Redemander la même chose une fois de plus."
+    },
+    "c-base-fini": {
+      "label": "Finito",
+      "grammar": "mot social",
+      "disambiguation": "Dire que c’est terminé, qu’on veut arrêter."
+    },
+    "c-base-aide-moi": {
+      "label": "Aiutami",
+      "grammar": "mot social",
+      "disambiguation": "Demander de l’aide à un adulte."
+    },
+    "c-base-attends": {
+      "label": "Aspetta",
+      "grammar": "mot social",
+      "disambiguation": "Demander à l’autre d’attendre un moment."
+    },
+    "c-base-j-ai-mal": {
+      "label": "Mi fa male",
+      "grammar": "mot social",
+      "disambiguation": "Dire qu’on a une douleur dans le corps."
+    },
+    "c-base-bonjour": {
+      "label": "Ciao",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en arrivant."
+    },
+    "c-base-au-revoir": {
+      "label": "Arrivederci",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en partant."
+    },
+    "c-base-viens-jouer": {
+      "label": "Vieni a giocare",
+      "grammar": "mot social",
+      "disambiguation": "Inviter quelqu’un à jouer avec soi."
+    },
+    "c-manger-pain": {
+      "label": "Pane",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le pain."
+    },
+    "c-manger-pomme": {
+      "label": "Mela",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la pomme."
+    },
+    "c-manger-banane": {
+      "label": "Banana",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la banane."
+    },
+    "c-manger-gateau": {
+      "label": "Torta",
+      "grammar": "nom",
+      "disambiguation": "Aliment sucré : le gâteau."
+    },
+    "c-manger-yaourt": {
+      "label": "Yogurt",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le yaourt."
+    },
+    "c-manger-riz": {
+      "label": "Riso",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le riz cuit."
+    },
+    "c-manger-biscuit": {
+      "label": "Biscotto",
+      "grammar": "nom",
+      "disambiguation": "Petit gâteau sec : le biscuit."
+    },
+    "c-manger--uf": {
+      "label": "Uovo",
+      "grammar": "nom",
+      "disambiguation": "Aliment : l’œuf."
+    },
+    "c-boire-eau": {
+      "label": "Acqua",
+      "grammar": "nom",
+      "disambiguation": "Boisson : l’eau."
+    },
+    "c-boire-lait": {
+      "label": "Latte",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le lait."
+    },
+    "c-boire-jus": {
+      "label": "Succo",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le jus de fruit."
+    },
+    "c-manger-chips": {
+      "label": "Patatine",
+      "grammar": "nom",
+      "disambiguation": "Grignotage : les chips."
+    },
+    "c-manger-fromage": {
+      "label": "Formaggio",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le fromage."
+    },
+    "c-manger-pancake": {
+      "label": "Pancake",
+      "grammar": "nom",
+      "disambiguation": "Petite crêpe épaisse : le pancake."
+    },
+    "c-manger-mcdo": {
+      "label": "McDonald's",
+      "grammar": "nom",
+      "disambiguation": "Restaurant rapide (nom de marque, ne se traduit pas)."
+    },
+    "c-boire-coca-cola": {
+      "label": "Coca-Cola",
+      "grammar": "nom",
+      "disambiguation": "Boisson gazeuse (nom de marque, ne se traduit pas)."
+    },
+    "c-jouer-trampoline": {
+      "label": "Trampolino",
+      "grammar": "nom",
+      "disambiguation": "Jeu : la grande toile pour sauter."
+    },
+    "c-jouer-ballon": {
+      "label": "Palla",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la balle ou le ballon."
+    },
+    "c-jouer-tablette": {
+      "label": "Tablet",
+      "grammar": "nom",
+      "disambiguation": "Écran tactile pour jouer ou regarder."
+    },
+    "c-jouer-dessin-anime": {
+      "label": "Cartone animato",
+      "grammar": "nom",
+      "disambiguation": "Programme pour enfants à regarder."
+    },
+    "c-jouer-poupee": {
+      "label": "Bambola",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la poupée."
+    },
+    "c-jouer-musique": {
+      "label": "Musica",
+      "grammar": "nom",
+      "disambiguation": "Écouter ou faire de la musique."
+    },
+    "c-jouer-balancoire": {
+      "label": "Altalena",
+      "grammar": "nom",
+      "disambiguation": "Jeu du parc : la balançoire."
+    },
+    "c-actions-manger": {
+      "label": "Mangiare",
+      "grammar": "verbe",
+      "disambiguation": "Action : manger."
+    },
+    "c-actions-boire": {
+      "label": "Bere",
+      "grammar": "verbe",
+      "disambiguation": "Action : boire."
+    },
+    "c-actions-jouer": {
+      "label": "Giocare",
+      "grammar": "verbe",
+      "disambiguation": "Action : jouer."
+    },
+    "c-actions-courir": {
+      "label": "Correre",
+      "grammar": "verbe",
+      "disambiguation": "Action : courir."
+    },
+    "c-actions-donner": {
+      "label": "Dare",
+      "grammar": "verbe",
+      "disambiguation": "Action : donner un objet à quelqu’un."
+    },
+    "c-actions-couper": {
+      "label": "Tagliare",
+      "grammar": "verbe",
+      "disambiguation": "Action : couper (avec ciseaux ou couteau)."
+    },
+    "c-actions-sauter": {
+      "label": "Saltare",
+      "grammar": "verbe",
+      "disambiguation": "Action : sauter."
+    },
+    "c-actions-laver": {
+      "label": "Lavare",
+      "grammar": "verbe",
+      "disambiguation": "Action : laver, se laver."
+    },
+    "c-actions-dessiner": {
+      "label": "Disegnare",
+      "grammar": "verbe",
+      "disambiguation": "Action : dessiner."
+    },
+    "c-actions-ouvrir": {
+      "label": "Aprire",
+      "grammar": "verbe",
+      "disambiguation": "Action : ouvrir (porte, boîte, paquet)."
+    },
+    "c-personnes-sibling": {
+      "label": "Sorella / Fratello",
+      "grammar": "personne",
+      "disambiguation": "La sœur ou le frère de l’enfant."
+    },
+    "c-personnes-papa": {
+      "label": "Papà",
+      "grammar": "personne",
+      "disambiguation": "Le père (mot de l’enfant)."
+    },
+    "c-personnes-maman": {
+      "label": "Mamma",
+      "grammar": "personne",
+      "disambiguation": "La mère (mot de l’enfant)."
+    },
+    "c-personnes-maitresse": {
+      "label": "Maestra",
+      "grammar": "personne",
+      "disambiguation": "L’enseignante de l’école."
+    },
+    "c-personnes-mamie": {
+      "label": "Nonna",
+      "grammar": "personne",
+      "disambiguation": "La grand-mère (mot de l’enfant)."
+    },
+    "c-personnes-papi": {
+      "label": "Nonno",
+      "grammar": "personne",
+      "disambiguation": "Le grand-père (mot de l’enfant)."
+    },
+    "c-besoins-toilettes": {
+      "label": "Bagno",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’aller aux toilettes (pipi, caca). Pas le bain."
+    },
+    "c-besoins-dormir": {
+      "label": "Dormire",
+      "grammar": "verbe",
+      "disambiguation": "Besoin : avoir sommeil, vouloir dormir."
+    },
+    "c-actions-dormir": {
+      "label": "Dormire",
+      "grammar": "verbe",
+      "disambiguation": "Action : dormir."
+    },
+    "c-besoins-calin": {
+      "label": "Abbraccio",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’être pris dans les bras."
+    },
+    "c-besoins-bain": {
+      "label": "Bagnetto",
+      "grammar": "nom",
+      "disambiguation": "Moment de se laver dans la baignoire. Pas les toilettes."
+    },
+    "c-besoins-changer": {
+      "label": "Cambiarmi",
+      "grammar": "verbe",
+      "disambiguation": "Besoin de changer de vêtements ou de couche."
+    },
     "c-besoins-calme": {
       "label": "Calma",
       "gender": {
         "m": "Calmo",
         "f": "Calma"
-      }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Besoin de calme, de se poser (s’accorde avec l’enfant)."
     },
     "c-emotions-content": {
       "label": "Contenta",
       "gender": {
         "m": "Contento",
         "f": "Contenta"
-      }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être content, joyeux (s’accorde avec l’enfant)."
     },
-    "c-emotions-triste": "Triste",
+    "c-emotions-triste": {
+      "label": "Triste",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être triste."
+    },
     "c-emotions-en-colere": {
       "label": "Arrabbiata",
       "gender": {
         "m": "Arrabbiato",
         "f": "Arrabbiata"
-      }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être en colère (s’accorde avec l’enfant)."
     },
-    "c-emotions-peur": "Paura",
+    "c-emotions-peur": {
+      "label": "Paura",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : avoir peur."
+    },
     "c-emotions-fatigue": {
       "label": "Stanca",
       "gender": {
         "m": "Stanco",
         "f": "Stanca"
-      }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "État : être fatigué (s’accorde avec l’enfant)."
     },
     "c-emotions-fier": {
       "label": "Orgogliosa",
       "gender": {
         "m": "Orgoglioso",
         "f": "Orgogliosa"
-      }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être fier de soi (s’accorde avec l’enfant)."
     },
-    "c-decrire-grand": "Grande",
-    "c-decrire-petit": "Piccolo",
-    "c-decrire-rouge": "Rosso",
-    "c-decrire-bleu": "Blu",
-    "c-decrire-jaune": "Giallo",
-    "c-decrire-vert": "Verde",
-    "c-decrire-chaud": "Caldo",
-    "c-decrire-froid": "Freddo",
-    "c-decrire-rond": "Rotondo",
-    "c-lieux-dehors": "Fuori",
-    "c-lieux-maison": "Casa",
-    "c-lieux-voiture": "Macchina",
-    "c-lieux-parc": "Parco",
-    "c-lieux-ecole": "Scuola",
-    "c-base-s-il-te-plait": "Per favore",
-    "c-base-merci": "Grazie",
-    "c-base-c-est-quoi-": "Che cos'è?",
-    "c-base-ou-est-": "Dov'è?",
-    "c-base-avec": "Con",
-    "c-actions-lire": "Leggere",
-    "c-actions-ecrire": "Scrivere",
-    "c-actions-regarder": "Guardare",
-    "c-actions-ecouter": "Ascoltare",
-    "c-decrire-dans": "Dentro",
-    "c-decrire-sur": "Sopra",
-    "c-decrire-sous": "Sotto",
-    "c-decrire-beaucoup": "Tanto",
-    "c-decrire-un-peu": "Un po'",
-    "c-personnes-moi": "Io"
+    "c-decrire-grand": {
+      "label": "Grande",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : grand."
+    },
+    "c-decrire-petit": {
+      "label": "Piccolo",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : petit."
+    },
+    "c-decrire-rouge": {
+      "label": "Rosso",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : rouge."
+    },
+    "c-decrire-bleu": {
+      "label": "Blu",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : bleu."
+    },
+    "c-decrire-jaune": {
+      "label": "Giallo",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : jaune."
+    },
+    "c-decrire-vert": {
+      "label": "Verde",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : vert."
+    },
+    "c-decrire-chaud": {
+      "label": "Caldo",
+      "grammar": "adjectif",
+      "disambiguation": "Température : chaud."
+    },
+    "c-decrire-froid": {
+      "label": "Freddo",
+      "grammar": "adjectif",
+      "disambiguation": "Température : froid."
+    },
+    "c-decrire-rond": {
+      "label": "Rotondo",
+      "grammar": "adjectif",
+      "disambiguation": "Forme : rond."
+    },
+    "c-lieux-dehors": {
+      "label": "Fuori",
+      "grammar": "nom",
+      "disambiguation": "Lieu : dehors, à l’extérieur."
+    },
+    "c-lieux-maison": {
+      "label": "Casa",
+      "grammar": "nom",
+      "disambiguation": "Lieu : la maison."
+    },
+    "c-lieux-voiture": {
+      "label": "Macchina",
+      "grammar": "nom",
+      "disambiguation": "La voiture (pour partir en voiture)."
+    },
+    "c-lieux-parc": {
+      "label": "Parco",
+      "grammar": "nom",
+      "disambiguation": "Lieu : le parc, l’aire de jeux."
+    },
+    "c-lieux-ecole": {
+      "label": "Scuola",
+      "grammar": "nom",
+      "disambiguation": "Lieu : l’école."
+    },
+    "c-base-s-il-te-plait": {
+      "label": "Per favore",
+      "grammar": "mot social",
+      "disambiguation": "Formule de politesse pour demander."
+    },
+    "c-base-merci": {
+      "label": "Grazie",
+      "grammar": "mot social",
+      "disambiguation": "Remercier."
+    },
+    "c-base-c-est-quoi-": {
+      "label": "Che cos'è?",
+      "grammar": "mot social",
+      "disambiguation": "Demander le nom d’une chose."
+    },
+    "c-base-ou-est-": {
+      "label": "Dov'è?",
+      "grammar": "mot social",
+      "disambiguation": "Demander où se trouve une chose ou une personne."
+    },
+    "c-base-avec": {
+      "label": "Con",
+      "grammar": "mot social",
+      "disambiguation": "Être ou faire ensemble (« avec papa »)."
+    },
+    "c-actions-lire": {
+      "label": "Leggere",
+      "grammar": "verbe",
+      "disambiguation": "Action : lire ou regarder un livre."
+    },
+    "c-actions-ecrire": {
+      "label": "Scrivere",
+      "grammar": "verbe",
+      "disambiguation": "Action : écrire."
+    },
+    "c-actions-regarder": {
+      "label": "Guardare",
+      "grammar": "verbe",
+      "disambiguation": "Action : regarder."
+    },
+    "c-actions-ecouter": {
+      "label": "Ascoltare",
+      "grammar": "verbe",
+      "disambiguation": "Action : écouter."
+    },
+    "c-decrire-dans": {
+      "label": "Dentro",
+      "grammar": "adjectif",
+      "disambiguation": "Position : à l’intérieur."
+    },
+    "c-decrire-sur": {
+      "label": "Sopra",
+      "grammar": "adjectif",
+      "disambiguation": "Position : au-dessus, posé dessus."
+    },
+    "c-decrire-sous": {
+      "label": "Sotto",
+      "grammar": "adjectif",
+      "disambiguation": "Position : en dessous."
+    },
+    "c-decrire-beaucoup": {
+      "label": "Tanto",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : beaucoup."
+    },
+    "c-decrire-un-peu": {
+      "label": "Un po'",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : un peu."
+    },
+    "c-personnes-moi": {
+      "label": "Io",
+      "grammar": "personne",
+      "disambiguation": "L’enfant lui-même (« moi »)."
+    },
+    "c-personnes-therapist": {
+      "label": "Terapista",
+      "whenFr": "Thérapeute",
+      "grammar": "personne",
+      "disambiguation": "La personne qui soigne (orthophoniste, psychologue). Si le parent a écrit un prénom, le prénom reste."
+    }
   }
 }

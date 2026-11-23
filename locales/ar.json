@@ -39,97 +39,627 @@
     "أماكن"
   ],
   "lexicon": {
-    "c-base-je-veux": { "label": "أريد", "tts": "أُرِيدُ" },
-    "c-base-oui": { "label": "نعم", "tts": "نَعَمْ" },
-    "c-base-non": { "label": "لا", "tts": "لَا" },
-    "c-base-encore": { "label": "المزيد", "tts": "الْمَزِيد" },
-    "c-base-fini": { "label": "انتهى", "tts": "انْتَهَى" },
-    "c-base-aide-moi": { "label": "ساعدني", "tts": "سَاعِدْنِي" },
-    "c-base-attends": { "label": "انتظر", "tts": "انْتَظِرْ" },
-    "c-base-j-ai-mal": { "label": "أتألم", "tts": "أَتَأَلَّم" },
-    "c-base-bonjour": { "label": "مرحبا", "tts": "مَرْحَبًا" },
-    "c-base-au-revoir": { "label": "مع السلامة", "tts": "مَعَ السَّلَامَة" },
-    "c-base-viens-jouer": { "label": "تعال نلعب", "tts": "تَعَالَ نَلْعَب" },
-    "c-manger-pain": { "label": "خبز", "tts": "خُبْز" },
-    "c-manger-pomme": { "label": "تفاحة", "tts": "تُفَّاحَة" },
-    "c-manger-banane": { "label": "موزة", "tts": "مَوْزَة" },
-    "c-manger-gateau": { "label": "كعكة", "tts": "كَعْكَة" },
-    "c-manger-yaourt": { "label": "زبادي", "tts": "زَبَادِي" },
-    "c-manger-riz": { "label": "أرز", "tts": "أَرُز" },
-    "c-manger-biscuit": { "label": "بسكويت", "tts": "بَسْكَوِيت" },
-    "c-manger--uf": { "label": "بيضة", "tts": "بَيْضَة" },
-    "c-boire-eau": { "label": "ماء", "tts": "مَاء" },
-    "c-boire-lait": { "label": "حليب", "tts": "حَلِيب" },
-    "c-boire-jus": { "label": "عصير", "tts": "عَصِير" },
-    "c-manger-chips": { "label": "شيبس", "tts": "شِيبْس" },
-    "c-manger-fromage": { "label": "جبن", "tts": "جُبْن" },
-    "c-manger-pancake": { "label": "فطيرة", "tts": "فَطِيرَة" },
-    "c-manger-mcdo": { "label": "ماكدونالدز", "tts": "مَاكْدُونَالْدْز" },
-    "c-boire-coca-cola": { "label": "كوكا كولا", "tts": "كُوكَا كُولَا" },
-    "c-jouer-trampoline": { "label": "ترامبولين", "tts": "تْرَامْبُولِين" },
-    "c-jouer-ballon": { "label": "كرة", "tts": "كُرَة" },
-    "c-jouer-tablette": { "label": "جهاز لوحي", "tts": "جِهَاز لَوْحِي" },
-    "c-jouer-dessin-anime": { "label": "رسوم متحركة", "tts": "رُسُوم مُتَحَرِّكَة" },
-    "c-jouer-poupee": { "label": "دمية", "tts": "دُمْيَة" },
-    "c-jouer-musique": { "label": "موسيقى", "tts": "مُوسِيقَى" },
-    "c-jouer-balancoire": { "label": "أرجوحة", "tts": "أُرْجُوحَة" },
-    "c-actions-manger": { "label": "آكل", "tts": "آكُل" },
-    "c-actions-boire": { "label": "أشرب", "tts": "أَشْرَب" },
-    "c-actions-jouer": { "label": "ألعب", "tts": "أَلْعَب" },
-    "c-actions-courir": { "label": "أجري", "tts": "أَجْرِي" },
-    "c-actions-donner": { "label": "أعطي", "tts": "أُعْطِي" },
-    "c-actions-couper": { "label": "أقطع", "tts": "أَقْطَع" },
-    "c-actions-sauter": { "label": "أقفز", "tts": "أَقْفِز" },
-    "c-actions-laver": { "label": "أغسل", "tts": "أَغْسِل" },
-    "c-actions-dessiner": { "label": "أرسم", "tts": "أَرْسُم" },
-    "c-actions-ouvrir": { "label": "أفتح", "tts": "أَفْتَح" },
-    "c-personnes-sibling": { "label": "أختي / أخي", "tts": "أُخْتِي / أَخِي" },
-    "c-personnes-papa": { "label": "بابا", "tts": "بَابَا" },
-    "c-personnes-maman": { "label": "ماما", "tts": "مَامَا" },
-    "c-personnes-maitresse": { "label": "المعلمة", "tts": "الْمُعَلِّمَة", "gender": "f" },
-    "c-personnes-mamie": { "label": "جدتي", "tts": "جَدَّتِي", "gender": "f" },
-    "c-personnes-papi": { "label": "جدي", "tts": "جَدِّي", "gender": "m" },
-    "c-besoins-toilettes": { "label": "المرحاض", "tts": "الْمِرْحَاض" },
-    "c-besoins-dormir": { "label": "أنام", "tts": "أَنَام" },
-    "c-actions-dormir": { "label": "أنام", "tts": "أَنَام" },
-    "c-besoins-calin": { "label": "عناق", "tts": "عِنَاق" },
-    "c-besoins-bain": { "label": "حمام", "tts": "حَمَّام" },
-    "c-besoins-changer": { "label": "أغيّر ملابسي", "tts": "أُغَيِّر مَلَابِسِي" },
-    "c-besoins-calme": { "label": "هادئة", "tts": "هَادِئَة", "gender": { "m": { "label": "هادئ", "tts": "هَادِئ" }, "f": { "label": "هادئة", "tts": "هَادِئَة" } } },
-    "c-emotions-content": { "label": "سعيدة", "tts": "سَعِيدَة", "gender": { "m": { "label": "سعيد", "tts": "سَعِيد" }, "f": { "label": "سعيدة", "tts": "سَعِيدَة" } } },
-    "c-emotions-triste": { "label": "حزينة", "tts": "حَزِينَة", "gender": { "m": { "label": "حزين", "tts": "حَزِين" }, "f": { "label": "حزينة", "tts": "حَزِينَة" } } },
-    "c-emotions-en-colere": { "label": "غاضبة", "tts": "غَاضِبَة", "gender": { "m": { "label": "غاضب", "tts": "غَاضِب" }, "f": { "label": "غاضبة", "tts": "غَاضِبَة" } } },
-    "c-emotions-peur": { "label": "خائف", "tts": "خَائِف" },
-    "c-emotions-fatigue": { "label": "متعبة", "tts": "مُتْعَبَة", "gender": { "m": { "label": "متعب", "tts": "مُتْعَب" }, "f": { "label": "متعبة", "tts": "مُتْعَبَة" } } },
-    "c-emotions-fier": { "label": "فخورة", "tts": "فَخُورَة", "gender": { "m": { "label": "فخور", "tts": "فَخُور" }, "f": { "label": "فخورة", "tts": "فَخُورَة" } } },
-    "c-decrire-grand": { "label": "كبير", "tts": "كَبِير" },
-    "c-decrire-petit": { "label": "صغير", "tts": "صَغِير" },
-    "c-decrire-rouge": { "label": "أحمر", "tts": "أَحْمَر" },
-    "c-decrire-bleu": { "label": "أزرق", "tts": "أَزْرَق" },
-    "c-decrire-jaune": { "label": "أصفر", "tts": "أَصْفَر" },
-    "c-decrire-vert": { "label": "أخضر", "tts": "أَخْضَر" },
-    "c-decrire-chaud": { "label": "ساخن", "tts": "سَاخِن" },
-    "c-decrire-froid": { "label": "بارد", "tts": "بَارِد" },
-    "c-decrire-rond": { "label": "دائري", "tts": "دَائِرِي" },
-    "c-lieux-dehors": { "label": "خارج البيت", "tts": "خَارِج الْبَيْت" },
-    "c-lieux-maison": { "label": "البيت", "tts": "الْبَيْت" },
-    "c-lieux-voiture": { "label": "سيارة", "tts": "سَيَّارَة" },
-    "c-lieux-parc": { "label": "حديقة", "tts": "حَدِيقَة" },
-    "c-lieux-ecole": { "label": "المدرسة", "tts": "الْمَدْرَسَة" },
-    "c-base-s-il-te-plait": { "label": "من فضلك", "tts": "مِنْ فَضْلِك" },
-    "c-base-merci": { "label": "شكرا", "tts": "شُكْرًا" },
-    "c-base-c-est-quoi-": { "label": "ما هذا؟", "tts": "مَا هَذَا؟" },
-    "c-base-ou-est-": { "label": "أين؟", "tts": "أَيْنَ؟" },
-    "c-base-avec": { "label": "مع", "tts": "مَعَ" },
-    "c-actions-lire": { "label": "أقرأ", "tts": "أَقْرَأ" },
-    "c-actions-ecrire": { "label": "أكتب", "tts": "أَكْتُب" },
-    "c-actions-regarder": { "label": "أشاهد", "tts": "أُشَاهِد" },
-    "c-actions-ecouter": { "label": "أستمع", "tts": "أَسْتَمِع" },
-    "c-decrire-dans": { "label": "في", "tts": "فِي" },
-    "c-decrire-sur": { "label": "فوق", "tts": "فَوْق" },
-    "c-decrire-sous": { "label": "تحت", "tts": "تَحْت" },
-    "c-decrire-beaucoup": { "label": "كثيرا", "tts": "كَثِيرًا" },
-    "c-decrire-un-peu": { "label": "قليلا", "tts": "قَلِيلًا" },
-    "c-personnes-moi": { "label": "أنا", "tts": "أَنَا" }
+    "c-base-je-veux": {
+      "label": "أريد",
+      "tts": "أُرِيدُ",
+      "grammar": "personne",
+      "disambiguation": "Demander quelque chose pour soi (début de phrase)."
+    },
+    "c-base-oui": {
+      "label": "نعم",
+      "tts": "نَعَمْ",
+      "grammar": "mot social",
+      "disambiguation": "Accepter, dire d’accord."
+    },
+    "c-base-non": {
+      "label": "لا",
+      "tts": "لَا",
+      "grammar": "mot social",
+      "disambiguation": "Refuser, dire pas d’accord."
+    },
+    "c-base-encore": {
+      "label": "المزيد",
+      "tts": "الْمَزِيد",
+      "grammar": "adjectif",
+      "disambiguation": "Redemander la même chose une fois de plus."
+    },
+    "c-base-fini": {
+      "label": "انتهى",
+      "tts": "انْتَهَى",
+      "grammar": "mot social",
+      "disambiguation": "Dire que c’est terminé, qu’on veut arrêter."
+    },
+    "c-base-aide-moi": {
+      "label": "ساعدني",
+      "tts": "سَاعِدْنِي",
+      "grammar": "mot social",
+      "disambiguation": "Demander de l’aide à un adulte."
+    },
+    "c-base-attends": {
+      "label": "انتظر",
+      "tts": "انْتَظِرْ",
+      "grammar": "mot social",
+      "disambiguation": "Demander à l’autre d’attendre un moment."
+    },
+    "c-base-j-ai-mal": {
+      "label": "أتألم",
+      "tts": "أَتَأَلَّم",
+      "grammar": "mot social",
+      "disambiguation": "Dire qu’on a une douleur dans le corps."
+    },
+    "c-base-bonjour": {
+      "label": "مرحبا",
+      "tts": "مَرْحَبًا",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en arrivant."
+    },
+    "c-base-au-revoir": {
+      "label": "مع السلامة",
+      "tts": "مَعَ السَّلَامَة",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en partant."
+    },
+    "c-base-viens-jouer": {
+      "label": "تعال نلعب",
+      "tts": "تَعَالَ نَلْعَب",
+      "grammar": "mot social",
+      "disambiguation": "Inviter quelqu’un à jouer avec soi."
+    },
+    "c-manger-pain": {
+      "label": "خبز",
+      "tts": "خُبْز",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le pain."
+    },
+    "c-manger-pomme": {
+      "label": "تفاحة",
+      "tts": "تُفَّاحَة",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la pomme."
+    },
+    "c-manger-banane": {
+      "label": "موزة",
+      "tts": "مَوْزَة",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la banane."
+    },
+    "c-manger-gateau": {
+      "label": "كعكة",
+      "tts": "كَعْكَة",
+      "grammar": "nom",
+      "disambiguation": "Aliment sucré : le gâteau."
+    },
+    "c-manger-yaourt": {
+      "label": "زبادي",
+      "tts": "زَبَادِي",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le yaourt."
+    },
+    "c-manger-riz": {
+      "label": "أرز",
+      "tts": "أَرُز",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le riz cuit."
+    },
+    "c-manger-biscuit": {
+      "label": "بسكويت",
+      "tts": "بَسْكَوِيت",
+      "grammar": "nom",
+      "disambiguation": "Petit gâteau sec : le biscuit."
+    },
+    "c-manger--uf": {
+      "label": "بيضة",
+      "tts": "بَيْضَة",
+      "grammar": "nom",
+      "disambiguation": "Aliment : l’œuf."
+    },
+    "c-boire-eau": {
+      "label": "ماء",
+      "tts": "مَاء",
+      "grammar": "nom",
+      "disambiguation": "Boisson : l’eau."
+    },
+    "c-boire-lait": {
+      "label": "حليب",
+      "tts": "حَلِيب",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le lait."
+    },
+    "c-boire-jus": {
+      "label": "عصير",
+      "tts": "عَصِير",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le jus de fruit."
+    },
+    "c-manger-chips": {
+      "label": "شيبس",
+      "tts": "شِيبْس",
+      "grammar": "nom",
+      "disambiguation": "Grignotage : les chips."
+    },
+    "c-manger-fromage": {
+      "label": "جبن",
+      "tts": "جُبْن",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le fromage."
+    },
+    "c-manger-pancake": {
+      "label": "فطيرة",
+      "tts": "فَطِيرَة",
+      "grammar": "nom",
+      "disambiguation": "Petite crêpe épaisse : le pancake."
+    },
+    "c-manger-mcdo": {
+      "label": "ماكدونالدز",
+      "tts": "مَاكْدُونَالْدْز",
+      "grammar": "nom",
+      "disambiguation": "Restaurant rapide (nom de marque, ne se traduit pas)."
+    },
+    "c-boire-coca-cola": {
+      "label": "كوكا كولا",
+      "tts": "كُوكَا كُولَا",
+      "grammar": "nom",
+      "disambiguation": "Boisson gazeuse (nom de marque, ne se traduit pas)."
+    },
+    "c-jouer-trampoline": {
+      "label": "ترامبولين",
+      "tts": "تْرَامْبُولِين",
+      "grammar": "nom",
+      "disambiguation": "Jeu : la grande toile pour sauter."
+    },
+    "c-jouer-ballon": {
+      "label": "كرة",
+      "tts": "كُرَة",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la balle ou le ballon."
+    },
+    "c-jouer-tablette": {
+      "label": "جهاز لوحي",
+      "tts": "جِهَاز لَوْحِي",
+      "grammar": "nom",
+      "disambiguation": "Écran tactile pour jouer ou regarder."
+    },
+    "c-jouer-dessin-anime": {
+      "label": "رسوم متحركة",
+      "tts": "رُسُوم مُتَحَرِّكَة",
+      "grammar": "nom",
+      "disambiguation": "Programme pour enfants à regarder."
+    },
+    "c-jouer-poupee": {
+      "label": "دمية",
+      "tts": "دُمْيَة",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la poupée."
+    },
+    "c-jouer-musique": {
+      "label": "موسيقى",
+      "tts": "مُوسِيقَى",
+      "grammar": "nom",
+      "disambiguation": "Écouter ou faire de la musique."
+    },
+    "c-jouer-balancoire": {
+      "label": "أرجوحة",
+      "tts": "أُرْجُوحَة",
+      "grammar": "nom",
+      "disambiguation": "Jeu du parc : la balançoire."
+    },
+    "c-actions-manger": {
+      "label": "آكل",
+      "tts": "آكُل",
+      "grammar": "verbe",
+      "disambiguation": "Action : manger."
+    },
+    "c-actions-boire": {
+      "label": "أشرب",
+      "tts": "أَشْرَب",
+      "grammar": "verbe",
+      "disambiguation": "Action : boire."
+    },
+    "c-actions-jouer": {
+      "label": "ألعب",
+      "tts": "أَلْعَب",
+      "grammar": "verbe",
+      "disambiguation": "Action : jouer."
+    },
+    "c-actions-courir": {
+      "label": "أجري",
+      "tts": "أَجْرِي",
+      "grammar": "verbe",
+      "disambiguation": "Action : courir."
+    },
+    "c-actions-donner": {
+      "label": "أعطي",
+      "tts": "أُعْطِي",
+      "grammar": "verbe",
+      "disambiguation": "Action : donner un objet à quelqu’un."
+    },
+    "c-actions-couper": {
+      "label": "أقطع",
+      "tts": "أَقْطَع",
+      "grammar": "verbe",
+      "disambiguation": "Action : couper (avec ciseaux ou couteau)."
+    },
+    "c-actions-sauter": {
+      "label": "أقفز",
+      "tts": "أَقْفِز",
+      "grammar": "verbe",
+      "disambiguation": "Action : sauter."
+    },
+    "c-actions-laver": {
+      "label": "أغسل",
+      "tts": "أَغْسِل",
+      "grammar": "verbe",
+      "disambiguation": "Action : laver, se laver."
+    },
+    "c-actions-dessiner": {
+      "label": "أرسم",
+      "tts": "أَرْسُم",
+      "grammar": "verbe",
+      "disambiguation": "Action : dessiner."
+    },
+    "c-actions-ouvrir": {
+      "label": "أفتح",
+      "tts": "أَفْتَح",
+      "grammar": "verbe",
+      "disambiguation": "Action : ouvrir (porte, boîte, paquet)."
+    },
+    "c-personnes-sibling": {
+      "label": "أختي / أخي",
+      "tts": "أُخْتِي / أَخِي",
+      "grammar": "personne",
+      "disambiguation": "La sœur ou le frère de l’enfant."
+    },
+    "c-personnes-papa": {
+      "label": "بابا",
+      "tts": "بَابَا",
+      "grammar": "personne",
+      "disambiguation": "Le père (mot de l’enfant)."
+    },
+    "c-personnes-maman": {
+      "label": "ماما",
+      "tts": "مَامَا",
+      "grammar": "personne",
+      "disambiguation": "La mère (mot de l’enfant)."
+    },
+    "c-personnes-maitresse": {
+      "label": "المعلمة",
+      "tts": "الْمُعَلِّمَة",
+      "gender": "f",
+      "grammar": "personne",
+      "disambiguation": "L’enseignante de l’école."
+    },
+    "c-personnes-mamie": {
+      "label": "جدتي",
+      "tts": "جَدَّتِي",
+      "gender": "f",
+      "grammar": "personne",
+      "disambiguation": "La grand-mère (mot de l’enfant)."
+    },
+    "c-personnes-papi": {
+      "label": "جدي",
+      "tts": "جَدِّي",
+      "gender": "m",
+      "grammar": "personne",
+      "disambiguation": "Le grand-père (mot de l’enfant)."
+    },
+    "c-besoins-toilettes": {
+      "label": "المرحاض",
+      "tts": "الْمِرْحَاض",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’aller aux toilettes (pipi, caca). Pas le bain."
+    },
+    "c-besoins-dormir": {
+      "label": "أنام",
+      "tts": "أَنَام",
+      "grammar": "verbe",
+      "disambiguation": "Besoin : avoir sommeil, vouloir dormir."
+    },
+    "c-actions-dormir": {
+      "label": "أنام",
+      "tts": "أَنَام",
+      "grammar": "verbe",
+      "disambiguation": "Action : dormir."
+    },
+    "c-besoins-calin": {
+      "label": "عناق",
+      "tts": "عِنَاق",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’être pris dans les bras."
+    },
+    "c-besoins-bain": {
+      "label": "حمام",
+      "tts": "حَمَّام",
+      "grammar": "nom",
+      "disambiguation": "Moment de se laver dans la baignoire. Pas les toilettes."
+    },
+    "c-besoins-changer": {
+      "label": "أغيّر ملابسي",
+      "tts": "أُغَيِّر مَلَابِسِي",
+      "grammar": "verbe",
+      "disambiguation": "Besoin de changer de vêtements ou de couche."
+    },
+    "c-besoins-calme": {
+      "label": "هادئة",
+      "tts": "هَادِئَة",
+      "gender": {
+        "m": {
+          "label": "هادئ",
+          "tts": "هَادِئ"
+        },
+        "f": {
+          "label": "هادئة",
+          "tts": "هَادِئَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Besoin de calme, de se poser (s’accorde avec l’enfant)."
+    },
+    "c-emotions-content": {
+      "label": "سعيدة",
+      "tts": "سَعِيدَة",
+      "gender": {
+        "m": {
+          "label": "سعيد",
+          "tts": "سَعِيد"
+        },
+        "f": {
+          "label": "سعيدة",
+          "tts": "سَعِيدَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être content, joyeux (s’accorde avec l’enfant)."
+    },
+    "c-emotions-triste": {
+      "label": "حزينة",
+      "tts": "حَزِينَة",
+      "gender": {
+        "m": {
+          "label": "حزين",
+          "tts": "حَزِين"
+        },
+        "f": {
+          "label": "حزينة",
+          "tts": "حَزِينَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être triste."
+    },
+    "c-emotions-en-colere": {
+      "label": "غاضبة",
+      "tts": "غَاضِبَة",
+      "gender": {
+        "m": {
+          "label": "غاضب",
+          "tts": "غَاضِب"
+        },
+        "f": {
+          "label": "غاضبة",
+          "tts": "غَاضِبَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être en colère (s’accorde avec l’enfant)."
+    },
+    "c-emotions-peur": {
+      "label": "خائف",
+      "tts": "خَائِف",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : avoir peur."
+    },
+    "c-emotions-fatigue": {
+      "label": "متعبة",
+      "tts": "مُتْعَبَة",
+      "gender": {
+        "m": {
+          "label": "متعب",
+          "tts": "مُتْعَب"
+        },
+        "f": {
+          "label": "متعبة",
+          "tts": "مُتْعَبَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "État : être fatigué (s’accorde avec l’enfant)."
+    },
+    "c-emotions-fier": {
+      "label": "فخورة",
+      "tts": "فَخُورَة",
+      "gender": {
+        "m": {
+          "label": "فخور",
+          "tts": "فَخُور"
+        },
+        "f": {
+          "label": "فخورة",
+          "tts": "فَخُورَة"
+        }
+      },
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être fier de soi (s’accorde avec l’enfant)."
+    },
+    "c-decrire-grand": {
+      "label": "كبير",
+      "tts": "كَبِير",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : grand."
+    },
+    "c-decrire-petit": {
+      "label": "صغير",
+      "tts": "صَغِير",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : petit."
+    },
+    "c-decrire-rouge": {
+      "label": "أحمر",
+      "tts": "أَحْمَر",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : rouge."
+    },
+    "c-decrire-bleu": {
+      "label": "أزرق",
+      "tts": "أَزْرَق",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : bleu."
+    },
+    "c-decrire-jaune": {
+      "label": "أصفر",
+      "tts": "أَصْفَر",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : jaune."
+    },
+    "c-decrire-vert": {
+      "label": "أخضر",
+      "tts": "أَخْضَر",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : vert."
+    },
+    "c-decrire-chaud": {
+      "label": "ساخن",
+      "tts": "سَاخِن",
+      "grammar": "adjectif",
+      "disambiguation": "Température : chaud."
+    },
+    "c-decrire-froid": {
+      "label": "بارد",
+      "tts": "بَارِد",
+      "grammar": "adjectif",
+      "disambiguation": "Température : froid."
+    },
+    "c-decrire-rond": {
+      "label": "دائري",
+      "tts": "دَائِرِي",
+      "grammar": "adjectif",
+      "disambiguation": "Forme : rond."
+    },
+    "c-lieux-dehors": {
+      "label": "خارج البيت",
+      "tts": "خَارِج الْبَيْت",
+      "grammar": "nom",
+      "disambiguation": "Lieu : dehors, à l’extérieur."
+    },
+    "c-lieux-maison": {
+      "label": "البيت",
+      "tts": "الْبَيْت",
+      "grammar": "nom",
+      "disambiguation": "Lieu : la maison."
+    },
+    "c-lieux-voiture": {
+      "label": "سيارة",
+      "tts": "سَيَّارَة",
+      "grammar": "nom",
+      "disambiguation": "La voiture (pour partir en voiture)."
+    },
+    "c-lieux-parc": {
+      "label": "حديقة",
+      "tts": "حَدِيقَة",
+      "grammar": "nom",
+      "disambiguation": "Lieu : le parc, l’aire de jeux."
+    },
+    "c-lieux-ecole": {
+      "label": "المدرسة",
+      "tts": "الْمَدْرَسَة",
+      "grammar": "nom",
+      "disambiguation": "Lieu : l’école."
+    },
+    "c-base-s-il-te-plait": {
+      "label": "من فضلك",
+      "tts": "مِنْ فَضْلِك",
+      "grammar": "mot social",
+      "disambiguation": "Formule de politesse pour demander."
+    },
+    "c-base-merci": {
+      "label": "شكرا",
+      "tts": "شُكْرًا",
+      "grammar": "mot social",
+      "disambiguation": "Remercier."
+    },
+    "c-base-c-est-quoi-": {
+      "label": "ما هذا؟",
+      "tts": "مَا هَذَا؟",
+      "grammar": "mot social",
+      "disambiguation": "Demander le nom d’une chose."
+    },
+    "c-base-ou-est-": {
+      "label": "أين؟",
+      "tts": "أَيْنَ؟",
+      "grammar": "mot social",
+      "disambiguation": "Demander où se trouve une chose ou une personne."
+    },
+    "c-base-avec": {
+      "label": "مع",
+      "tts": "مَعَ",
+      "grammar": "mot social",
+      "disambiguation": "Être ou faire ensemble (« avec papa »)."
+    },
+    "c-actions-lire": {
+      "label": "أقرأ",
+      "tts": "أَقْرَأ",
+      "grammar": "verbe",
+      "disambiguation": "Action : lire ou regarder un livre."
+    },
+    "c-actions-ecrire": {
+      "label": "أكتب",
+      "tts": "أَكْتُب",
+      "grammar": "verbe",
+      "disambiguation": "Action : écrire."
+    },
+    "c-actions-regarder": {
+      "label": "أشاهد",
+      "tts": "أُشَاهِد",
+      "grammar": "verbe",
+      "disambiguation": "Action : regarder."
+    },
+    "c-actions-ecouter": {
+      "label": "أستمع",
+      "tts": "أَسْتَمِع",
+      "grammar": "verbe",
+      "disambiguation": "Action : écouter."
+    },
+    "c-decrire-dans": {
+      "label": "في",
+      "tts": "فِي",
+      "grammar": "adjectif",
+      "disambiguation": "Position : à l’intérieur."
+    },
+    "c-decrire-sur": {
+      "label": "فوق",
+      "tts": "فَوْق",
+      "grammar": "adjectif",
+      "disambiguation": "Position : au-dessus, posé dessus."
+    },
+    "c-decrire-sous": {
+      "label": "تحت",
+      "tts": "تَحْت",
+      "grammar": "adjectif",
+      "disambiguation": "Position : en dessous."
+    },
+    "c-decrire-beaucoup": {
+      "label": "كثيرا",
+      "tts": "كَثِيرًا",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : beaucoup."
+    },
+    "c-decrire-un-peu": {
+      "label": "قليلا",
+      "tts": "قَلِيلًا",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : un peu."
+    },
+    "c-personnes-moi": {
+      "label": "أنا",
+      "tts": "أَنَا",
+      "grammar": "personne",
+      "disambiguation": "L’enfant lui-même (« moi »)."
+    },
+    "c-personnes-therapist": {
+      "label": "المعالجة",
+      "tts": "الْمُعَالِجَة",
+      "whenFr": "Thérapeute",
+      "grammar": "personne",
+      "disambiguation": "La personne qui soigne (orthophoniste, psychologue). Si le parent a écrit un prénom, le prénom reste."
+    }
   }
 }

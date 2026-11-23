@@ -84,7 +84,7 @@ export function cardWord(card, code, { scriptMode = 'both' } = {}) {
     return (lex && formatAmazighText(lex, scriptMode)) || card.fr;
   }
   if (code === 'fr') return card.fr;
-  const found = localeWord(code, card.id);
+  const found = lexiconApplies(card, code) ? localeWord(code, card.id) : undefined;
   if (found) return code === 'de' ? germanNoun(card, found) : found;
   const self = /^(.*)\(Moi\)\s*$/.exec(card.fr || '');
   if (self) {
@@ -103,8 +103,15 @@ export const hasWord = (card, code) => {
 // dite : l'arabe s'affiche sans les harakat (« خبز ») mais se dit vocalisé (« خُبْز »), ce que la voix du
 // téléphone lit sans se tromper. Repli sur le mot affiché si la locale ne donne pas de forme vocale.
 export function cardSpeechText(card, code) {
-  if (isExtraLang(code)) return localeTtsText(code, card.id) || cardWord(card, code);
+  if (isExtraLang(code)) return (lexiconApplies(card, code) && localeTtsText(code, card.id)) || cardWord(card, code);
   return cardWord(card, code);
+}
+
+// v10.40+ (Lot 3) : « whenFr » = le mot ne vaut que si la carte porte encore ce mot français.
+// La carte « Thérapeute » se traduit ; si le parent y a écrit un prénom, le prénom reste.
+function lexiconApplies(card, code) {
+  const entry = localeEntry(code, card.id);
+  return !(entry && typeof entry === 'object' && entry.whenFr && entry.whenFr !== card.fr);
 }
 
 // v10.40 (Lot 2.3) : en allemand, un nom commence toujours par une majuscule (« Apfel », « Wasser »),

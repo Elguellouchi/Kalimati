@@ -39,97 +39,471 @@
     "Plaatsen"
   ],
   "lexicon": {
-    "c-base-je-veux": "Ik wil",
-    "c-base-oui": "Ja",
-    "c-base-non": "Nee",
-    "c-base-encore": "Meer",
-    "c-base-fini": "Klaar",
-    "c-base-aide-moi": "Help me",
-    "c-base-attends": "Wacht",
-    "c-base-j-ai-mal": "Het doet pijn",
-    "c-base-bonjour": "Hallo",
-    "c-base-au-revoir": "Dag",
-    "c-base-viens-jouer": "Kom spelen",
-    "c-manger-pain": "Brood",
-    "c-manger-pomme": "Appel",
-    "c-manger-banane": "Banaan",
-    "c-manger-gateau": "Taart",
-    "c-manger-yaourt": "Yoghurt",
-    "c-manger-riz": "Rijst",
-    "c-manger-biscuit": "Koekje",
-    "c-manger--uf": "Ei",
-    "c-boire-eau": "Water",
-    "c-boire-lait": "Melk",
-    "c-boire-jus": "Sap",
-    "c-manger-chips": "Chips",
-    "c-manger-fromage": "Kaas",
-    "c-manger-pancake": "Pannenkoek",
-    "c-manger-mcdo": "McDonald's",
-    "c-boire-coca-cola": "Coca-Cola",
-    "c-jouer-trampoline": "Trampoline",
-    "c-jouer-ballon": "Bal",
-    "c-jouer-tablette": "Tablet",
-    "c-jouer-dessin-anime": "Tekenfilm",
-    "c-jouer-poupee": "Pop",
-    "c-jouer-musique": "Muziek",
-    "c-jouer-balancoire": "Schommel",
-    "c-actions-manger": "Eten",
-    "c-actions-boire": "Drinken",
-    "c-actions-jouer": "Spelen",
-    "c-actions-courir": "Rennen",
-    "c-actions-donner": "Geven",
-    "c-actions-couper": "Knippen",
-    "c-actions-sauter": "Springen",
-    "c-actions-laver": "Wassen",
-    "c-actions-dessiner": "Tekenen",
-    "c-actions-ouvrir": "Openen",
-    "c-personnes-sibling": "Zus / Broer",
-    "c-personnes-papa": "Papa",
-    "c-personnes-maman": "Mama",
-    "c-personnes-maitresse": "Juf",
-    "c-personnes-mamie": "Oma",
-    "c-personnes-papi": "Opa",
-    "c-besoins-toilettes": "Wc",
-    "c-besoins-dormir": "Slapen",
-    "c-actions-dormir": "Slapen",
-    "c-besoins-calin": "Knuffel",
-    "c-besoins-bain": "Bad",
-    "c-besoins-changer": "Omkleden",
-    "c-besoins-calme": "Rustig",
-    "c-emotions-content": "Blij",
-    "c-emotions-triste": "Verdrietig",
-    "c-emotions-en-colere": "Boos",
-    "c-emotions-peur": "Bang",
-    "c-emotions-fatigue": "Moe",
-    "c-emotions-fier": "Trots",
-    "c-decrire-grand": "Groot",
-    "c-decrire-petit": "Klein",
-    "c-decrire-rouge": "Rood",
-    "c-decrire-bleu": "Blauw",
-    "c-decrire-jaune": "Geel",
-    "c-decrire-vert": "Groen",
-    "c-decrire-chaud": "Warm",
-    "c-decrire-froid": "Koud",
-    "c-decrire-rond": "Rond",
-    "c-lieux-dehors": "Buiten",
-    "c-lieux-maison": "Huis",
-    "c-lieux-voiture": "Auto",
-    "c-lieux-parc": "Park",
-    "c-lieux-ecole": "School",
-    "c-base-s-il-te-plait": "Alsjeblieft",
-    "c-base-merci": "Dank je",
-    "c-base-c-est-quoi-": "Wat is dat?",
-    "c-base-ou-est-": "Waar is het?",
-    "c-base-avec": "Met",
-    "c-actions-lire": "Lezen",
-    "c-actions-ecrire": "Schrijven",
-    "c-actions-regarder": "Kijken",
-    "c-actions-ecouter": "Luisteren",
-    "c-decrire-dans": "In",
-    "c-decrire-sur": "Op",
-    "c-decrire-sous": "Onder",
-    "c-decrire-beaucoup": "Veel",
-    "c-decrire-un-peu": "Een beetje",
-    "c-personnes-moi": "Ik"
+    "c-base-je-veux": {
+      "label": "Ik wil",
+      "grammar": "personne",
+      "disambiguation": "Demander quelque chose pour soi (début de phrase)."
+    },
+    "c-base-oui": {
+      "label": "Ja",
+      "grammar": "mot social",
+      "disambiguation": "Accepter, dire d’accord."
+    },
+    "c-base-non": {
+      "label": "Nee",
+      "grammar": "mot social",
+      "disambiguation": "Refuser, dire pas d’accord."
+    },
+    "c-base-encore": {
+      "label": "Meer",
+      "grammar": "adjectif",
+      "disambiguation": "Redemander la même chose une fois de plus."
+    },
+    "c-base-fini": {
+      "label": "Klaar",
+      "grammar": "mot social",
+      "disambiguation": "Dire que c’est terminé, qu’on veut arrêter."
+    },
+    "c-base-aide-moi": {
+      "label": "Help me",
+      "grammar": "mot social",
+      "disambiguation": "Demander de l’aide à un adulte."
+    },
+    "c-base-attends": {
+      "label": "Wacht",
+      "grammar": "mot social",
+      "disambiguation": "Demander à l’autre d’attendre un moment."
+    },
+    "c-base-j-ai-mal": {
+      "label": "Het doet pijn",
+      "grammar": "mot social",
+      "disambiguation": "Dire qu’on a une douleur dans le corps."
+    },
+    "c-base-bonjour": {
+      "label": "Hallo",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en arrivant."
+    },
+    "c-base-au-revoir": {
+      "label": "Dag",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en partant."
+    },
+    "c-base-viens-jouer": {
+      "label": "Kom spelen",
+      "grammar": "mot social",
+      "disambiguation": "Inviter quelqu’un à jouer avec soi."
+    },
+    "c-manger-pain": {
+      "label": "Brood",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le pain."
+    },
+    "c-manger-pomme": {
+      "label": "Appel",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la pomme."
+    },
+    "c-manger-banane": {
+      "label": "Banaan",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la banane."
+    },
+    "c-manger-gateau": {
+      "label": "Taart",
+      "grammar": "nom",
+      "disambiguation": "Aliment sucré : le gâteau."
+    },
+    "c-manger-yaourt": {
+      "label": "Yoghurt",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le yaourt."
+    },
+    "c-manger-riz": {
+      "label": "Rijst",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le riz cuit."
+    },
+    "c-manger-biscuit": {
+      "label": "Koekje",
+      "grammar": "nom",
+      "disambiguation": "Petit gâteau sec : le biscuit."
+    },
+    "c-manger--uf": {
+      "label": "Ei",
+      "grammar": "nom",
+      "disambiguation": "Aliment : l’œuf."
+    },
+    "c-boire-eau": {
+      "label": "Water",
+      "grammar": "nom",
+      "disambiguation": "Boisson : l’eau."
+    },
+    "c-boire-lait": {
+      "label": "Melk",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le lait."
+    },
+    "c-boire-jus": {
+      "label": "Sap",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le jus de fruit."
+    },
+    "c-manger-chips": {
+      "label": "Chips",
+      "grammar": "nom",
+      "disambiguation": "Grignotage : les chips."
+    },
+    "c-manger-fromage": {
+      "label": "Kaas",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le fromage."
+    },
+    "c-manger-pancake": {
+      "label": "Pannenkoek",
+      "grammar": "nom",
+      "disambiguation": "Petite crêpe épaisse : le pancake."
+    },
+    "c-manger-mcdo": {
+      "label": "McDonald's",
+      "grammar": "nom",
+      "disambiguation": "Restaurant rapide (nom de marque, ne se traduit pas)."
+    },
+    "c-boire-coca-cola": {
+      "label": "Coca-Cola",
+      "grammar": "nom",
+      "disambiguation": "Boisson gazeuse (nom de marque, ne se traduit pas)."
+    },
+    "c-jouer-trampoline": {
+      "label": "Trampoline",
+      "grammar": "nom",
+      "disambiguation": "Jeu : la grande toile pour sauter."
+    },
+    "c-jouer-ballon": {
+      "label": "Bal",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la balle ou le ballon."
+    },
+    "c-jouer-tablette": {
+      "label": "Tablet",
+      "grammar": "nom",
+      "disambiguation": "Écran tactile pour jouer ou regarder."
+    },
+    "c-jouer-dessin-anime": {
+      "label": "Tekenfilm",
+      "grammar": "nom",
+      "disambiguation": "Programme pour enfants à regarder."
+    },
+    "c-jouer-poupee": {
+      "label": "Pop",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la poupée."
+    },
+    "c-jouer-musique": {
+      "label": "Muziek",
+      "grammar": "nom",
+      "disambiguation": "Écouter ou faire de la musique."
+    },
+    "c-jouer-balancoire": {
+      "label": "Schommel",
+      "grammar": "nom",
+      "disambiguation": "Jeu du parc : la balançoire."
+    },
+    "c-actions-manger": {
+      "label": "Eten",
+      "grammar": "verbe",
+      "disambiguation": "Action : manger."
+    },
+    "c-actions-boire": {
+      "label": "Drinken",
+      "grammar": "verbe",
+      "disambiguation": "Action : boire."
+    },
+    "c-actions-jouer": {
+      "label": "Spelen",
+      "grammar": "verbe",
+      "disambiguation": "Action : jouer."
+    },
+    "c-actions-courir": {
+      "label": "Rennen",
+      "grammar": "verbe",
+      "disambiguation": "Action : courir."
+    },
+    "c-actions-donner": {
+      "label": "Geven",
+      "grammar": "verbe",
+      "disambiguation": "Action : donner un objet à quelqu’un."
+    },
+    "c-actions-couper": {
+      "label": "Knippen",
+      "grammar": "verbe",
+      "disambiguation": "Action : couper (avec ciseaux ou couteau)."
+    },
+    "c-actions-sauter": {
+      "label": "Springen",
+      "grammar": "verbe",
+      "disambiguation": "Action : sauter."
+    },
+    "c-actions-laver": {
+      "label": "Wassen",
+      "grammar": "verbe",
+      "disambiguation": "Action : laver, se laver."
+    },
+    "c-actions-dessiner": {
+      "label": "Tekenen",
+      "grammar": "verbe",
+      "disambiguation": "Action : dessiner."
+    },
+    "c-actions-ouvrir": {
+      "label": "Openen",
+      "grammar": "verbe",
+      "disambiguation": "Action : ouvrir (porte, boîte, paquet)."
+    },
+    "c-personnes-sibling": {
+      "label": "Zus / Broer",
+      "grammar": "personne",
+      "disambiguation": "La sœur ou le frère de l’enfant."
+    },
+    "c-personnes-papa": {
+      "label": "Papa",
+      "grammar": "personne",
+      "disambiguation": "Le père (mot de l’enfant)."
+    },
+    "c-personnes-maman": {
+      "label": "Mama",
+      "grammar": "personne",
+      "disambiguation": "La mère (mot de l’enfant)."
+    },
+    "c-personnes-maitresse": {
+      "label": "Juf",
+      "grammar": "personne",
+      "disambiguation": "L’enseignante de l’école."
+    },
+    "c-personnes-mamie": {
+      "label": "Oma",
+      "grammar": "personne",
+      "disambiguation": "La grand-mère (mot de l’enfant)."
+    },
+    "c-personnes-papi": {
+      "label": "Opa",
+      "grammar": "personne",
+      "disambiguation": "Le grand-père (mot de l’enfant)."
+    },
+    "c-besoins-toilettes": {
+      "label": "Wc",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’aller aux toilettes (pipi, caca). Pas le bain."
+    },
+    "c-besoins-dormir": {
+      "label": "Slapen",
+      "grammar": "verbe",
+      "disambiguation": "Besoin : avoir sommeil, vouloir dormir."
+    },
+    "c-actions-dormir": {
+      "label": "Slapen",
+      "grammar": "verbe",
+      "disambiguation": "Action : dormir."
+    },
+    "c-besoins-calin": {
+      "label": "Knuffel",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’être pris dans les bras."
+    },
+    "c-besoins-bain": {
+      "label": "Bad",
+      "grammar": "nom",
+      "disambiguation": "Moment de se laver dans la baignoire. Pas les toilettes."
+    },
+    "c-besoins-changer": {
+      "label": "Omkleden",
+      "grammar": "verbe",
+      "disambiguation": "Besoin de changer de vêtements ou de couche."
+    },
+    "c-besoins-calme": {
+      "label": "Rustig",
+      "grammar": "adjectif",
+      "disambiguation": "Besoin de calme, de se poser (s’accorde avec l’enfant)."
+    },
+    "c-emotions-content": {
+      "label": "Blij",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être content, joyeux (s’accorde avec l’enfant)."
+    },
+    "c-emotions-triste": {
+      "label": "Verdrietig",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être triste."
+    },
+    "c-emotions-en-colere": {
+      "label": "Boos",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être en colère (s’accorde avec l’enfant)."
+    },
+    "c-emotions-peur": {
+      "label": "Bang",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : avoir peur."
+    },
+    "c-emotions-fatigue": {
+      "label": "Moe",
+      "grammar": "adjectif",
+      "disambiguation": "État : être fatigué (s’accorde avec l’enfant)."
+    },
+    "c-emotions-fier": {
+      "label": "Trots",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être fier de soi (s’accorde avec l’enfant)."
+    },
+    "c-decrire-grand": {
+      "label": "Groot",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : grand."
+    },
+    "c-decrire-petit": {
+      "label": "Klein",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : petit."
+    },
+    "c-decrire-rouge": {
+      "label": "Rood",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : rouge."
+    },
+    "c-decrire-bleu": {
+      "label": "Blauw",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : bleu."
+    },
+    "c-decrire-jaune": {
+      "label": "Geel",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : jaune."
+    },
+    "c-decrire-vert": {
+      "label": "Groen",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : vert."
+    },
+    "c-decrire-chaud": {
+      "label": "Warm",
+      "grammar": "adjectif",
+      "disambiguation": "Température : chaud."
+    },
+    "c-decrire-froid": {
+      "label": "Koud",
+      "grammar": "adjectif",
+      "disambiguation": "Température : froid."
+    },
+    "c-decrire-rond": {
+      "label": "Rond",
+      "grammar": "adjectif",
+      "disambiguation": "Forme : rond."
+    },
+    "c-lieux-dehors": {
+      "label": "Buiten",
+      "grammar": "nom",
+      "disambiguation": "Lieu : dehors, à l’extérieur."
+    },
+    "c-lieux-maison": {
+      "label": "Huis",
+      "grammar": "nom",
+      "disambiguation": "Lieu : la maison."
+    },
+    "c-lieux-voiture": {
+      "label": "Auto",
+      "grammar": "nom",
+      "disambiguation": "La voiture (pour partir en voiture)."
+    },
+    "c-lieux-parc": {
+      "label": "Park",
+      "grammar": "nom",
+      "disambiguation": "Lieu : le parc, l’aire de jeux."
+    },
+    "c-lieux-ecole": {
+      "label": "School",
+      "grammar": "nom",
+      "disambiguation": "Lieu : l’école."
+    },
+    "c-base-s-il-te-plait": {
+      "label": "Alsjeblieft",
+      "grammar": "mot social",
+      "disambiguation": "Formule de politesse pour demander."
+    },
+    "c-base-merci": {
+      "label": "Dank je",
+      "grammar": "mot social",
+      "disambiguation": "Remercier."
+    },
+    "c-base-c-est-quoi-": {
+      "label": "Wat is dat?",
+      "grammar": "mot social",
+      "disambiguation": "Demander le nom d’une chose."
+    },
+    "c-base-ou-est-": {
+      "label": "Waar is het?",
+      "grammar": "mot social",
+      "disambiguation": "Demander où se trouve une chose ou une personne."
+    },
+    "c-base-avec": {
+      "label": "Met",
+      "grammar": "mot social",
+      "disambiguation": "Être ou faire ensemble (« avec papa »)."
+    },
+    "c-actions-lire": {
+      "label": "Lezen",
+      "grammar": "verbe",
+      "disambiguation": "Action : lire ou regarder un livre."
+    },
+    "c-actions-ecrire": {
+      "label": "Schrijven",
+      "grammar": "verbe",
+      "disambiguation": "Action : écrire."
+    },
+    "c-actions-regarder": {
+      "label": "Kijken",
+      "grammar": "verbe",
+      "disambiguation": "Action : regarder."
+    },
+    "c-actions-ecouter": {
+      "label": "Luisteren",
+      "grammar": "verbe",
+      "disambiguation": "Action : écouter."
+    },
+    "c-decrire-dans": {
+      "label": "In",
+      "grammar": "adjectif",
+      "disambiguation": "Position : à l’intérieur."
+    },
+    "c-decrire-sur": {
+      "label": "Op",
+      "grammar": "adjectif",
+      "disambiguation": "Position : au-dessus, posé dessus."
+    },
+    "c-decrire-sous": {
+      "label": "Onder",
+      "grammar": "adjectif",
+      "disambiguation": "Position : en dessous."
+    },
+    "c-decrire-beaucoup": {
+      "label": "Veel",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : beaucoup."
+    },
+    "c-decrire-un-peu": {
+      "label": "Een beetje",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : un peu."
+    },
+    "c-personnes-moi": {
+      "label": "Ik",
+      "grammar": "personne",
+      "disambiguation": "L’enfant lui-même (« moi »)."
+    },
+    "c-personnes-therapist": {
+      "label": "Therapeut",
+      "whenFr": "Thérapeute",
+      "grammar": "personne",
+      "disambiguation": "La personne qui soigne (orthophoniste, psychologue). Si le parent a écrit un prénom, le prénom reste."
+    }
   }
 }

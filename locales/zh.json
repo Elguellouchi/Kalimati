@@ -39,148 +39,488 @@
     "地点"
   ],
   "lexicon": {
-    "c-base-je-veux": "我要",
-    "c-base-oui": "是",
-    "c-base-non": "不",
-    "c-base-encore": "还要",
-    "c-base-fini": "完了",
-    "c-base-aide-moi": "帮帮我",
-    "c-base-attends": "等一下",
-    "c-base-j-ai-mal": "我疼",
-    "c-base-bonjour": "你好",
-    "c-base-au-revoir": "再见",
-    "c-base-viens-jouer": "来玩吧",
+    "c-base-je-veux": {
+      "label": "我要",
+      "grammar": "personne",
+      "disambiguation": "Demander quelque chose pour soi (début de phrase)."
+    },
+    "c-base-oui": {
+      "label": "是",
+      "grammar": "mot social",
+      "disambiguation": "Accepter, dire d’accord."
+    },
+    "c-base-non": {
+      "label": "不",
+      "grammar": "mot social",
+      "disambiguation": "Refuser, dire pas d’accord."
+    },
+    "c-base-encore": {
+      "label": "还要",
+      "grammar": "adjectif",
+      "disambiguation": "Redemander la même chose une fois de plus."
+    },
+    "c-base-fini": {
+      "label": "完了",
+      "grammar": "mot social",
+      "disambiguation": "Dire que c’est terminé, qu’on veut arrêter."
+    },
+    "c-base-aide-moi": {
+      "label": "帮帮我",
+      "grammar": "mot social",
+      "disambiguation": "Demander de l’aide à un adulte."
+    },
+    "c-base-attends": {
+      "label": "等一下",
+      "grammar": "mot social",
+      "disambiguation": "Demander à l’autre d’attendre un moment."
+    },
+    "c-base-j-ai-mal": {
+      "label": "我疼",
+      "grammar": "mot social",
+      "disambiguation": "Dire qu’on a une douleur dans le corps."
+    },
+    "c-base-bonjour": {
+      "label": "你好",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en arrivant."
+    },
+    "c-base-au-revoir": {
+      "label": "再见",
+      "grammar": "mot social",
+      "disambiguation": "Saluer en partant."
+    },
+    "c-base-viens-jouer": {
+      "label": "来玩吧",
+      "grammar": "mot social",
+      "disambiguation": "Inviter quelqu’un à jouer avec soi."
+    },
     "c-manger-pain": {
       "label": "面包",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le pain."
     },
     "c-manger-pomme": {
       "label": "苹果",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la pomme."
     },
     "c-manger-banane": {
       "label": "香蕉",
-      "classifier": "根"
+      "classifier": "根",
+      "grammar": "nom",
+      "disambiguation": "Fruit : la banane."
     },
     "c-manger-gateau": {
       "label": "蛋糕",
-      "classifier": "块"
+      "classifier": "块",
+      "grammar": "nom",
+      "disambiguation": "Aliment sucré : le gâteau."
     },
     "c-manger-yaourt": {
       "label": "酸奶",
-      "classifier": "杯"
+      "classifier": "杯",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le yaourt."
     },
     "c-manger-riz": {
       "label": "米饭",
-      "classifier": "碗"
+      "classifier": "碗",
+      "grammar": "nom",
+      "disambiguation": "Aliment : le riz cuit."
     },
     "c-manger-biscuit": {
       "label": "饼干",
-      "classifier": "块"
+      "classifier": "块",
+      "grammar": "nom",
+      "disambiguation": "Petit gâteau sec : le biscuit."
     },
     "c-manger--uf": {
       "label": "鸡蛋",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Aliment : l’œuf."
     },
     "c-boire-eau": {
       "label": "水",
-      "classifier": "杯"
+      "classifier": "杯",
+      "grammar": "nom",
+      "disambiguation": "Boisson : l’eau."
     },
     "c-boire-lait": {
       "label": "牛奶",
-      "classifier": "杯"
+      "classifier": "杯",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le lait."
     },
     "c-boire-jus": {
       "label": "果汁",
-      "classifier": "杯"
+      "classifier": "杯",
+      "grammar": "nom",
+      "disambiguation": "Boisson : le jus de fruit."
     },
     "c-manger-chips": {
       "label": "薯片",
-      "classifier": "包"
+      "classifier": "包",
+      "grammar": "nom",
+      "disambiguation": "Grignotage : les chips."
     },
     "c-manger-fromage": {
       "label": "奶酪",
-      "classifier": "块"
+      "classifier": "块",
+      "grammar": "nom",
+      "disambiguation": "Laitage : le fromage."
     },
     "c-manger-pancake": {
       "label": "松饼",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Petite crêpe épaisse : le pancake."
     },
-    "c-manger-mcdo": "麦当劳",
+    "c-manger-mcdo": {
+      "label": "麦当劳",
+      "grammar": "nom",
+      "disambiguation": "Restaurant rapide (nom de marque, ne se traduit pas)."
+    },
     "c-boire-coca-cola": {
       "label": "可口可乐",
-      "classifier": "瓶"
+      "classifier": "瓶",
+      "grammar": "nom",
+      "disambiguation": "Boisson gazeuse (nom de marque, ne se traduit pas)."
     },
-    "c-jouer-trampoline": "蹦床",
+    "c-jouer-trampoline": {
+      "label": "蹦床",
+      "grammar": "nom",
+      "disambiguation": "Jeu : la grande toile pour sauter."
+    },
     "c-jouer-ballon": {
       "label": "球",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la balle ou le ballon."
     },
-    "c-jouer-tablette": "平板",
-    "c-jouer-dessin-anime": "动画片",
+    "c-jouer-tablette": {
+      "label": "平板",
+      "grammar": "nom",
+      "disambiguation": "Écran tactile pour jouer ou regarder."
+    },
+    "c-jouer-dessin-anime": {
+      "label": "动画片",
+      "grammar": "nom",
+      "disambiguation": "Programme pour enfants à regarder."
+    },
     "c-jouer-poupee": {
       "label": "娃娃",
-      "classifier": "个"
+      "classifier": "个",
+      "grammar": "nom",
+      "disambiguation": "Jouet : la poupée."
     },
-    "c-jouer-musique": "音乐",
-    "c-jouer-balancoire": "秋千",
-    "c-actions-manger": "吃",
-    "c-actions-boire": "喝",
-    "c-actions-jouer": "玩",
-    "c-actions-courir": "跑",
-    "c-actions-donner": "给",
-    "c-actions-couper": "剪",
-    "c-actions-sauter": "跳",
-    "c-actions-laver": "洗",
-    "c-actions-dessiner": "画画",
-    "c-actions-ouvrir": "打开",
-    "c-personnes-sibling": "姐姐 / 哥哥",
-    "c-personnes-papa": "爸爸",
-    "c-personnes-maman": "妈妈",
-    "c-personnes-maitresse": "老师",
-    "c-personnes-mamie": "奶奶",
-    "c-personnes-papi": "爷爷",
-    "c-besoins-toilettes": "厕所",
-    "c-besoins-dormir": "睡觉",
-    "c-actions-dormir": "睡觉",
-    "c-besoins-calin": "抱抱",
-    "c-besoins-bain": "洗澡",
-    "c-besoins-changer": "换衣服",
-    "c-besoins-calme": "安静",
-    "c-emotions-content": "开心",
-    "c-emotions-triste": "难过",
-    "c-emotions-en-colere": "生气",
-    "c-emotions-peur": "害怕",
-    "c-emotions-fatigue": "累",
-    "c-emotions-fier": "骄傲",
-    "c-decrire-grand": "大",
-    "c-decrire-petit": "小",
-    "c-decrire-rouge": "红色",
-    "c-decrire-bleu": "蓝色",
-    "c-decrire-jaune": "黄色",
-    "c-decrire-vert": "绿色",
-    "c-decrire-chaud": "热",
-    "c-decrire-froid": "冷",
-    "c-decrire-rond": "圆",
-    "c-lieux-dehors": "外面",
-    "c-lieux-maison": "家",
-    "c-lieux-voiture": "汽车",
-    "c-lieux-parc": "公园",
-    "c-lieux-ecole": "学校",
-    "c-base-s-il-te-plait": "请",
-    "c-base-merci": "谢谢",
-    "c-base-c-est-quoi-": "这是什么？",
-    "c-base-ou-est-": "在哪里？",
-    "c-base-avec": "和",
-    "c-actions-lire": "读",
-    "c-actions-ecrire": "写",
-    "c-actions-regarder": "看",
-    "c-actions-ecouter": "听",
-    "c-decrire-dans": "里面",
-    "c-decrire-sur": "上面",
-    "c-decrire-sous": "下面",
-    "c-decrire-beaucoup": "很多",
-    "c-decrire-un-peu": "一点",
-    "c-personnes-moi": "我"
+    "c-jouer-musique": {
+      "label": "音乐",
+      "grammar": "nom",
+      "disambiguation": "Écouter ou faire de la musique."
+    },
+    "c-jouer-balancoire": {
+      "label": "秋千",
+      "grammar": "nom",
+      "disambiguation": "Jeu du parc : la balançoire."
+    },
+    "c-actions-manger": {
+      "label": "吃",
+      "grammar": "verbe",
+      "disambiguation": "Action : manger."
+    },
+    "c-actions-boire": {
+      "label": "喝",
+      "grammar": "verbe",
+      "disambiguation": "Action : boire."
+    },
+    "c-actions-jouer": {
+      "label": "玩",
+      "grammar": "verbe",
+      "disambiguation": "Action : jouer."
+    },
+    "c-actions-courir": {
+      "label": "跑",
+      "grammar": "verbe",
+      "disambiguation": "Action : courir."
+    },
+    "c-actions-donner": {
+      "label": "给",
+      "grammar": "verbe",
+      "disambiguation": "Action : donner un objet à quelqu’un."
+    },
+    "c-actions-couper": {
+      "label": "剪",
+      "grammar": "verbe",
+      "disambiguation": "Action : couper (avec ciseaux ou couteau)."
+    },
+    "c-actions-sauter": {
+      "label": "跳",
+      "grammar": "verbe",
+      "disambiguation": "Action : sauter."
+    },
+    "c-actions-laver": {
+      "label": "洗",
+      "grammar": "verbe",
+      "disambiguation": "Action : laver, se laver."
+    },
+    "c-actions-dessiner": {
+      "label": "画画",
+      "grammar": "verbe",
+      "disambiguation": "Action : dessiner."
+    },
+    "c-actions-ouvrir": {
+      "label": "打开",
+      "grammar": "verbe",
+      "disambiguation": "Action : ouvrir (porte, boîte, paquet)."
+    },
+    "c-personnes-sibling": {
+      "label": "姐姐 / 哥哥",
+      "grammar": "personne",
+      "disambiguation": "La sœur ou le frère de l’enfant."
+    },
+    "c-personnes-papa": {
+      "label": "爸爸",
+      "grammar": "personne",
+      "disambiguation": "Le père (mot de l’enfant)."
+    },
+    "c-personnes-maman": {
+      "label": "妈妈",
+      "grammar": "personne",
+      "disambiguation": "La mère (mot de l’enfant)."
+    },
+    "c-personnes-maitresse": {
+      "label": "老师",
+      "grammar": "personne",
+      "disambiguation": "L’enseignante de l’école."
+    },
+    "c-personnes-mamie": {
+      "label": "奶奶",
+      "grammar": "personne",
+      "disambiguation": "La grand-mère (mot de l’enfant)."
+    },
+    "c-personnes-papi": {
+      "label": "爷爷",
+      "grammar": "personne",
+      "disambiguation": "Le grand-père (mot de l’enfant)."
+    },
+    "c-besoins-toilettes": {
+      "label": "厕所",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’aller aux toilettes (pipi, caca). Pas le bain."
+    },
+    "c-besoins-dormir": {
+      "label": "睡觉",
+      "grammar": "verbe",
+      "disambiguation": "Besoin : avoir sommeil, vouloir dormir."
+    },
+    "c-actions-dormir": {
+      "label": "睡觉",
+      "grammar": "verbe",
+      "disambiguation": "Action : dormir."
+    },
+    "c-besoins-calin": {
+      "label": "抱抱",
+      "grammar": "mot social",
+      "disambiguation": "Besoin d’être pris dans les bras."
+    },
+    "c-besoins-bain": {
+      "label": "洗澡",
+      "grammar": "nom",
+      "disambiguation": "Moment de se laver dans la baignoire. Pas les toilettes."
+    },
+    "c-besoins-changer": {
+      "label": "换衣服",
+      "grammar": "verbe",
+      "disambiguation": "Besoin de changer de vêtements ou de couche."
+    },
+    "c-besoins-calme": {
+      "label": "安静",
+      "grammar": "adjectif",
+      "disambiguation": "Besoin de calme, de se poser (s’accorde avec l’enfant)."
+    },
+    "c-emotions-content": {
+      "label": "开心",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être content, joyeux (s’accorde avec l’enfant)."
+    },
+    "c-emotions-triste": {
+      "label": "难过",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être triste."
+    },
+    "c-emotions-en-colere": {
+      "label": "生气",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être en colère (s’accorde avec l’enfant)."
+    },
+    "c-emotions-peur": {
+      "label": "害怕",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : avoir peur."
+    },
+    "c-emotions-fatigue": {
+      "label": "累",
+      "grammar": "adjectif",
+      "disambiguation": "État : être fatigué (s’accorde avec l’enfant)."
+    },
+    "c-emotions-fier": {
+      "label": "骄傲",
+      "grammar": "adjectif",
+      "disambiguation": "Émotion : être fier de soi (s’accorde avec l’enfant)."
+    },
+    "c-decrire-grand": {
+      "label": "大",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : grand."
+    },
+    "c-decrire-petit": {
+      "label": "小",
+      "grammar": "adjectif",
+      "disambiguation": "Taille : petit."
+    },
+    "c-decrire-rouge": {
+      "label": "红色",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : rouge."
+    },
+    "c-decrire-bleu": {
+      "label": "蓝色",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : bleu."
+    },
+    "c-decrire-jaune": {
+      "label": "黄色",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : jaune."
+    },
+    "c-decrire-vert": {
+      "label": "绿色",
+      "grammar": "adjectif",
+      "disambiguation": "Couleur : vert."
+    },
+    "c-decrire-chaud": {
+      "label": "热",
+      "grammar": "adjectif",
+      "disambiguation": "Température : chaud."
+    },
+    "c-decrire-froid": {
+      "label": "冷",
+      "grammar": "adjectif",
+      "disambiguation": "Température : froid."
+    },
+    "c-decrire-rond": {
+      "label": "圆",
+      "grammar": "adjectif",
+      "disambiguation": "Forme : rond."
+    },
+    "c-lieux-dehors": {
+      "label": "外面",
+      "grammar": "nom",
+      "disambiguation": "Lieu : dehors, à l’extérieur."
+    },
+    "c-lieux-maison": {
+      "label": "家",
+      "grammar": "nom",
+      "disambiguation": "Lieu : la maison."
+    },
+    "c-lieux-voiture": {
+      "label": "汽车",
+      "grammar": "nom",
+      "disambiguation": "La voiture (pour partir en voiture)."
+    },
+    "c-lieux-parc": {
+      "label": "公园",
+      "grammar": "nom",
+      "disambiguation": "Lieu : le parc, l’aire de jeux."
+    },
+    "c-lieux-ecole": {
+      "label": "学校",
+      "grammar": "nom",
+      "disambiguation": "Lieu : l’école."
+    },
+    "c-base-s-il-te-plait": {
+      "label": "请",
+      "grammar": "mot social",
+      "disambiguation": "Formule de politesse pour demander."
+    },
+    "c-base-merci": {
+      "label": "谢谢",
+      "grammar": "mot social",
+      "disambiguation": "Remercier."
+    },
+    "c-base-c-est-quoi-": {
+      "label": "这是什么？",
+      "grammar": "mot social",
+      "disambiguation": "Demander le nom d’une chose."
+    },
+    "c-base-ou-est-": {
+      "label": "在哪里？",
+      "grammar": "mot social",
+      "disambiguation": "Demander où se trouve une chose ou une personne."
+    },
+    "c-base-avec": {
+      "label": "和",
+      "grammar": "mot social",
+      "disambiguation": "Être ou faire ensemble (« avec papa »)."
+    },
+    "c-actions-lire": {
+      "label": "读",
+      "grammar": "verbe",
+      "disambiguation": "Action : lire ou regarder un livre."
+    },
+    "c-actions-ecrire": {
+      "label": "写",
+      "grammar": "verbe",
+      "disambiguation": "Action : écrire."
+    },
+    "c-actions-regarder": {
+      "label": "看",
+      "grammar": "verbe",
+      "disambiguation": "Action : regarder."
+    },
+    "c-actions-ecouter": {
+      "label": "听",
+      "grammar": "verbe",
+      "disambiguation": "Action : écouter."
+    },
+    "c-decrire-dans": {
+      "label": "里面",
+      "grammar": "adjectif",
+      "disambiguation": "Position : à l’intérieur."
+    },
+    "c-decrire-sur": {
+      "label": "上面",
+      "grammar": "adjectif",
+      "disambiguation": "Position : au-dessus, posé dessus."
+    },
+    "c-decrire-sous": {
+      "label": "下面",
+      "grammar": "adjectif",
+      "disambiguation": "Position : en dessous."
+    },
+    "c-decrire-beaucoup": {
+      "label": "很多",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : beaucoup."
+    },
+    "c-decrire-un-peu": {
+      "label": "一点",
+      "grammar": "adjectif",
+      "disambiguation": "Quantité : un peu."
+    },
+    "c-personnes-moi": {
+      "label": "我",
+      "grammar": "personne",
+      "disambiguation": "L’enfant lui-même (« moi »)."
+    },
+    "c-personnes-therapist": {
+      "label": "治疗师",
+      "whenFr": "Thérapeute",
+      "grammar": "personne",
+      "disambiguation": "La personne qui soigne (orthophoniste, psychologue). Si le parent a écrit un prénom, le prénom reste."
+    }
   }
 }

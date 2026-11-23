@@ -579,6 +579,11 @@ export const LOCALES = {
       "c-personnes-moi": {
         "label": "أنا",
         "tts": "أَنَا"
+      },
+      "c-personnes-therapist": {
+        "label": "المعالجة",
+        "tts": "الْمُعَالِجَة",
+        "whenFr": "Thérapeute"
       }
     }
   },
@@ -709,7 +714,11 @@ export const LOCALES = {
       "c-decrire-sous": "Unter",
       "c-decrire-beaucoup": "Viel",
       "c-decrire-un-peu": "Ein bisschen",
-      "c-personnes-moi": "Ich"
+      "c-personnes-moi": "Ich",
+      "c-personnes-therapist": {
+        "label": "Therapeutin",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "dr": {
@@ -910,7 +919,11 @@ export const LOCALES = {
       "c-decrire-sous": "Under",
       "c-decrire-beaucoup": "A lot",
       "c-decrire-un-peu": "A little",
-      "c-personnes-moi": "Me"
+      "c-personnes-moi": "Me",
+      "c-personnes-therapist": {
+        "label": "Therapist",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "es": {
@@ -1003,7 +1016,7 @@ export const LOCALES = {
       "c-besoins-dormir": "Dormir",
       "c-actions-dormir": "Dormir",
       "c-besoins-calin": "Abrazo",
-      "c-besoins-bain": "Baño",
+      "c-besoins-bain": "Bañera",
       "c-besoins-changer": "Cambiarme",
       "c-besoins-calme": {
         "label": "Tranquila",
@@ -1064,7 +1077,11 @@ export const LOCALES = {
       "c-decrire-sous": "Debajo",
       "c-decrire-beaucoup": "Mucho",
       "c-decrire-un-peu": "Un poco",
-      "c-personnes-moi": "Yo"
+      "c-personnes-moi": "Yo",
+      "c-personnes-therapist": {
+        "label": "Terapeuta",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "fr": {
@@ -1261,7 +1278,11 @@ export const LOCALES = {
       "c-decrire-sous": "Sotto",
       "c-decrire-beaucoup": "Tanto",
       "c-decrire-un-peu": "Un po'",
-      "c-personnes-moi": "Io"
+      "c-personnes-moi": "Io",
+      "c-personnes-therapist": {
+        "label": "Terapista",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "nl": {
@@ -1391,7 +1412,11 @@ export const LOCALES = {
       "c-decrire-sous": "Onder",
       "c-decrire-beaucoup": "Veel",
       "c-decrire-un-peu": "Een beetje",
-      "c-personnes-moi": "Ik"
+      "c-personnes-moi": "Ik",
+      "c-personnes-therapist": {
+        "label": "Therapeut",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "pt": {
@@ -1545,7 +1570,11 @@ export const LOCALES = {
       "c-decrire-sous": "Debaixo",
       "c-decrire-beaucoup": "Muito",
       "c-decrire-un-peu": "Um pouco",
-      "c-personnes-moi": "Eu"
+      "c-personnes-moi": "Eu",
+      "c-personnes-therapist": {
+        "label": "Terapeuta",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "rif": {
@@ -1743,7 +1772,11 @@ export const LOCALES = {
       "c-decrire-sous": "Altında",
       "c-decrire-beaucoup": "Çok",
       "c-decrire-un-peu": "Biraz",
-      "c-personnes-moi": "Ben"
+      "c-personnes-moi": "Ben",
+      "c-personnes-therapist": {
+        "label": "Terapist",
+        "whenFr": "Thérapeute"
+      }
     }
   },
   "tzm": {
@@ -1992,7 +2025,11 @@ export const LOCALES = {
       "c-decrire-sous": "下面",
       "c-decrire-beaucoup": "很多",
       "c-decrire-un-peu": "一点",
-      "c-personnes-moi": "我"
+      "c-personnes-moi": "我",
+      "c-personnes-therapist": {
+        "label": "治疗师",
+        "whenFr": "Thérapeute"
+      }
     }
   }
 };

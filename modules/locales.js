@@ -35,6 +35,9 @@ export const setLocaleChildGender = (g) => { childGender = g === 'boy' ? 'boy' :
 export const localeChildGender = () => childGender;
 const pickForm = (entry) => {
   if (!entry || typeof entry !== 'object' || !entry.gender || typeof entry.gender !== 'object') return entry;
+  return pickGender(entry);
+};
+const pickGender = (entry) => {
   const form = entry.gender[childGender === 'boy' ? 'm' : 'f'];
   if (form == null) return entry;
   return typeof form === 'string' ? { ...entry, label: form, tts: form } : { ...entry, ...form };

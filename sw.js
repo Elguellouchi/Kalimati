@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-40'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
+const CACHE = 'kalimati-v10-41'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
 const FILES = [
   './', './index.html', './boot-guard.js', './theme-boot.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',

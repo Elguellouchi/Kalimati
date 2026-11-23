@@ -36,8 +36,15 @@ check(Object.keys(disk).length === 15, `15 fichiers locales/<lang>.json (${Objec
 check(Object.keys(LOCALES).length === Object.keys(disk).length,
   `Le paquet charge autant de langues que de fichiers (${Object.keys(LOCALES).length})`);
 
+// v10.41 (Lot 3) : le paquet n'emporte pas les notes de relecture (« grammar », « disambiguation »).
+const runtimeLexicon = (lexicon) => Object.fromEntries(Object.entries(lexicon).map(([id, v]) => {
+  if (typeof v === 'string') return [id, v];
+  const { grammar, disambiguation, ...keep } = v;
+  const keys = Object.keys(keep);
+  return [id, keys.length === 1 && keys[0] === 'label' ? keep.label : keep];
+}));
 const drift = Object.keys(disk).filter((code) => JSON.stringify({
-  ui: disk[code].ui || {}, categories: disk[code].categories || [], lexicon: disk[code].lexicon || {},
+  ui: disk[code].ui || {}, categories: disk[code].categories || [], lexicon: runtimeLexicon(disk[code].lexicon || {}),
 }) !== JSON.stringify({
   ui: LOCALES[code].ui, categories: LOCALES[code].categories, lexicon: LOCALES[code].lexicon,
 }));
