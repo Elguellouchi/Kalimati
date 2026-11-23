@@ -2367,7 +2367,8 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
   .talk > .grid .card { aspect-ratio: 1 / 1.06; padding: 5px 3px 3px; border-width: 4px; }
   .talk > .grid .card > .visual { --vs: clamp(30px, 9.5vw, 48px); }
   .talk > .grid .card .label { font-size: 13px; }
-  .talk > .suggest-row { margin: 0 8px 4px; }
+  /* v10.31 : la rangée 💡 des mots proposés poussait la grille hors de l'écran après « Je veux » (vidéo d'Aziz). Sur téléphone, les mêmes mots sont déjà dans la grille : on la retire. */
+  .talk > .suggest-row { display: none !important; }
   .talk > .talk-adult { margin: 4px 8px 4px; }
   .talk > .talk-adult:not([open]) > summary { min-height: 32px; padding: 4px 10px; font-size: 12px; }
   /* Phrase en haut plus basse : une ligne de cartes, ▶ à côté. */
