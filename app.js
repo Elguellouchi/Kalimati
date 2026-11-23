@@ -18,7 +18,7 @@ import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
-import { LANGS, langInfo, isAmazighLang, isAmazighScript, isDarijaScript, setDarijaScript, isExtraLang, cardWord, cardSpeechText, categoryName, ui, spokenUi } from './modules/languages.js';
+import { LANGS, langInfo, isAmazighLang, isAmazighScript, isDarijaScript, setDarijaScript, isExtraLang, cardWord, cardSpeechText, categoryName, ui, spokenUi, zhClassifierAt } from './modules/languages.js';
 import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack, amazighAutoStep } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, touchSettingsBox, scanSpeed, clearConfirmNeeded, echoPracticeEnabled } from './modules/aac-plus.js';
@@ -218,6 +218,9 @@ function renderStrip() {
       lab.classList.add('inflected');
       el.title = shown;
     }
+    // v10.40 (Lot 2.3) : chinois, « 一 » + « 苹果 » s'écrit « 一个苹果 » (classificateur glissé).
+    const clf = zhClassifierAt(state.strip, i);
+    if (clf && lab) { fillLabel(lab, `${clf}${label(item.card, item.lang)}`, item.lang); lab.classList.add('inflected'); }
     return el;
   });
   renderMorphSlot();
@@ -225,7 +228,9 @@ function renderStrip() {
   row.replaceChildren(...items);
   // v9.7 : on montre toujours le dernier mot ajouté (ou le mot dit), même sur petit téléphone.
   const focus = items[state.playing] || items[items.length - 1];
-  if (focus) row.scrollLeft = focus.offsetLeft + focus.offsetWidth - row.clientWidth + 6;
+  // v10.40 (Lot 2.1) : en arabe la bande défile vers la gauche : on montre le mot sans calcul de position.
+  if (focus && document.documentElement.dir === 'rtl') focus.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  else if (focus) row.scrollLeft = focus.offsetLeft + focus.offsetWidth - row.clientWidth + 6;
   $('#strip').classList.toggle('empty', state.strip.length === 0);
   $('#btn-lang').textContent = langInfo(state.lang).short;
   $('#btn-lang').setAttribute('aria-label', `Langue : ${langInfo(state.lang).name}. Changer de langue`);

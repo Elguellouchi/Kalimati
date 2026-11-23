@@ -95,13 +95,43 @@
     "c-besoins-calin": "Abbraccio",
     "c-besoins-bain": "Bagnetto",
     "c-besoins-changer": "Cambiarmi",
-    "c-besoins-calme": "Calma",
-    "c-emotions-content": "Contenta",
+    "c-besoins-calme": {
+      "label": "Calma",
+      "gender": {
+        "m": "Calmo",
+        "f": "Calma"
+      }
+    },
+    "c-emotions-content": {
+      "label": "Contenta",
+      "gender": {
+        "m": "Contento",
+        "f": "Contenta"
+      }
+    },
     "c-emotions-triste": "Triste",
-    "c-emotions-en-colere": "Arrabbiata",
+    "c-emotions-en-colere": {
+      "label": "Arrabbiata",
+      "gender": {
+        "m": "Arrabbiato",
+        "f": "Arrabbiata"
+      }
+    },
     "c-emotions-peur": "Paura",
-    "c-emotions-fatigue": "Stanca",
-    "c-emotions-fier": "Orgogliosa",
+    "c-emotions-fatigue": {
+      "label": "Stanca",
+      "gender": {
+        "m": "Stanco",
+        "f": "Stanca"
+      }
+    },
+    "c-emotions-fier": {
+      "label": "Orgogliosa",
+      "gender": {
+        "m": "Orgoglioso",
+        "f": "Orgogliosa"
+      }
+    },
     "c-decrire-grand": "Grande",
     "c-decrire-petit": "Piccolo",
     "c-decrire-rouge": "Rosso",

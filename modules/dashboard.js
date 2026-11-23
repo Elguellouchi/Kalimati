@@ -1,4 +1,5 @@
 // 📊 Progrès PEI : tableau de bord ABLLS-R des objectifs + Partage Équipe & Console Super-Admin Bêta (protégé par le cadenas parent).
+import { getChildGender, setChildGender } from './morphology.js';
 import * as db from '../db.js';
 import { h, btn, dayKey, addDays, percent } from './util.js';
 import { iconLabel } from './ui-icons.js';
@@ -48,10 +49,14 @@ function profileForm() {
     setTimerShowNumbers(on);
     await db.setSetting(TIMER_SETTING_KEY, on);
   };
+  // v10.40 (Lot 2.2) : fille ou garçon, pour accorder les mots (« Cansada » / « Cansado », « تعبانة » / « تعبان »).
+  const genderSel = h('select', { 'aria-label': 'L’enfant est' }, options([['girl', 'Une fille'], ['boy', 'Un garçon']], getChildGender()));
+  genderSel.onchange = async () => { await setChildGender(genderSel.value); saved.textContent = 'Accords mis à jour ✅'; };
   const lotA = () => ({ calmMode: calm.checked, hintDelaySec: Number(hintSel.value), fixedChoiceCount: choiceSel.value === 'auto' ? 'auto' : Number(choiceSel.value) });
   return h('details', { class: 'card-box' },
     h('summary', {}, '👧 Profil de l’enfant (reste dans ce téléphone)'),
     h('div', { class: 'stack' }, fields.map(([key, label]) => h('label', { class: 'field' }, label, inputs[key])),
+      h('label', { class: 'field' }, '⚧ L’enfant est (pour accorder « fatigué / fatiguée » dans toutes les langues)', genderSel),
       h('label', { class: 'row' }, calm, ' 🌿 Mode calme (pas de petits sons, animations lentes ; la voix reste)'),
       h('label', { class: 'field' }, '👆 Aide avant l’erreur dans les jeux (la bonne image grossit doucement)', hintSel),
       h('label', { class: 'field' }, '🎯 Nombre d’images à choisir dans les jeux', choiceSel),

@@ -95,13 +95,37 @@
     "c-besoins-calin": "Abrazo",
     "c-besoins-bain": "Baño",
     "c-besoins-changer": "Cambiarme",
-    "c-besoins-calme": "Tranquila",
+    "c-besoins-calme": {
+      "label": "Tranquila",
+      "gender": {
+        "m": "Tranquilo",
+        "f": "Tranquila"
+      }
+    },
     "c-emotions-content": "Feliz",
     "c-emotions-triste": "Triste",
-    "c-emotions-en-colere": "Enfadada",
+    "c-emotions-en-colere": {
+      "label": "Enfadada",
+      "gender": {
+        "m": "Enfadado",
+        "f": "Enfadada"
+      }
+    },
     "c-emotions-peur": "Miedo",
-    "c-emotions-fatigue": "Cansada",
-    "c-emotions-fier": "Orgullosa",
+    "c-emotions-fatigue": {
+      "label": "Cansada",
+      "gender": {
+        "m": "Cansado",
+        "f": "Cansada"
+      }
+    },
+    "c-emotions-fier": {
+      "label": "Orgullosa",
+      "gender": {
+        "m": "Orgulloso",
+        "f": "Orgullosa"
+      }
+    },
     "c-decrire-grand": "Grande",
     "c-decrire-petit": "Pequeño",
     "c-decrire-rouge": "Rojo",

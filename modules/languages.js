@@ -6,7 +6,7 @@
 // Un mot amazigh sans voix sur le téléphone reste muet : jamais de lecture française approximative.
 
 import { amazighEntry, hasAmazighWord } from './amazigh-lexicon.js';
-import { localeCategories, localeHasWord, localeTtsText, localeUi, localeWord } from './locales.js';
+import { localeCategories, localeHasWord, localeEntry, localeTtsText, localeUi, localeWord } from './locales.js';
 
 export const AMAZIGH_LANGS = ['shi', 'tzm', 'rif', 'zgh'];
 export const isAmazighLang = (code) => AMAZIGH_LANGS.includes(code);
@@ -85,7 +85,7 @@ export function cardWord(card, code, { scriptMode = 'both' } = {}) {
   }
   if (code === 'fr') return card.fr;
   const found = localeWord(code, card.id);
-  if (found) return found;
+  if (found) return code === 'de' ? germanNoun(card, found) : found;
   const self = /^(.*)\(Moi\)\s*$/.exec(card.fr || '');
   if (self) {
     const moi = localeWord(code, 'c-personnes-moi');
@@ -105,6 +105,24 @@ export const hasWord = (card, code) => {
 export function cardSpeechText(card, code) {
   if (isExtraLang(code)) return localeTtsText(code, card.id) || cardWord(card, code);
   return cardWord(card, code);
+}
+
+// v10.40 (Lot 2.3) : en allemand, un nom commence toujours par une majuscule (« Apfel », « Wasser »),
+// même si le parent l'a écrit en minuscule.
+export function germanNoun(card, word) {
+  if (!word || card.gram !== 'noun') return word;
+  return word.charAt(0).toLocaleUpperCase('de') + word.slice(1);
+}
+
+// v10.40 (Lot 2.3) : en chinois, un nombre ou « ce / ça » devant un nom appelle un classificateur
+// (一 + 苹果 = 一个苹果 ; 这 + 水 = 这杯水). Rend le classificateur à glisser devant le mot n° i, ou ''.
+const ZH_COUNTER = /^(?:[0-9]+|[一二两三四五六七八九十几每]+|这|那|哪)$/;
+export function zhClassifierAt(items, i) {
+  if (i < 1 || !items[i] || items[i].lang !== 'zh' || !items[i - 1] || items[i - 1].lang !== 'zh') return '';
+  const before = String(cardWord(items[i - 1].card, 'zh') || '').trim();
+  if (!ZH_COUNTER.test(before)) return '';
+  const entry = localeEntry('zh', items[i].card.id);
+  return (entry && typeof entry === 'object' && entry.classifier) || (items[i].card.gram === 'noun' ? '个' : '');
 }
 
 // ---------- Catégories et menus ----------

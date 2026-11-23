@@ -46,8 +46,12 @@ function appendChildren(node, children) {
   }
 }
 
+// v10.40 (Lot 2.1) : en arabe (<html dir="rtl">), « ← Précédent » et « Suivant → » pointent dans le sens
+// de lecture : la flèche est retournée (les signes ‹ › « » le sont déjà par le navigateur).
+export const mirrorArrows = (text) => (typeof text === 'string' && typeof document !== 'undefined' && document.documentElement && document.documentElement.dir === 'rtl'
+  ? text.replace(/[←→⬅➡]/g, (c) => ({ '←': '→', '→': '←', '⬅': '➡', '➡': '⬅' })[c]) : text);
 export function btn(label, onclick, cls = '') {
-  return h('button', { type: 'button', class: `btn ${cls}`.trim(), onclick }, label);
+  return h('button', { type: 'button', class: `btn ${cls}`.trim(), onclick }, mirrorArrows(label));
 }
 
 export function shuffle(items) {

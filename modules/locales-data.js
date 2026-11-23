@@ -377,32 +377,92 @@ export const LOCALES = {
         "tts": "أُغَيِّر مَلَابِسِي"
       },
       "c-besoins-calme": {
-        "label": "هادئ",
-        "tts": "هَادِئ"
+        "label": "هادئة",
+        "tts": "هَادِئَة",
+        "gender": {
+          "m": {
+            "label": "هادئ",
+            "tts": "هَادِئ"
+          },
+          "f": {
+            "label": "هادئة",
+            "tts": "هَادِئَة"
+          }
+        }
       },
       "c-emotions-content": {
-        "label": "سعيد",
-        "tts": "سَعِيد"
+        "label": "سعيدة",
+        "tts": "سَعِيدَة",
+        "gender": {
+          "m": {
+            "label": "سعيد",
+            "tts": "سَعِيد"
+          },
+          "f": {
+            "label": "سعيدة",
+            "tts": "سَعِيدَة"
+          }
+        }
       },
       "c-emotions-triste": {
-        "label": "حزين",
-        "tts": "حَزِين"
+        "label": "حزينة",
+        "tts": "حَزِينَة",
+        "gender": {
+          "m": {
+            "label": "حزين",
+            "tts": "حَزِين"
+          },
+          "f": {
+            "label": "حزينة",
+            "tts": "حَزِينَة"
+          }
+        }
       },
       "c-emotions-en-colere": {
-        "label": "غاضب",
-        "tts": "غَاضِب"
+        "label": "غاضبة",
+        "tts": "غَاضِبَة",
+        "gender": {
+          "m": {
+            "label": "غاضب",
+            "tts": "غَاضِب"
+          },
+          "f": {
+            "label": "غاضبة",
+            "tts": "غَاضِبَة"
+          }
+        }
       },
       "c-emotions-peur": {
         "label": "خائف",
         "tts": "خَائِف"
       },
       "c-emotions-fatigue": {
-        "label": "متعب",
-        "tts": "مُتْعَب"
+        "label": "متعبة",
+        "tts": "مُتْعَبَة",
+        "gender": {
+          "m": {
+            "label": "متعب",
+            "tts": "مُتْعَب"
+          },
+          "f": {
+            "label": "متعبة",
+            "tts": "مُتْعَبَة"
+          }
+        }
       },
       "c-emotions-fier": {
-        "label": "فخور",
-        "tts": "فَخُور"
+        "label": "فخورة",
+        "tts": "فَخُورَة",
+        "gender": {
+          "m": {
+            "label": "فخور",
+            "tts": "فَخُور"
+          },
+          "f": {
+            "label": "فخورة",
+            "tts": "فَخُورَة"
+          }
+        }
       },
       "c-decrire-grand": {
         "label": "كبير",
@@ -945,13 +1005,37 @@ export const LOCALES = {
       "c-besoins-calin": "Abrazo",
       "c-besoins-bain": "Baño",
       "c-besoins-changer": "Cambiarme",
-      "c-besoins-calme": "Tranquila",
+      "c-besoins-calme": {
+        "label": "Tranquila",
+        "gender": {
+          "m": "Tranquilo",
+          "f": "Tranquila"
+        }
+      },
       "c-emotions-content": "Feliz",
       "c-emotions-triste": "Triste",
-      "c-emotions-en-colere": "Enfadada",
+      "c-emotions-en-colere": {
+        "label": "Enfadada",
+        "gender": {
+          "m": "Enfadado",
+          "f": "Enfadada"
+        }
+      },
       "c-emotions-peur": "Miedo",
-      "c-emotions-fatigue": "Cansada",
-      "c-emotions-fier": "Orgullosa",
+      "c-emotions-fatigue": {
+        "label": "Cansada",
+        "gender": {
+          "m": "Cansado",
+          "f": "Cansada"
+        }
+      },
+      "c-emotions-fier": {
+        "label": "Orgullosa",
+        "gender": {
+          "m": "Orgulloso",
+          "f": "Orgullosa"
+        }
+      },
       "c-decrire-grand": "Grande",
       "c-decrire-petit": "Pequeño",
       "c-decrire-rouge": "Rojo",
@@ -1112,13 +1196,43 @@ export const LOCALES = {
       "c-besoins-calin": "Abbraccio",
       "c-besoins-bain": "Bagnetto",
       "c-besoins-changer": "Cambiarmi",
-      "c-besoins-calme": "Calma",
-      "c-emotions-content": "Contenta",
+      "c-besoins-calme": {
+        "label": "Calma",
+        "gender": {
+          "m": "Calmo",
+          "f": "Calma"
+        }
+      },
+      "c-emotions-content": {
+        "label": "Contenta",
+        "gender": {
+          "m": "Contento",
+          "f": "Contenta"
+        }
+      },
       "c-emotions-triste": "Triste",
-      "c-emotions-en-colere": "Arrabbiata",
+      "c-emotions-en-colere": {
+        "label": "Arrabbiata",
+        "gender": {
+          "m": "Arrabbiato",
+          "f": "Arrabbiata"
+        }
+      },
       "c-emotions-peur": "Paura",
-      "c-emotions-fatigue": "Stanca",
-      "c-emotions-fier": "Orgogliosa",
+      "c-emotions-fatigue": {
+        "label": "Stanca",
+        "gender": {
+          "m": "Stanco",
+          "f": "Stanca"
+        }
+      },
+      "c-emotions-fier": {
+        "label": "Orgogliosa",
+        "gender": {
+          "m": "Orgoglioso",
+          "f": "Orgogliosa"
+        }
+      },
       "c-decrire-grand": "Grande",
       "c-decrire-petit": "Piccolo",
       "c-decrire-rouge": "Rosso",
@@ -1372,13 +1486,37 @@ export const LOCALES = {
       "c-besoins-calin": "Abraço",
       "c-besoins-bain": "Banho",
       "c-besoins-changer": "Mudar de roupa",
-      "c-besoins-calme": "Calma",
+      "c-besoins-calme": {
+        "label": "Calma",
+        "gender": {
+          "m": "Calmo",
+          "f": "Calma"
+        }
+      },
       "c-emotions-content": "Feliz",
       "c-emotions-triste": "Triste",
-      "c-emotions-en-colere": "Zangada",
+      "c-emotions-en-colere": {
+        "label": "Zangada",
+        "gender": {
+          "m": "Zangado",
+          "f": "Zangada"
+        }
+      },
       "c-emotions-peur": "Medo",
-      "c-emotions-fatigue": "Cansada",
-      "c-emotions-fier": "Orgulhosa",
+      "c-emotions-fatigue": {
+        "label": "Cansada",
+        "gender": {
+          "m": "Cansado",
+          "f": "Cansada"
+        }
+      },
+      "c-emotions-fier": {
+        "label": "Orgulhosa",
+        "gender": {
+          "m": "Orgulhoso",
+          "f": "Orgulhosa"
+        }
+      },
       "c-decrire-grand": "Grande",
       "c-decrire-petit": "Pequeno",
       "c-decrire-rouge": "Vermelho",
@@ -1723,27 +1861,78 @@ export const LOCALES = {
       "c-base-bonjour": "你好",
       "c-base-au-revoir": "再见",
       "c-base-viens-jouer": "来玩吧",
-      "c-manger-pain": "面包",
-      "c-manger-pomme": "苹果",
-      "c-manger-banane": "香蕉",
-      "c-manger-gateau": "蛋糕",
-      "c-manger-yaourt": "酸奶",
-      "c-manger-riz": "米饭",
-      "c-manger-biscuit": "饼干",
-      "c-manger--uf": "鸡蛋",
-      "c-boire-eau": "水",
-      "c-boire-lait": "牛奶",
-      "c-boire-jus": "果汁",
-      "c-manger-chips": "薯片",
-      "c-manger-fromage": "奶酪",
-      "c-manger-pancake": "松饼",
+      "c-manger-pain": {
+        "label": "面包",
+        "classifier": "个"
+      },
+      "c-manger-pomme": {
+        "label": "苹果",
+        "classifier": "个"
+      },
+      "c-manger-banane": {
+        "label": "香蕉",
+        "classifier": "根"
+      },
+      "c-manger-gateau": {
+        "label": "蛋糕",
+        "classifier": "块"
+      },
+      "c-manger-yaourt": {
+        "label": "酸奶",
+        "classifier": "杯"
+      },
+      "c-manger-riz": {
+        "label": "米饭",
+        "classifier": "碗"
+      },
+      "c-manger-biscuit": {
+        "label": "饼干",
+        "classifier": "块"
+      },
+      "c-manger--uf": {
+        "label": "鸡蛋",
+        "classifier": "个"
+      },
+      "c-boire-eau": {
+        "label": "水",
+        "classifier": "杯"
+      },
+      "c-boire-lait": {
+        "label": "牛奶",
+        "classifier": "杯"
+      },
+      "c-boire-jus": {
+        "label": "果汁",
+        "classifier": "杯"
+      },
+      "c-manger-chips": {
+        "label": "薯片",
+        "classifier": "包"
+      },
+      "c-manger-fromage": {
+        "label": "奶酪",
+        "classifier": "块"
+      },
+      "c-manger-pancake": {
+        "label": "松饼",
+        "classifier": "个"
+      },
       "c-manger-mcdo": "麦当劳",
-      "c-boire-coca-cola": "可口可乐",
+      "c-boire-coca-cola": {
+        "label": "可口可乐",
+        "classifier": "瓶"
+      },
       "c-jouer-trampoline": "蹦床",
-      "c-jouer-ballon": "球",
+      "c-jouer-ballon": {
+        "label": "球",
+        "classifier": "个"
+      },
       "c-jouer-tablette": "平板",
       "c-jouer-dessin-anime": "动画片",
-      "c-jouer-poupee": "娃娃",
+      "c-jouer-poupee": {
+        "label": "娃娃",
+        "classifier": "个"
+      },
       "c-jouer-musique": "音乐",
       "c-jouer-balancoire": "秋千",
       "c-actions-manger": "吃",

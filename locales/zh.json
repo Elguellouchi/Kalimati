@@ -50,27 +50,78 @@
     "c-base-bonjour": "你好",
     "c-base-au-revoir": "再见",
     "c-base-viens-jouer": "来玩吧",
-    "c-manger-pain": "面包",
-    "c-manger-pomme": "苹果",
-    "c-manger-banane": "香蕉",
-    "c-manger-gateau": "蛋糕",
-    "c-manger-yaourt": "酸奶",
-    "c-manger-riz": "米饭",
-    "c-manger-biscuit": "饼干",
-    "c-manger--uf": "鸡蛋",
-    "c-boire-eau": "水",
-    "c-boire-lait": "牛奶",
-    "c-boire-jus": "果汁",
-    "c-manger-chips": "薯片",
-    "c-manger-fromage": "奶酪",
-    "c-manger-pancake": "松饼",
+    "c-manger-pain": {
+      "label": "面包",
+      "classifier": "个"
+    },
+    "c-manger-pomme": {
+      "label": "苹果",
+      "classifier": "个"
+    },
+    "c-manger-banane": {
+      "label": "香蕉",
+      "classifier": "根"
+    },
+    "c-manger-gateau": {
+      "label": "蛋糕",
+      "classifier": "块"
+    },
+    "c-manger-yaourt": {
+      "label": "酸奶",
+      "classifier": "杯"
+    },
+    "c-manger-riz": {
+      "label": "米饭",
+      "classifier": "碗"
+    },
+    "c-manger-biscuit": {
+      "label": "饼干",
+      "classifier": "块"
+    },
+    "c-manger--uf": {
+      "label": "鸡蛋",
+      "classifier": "个"
+    },
+    "c-boire-eau": {
+      "label": "水",
+      "classifier": "杯"
+    },
+    "c-boire-lait": {
+      "label": "牛奶",
+      "classifier": "杯"
+    },
+    "c-boire-jus": {
+      "label": "果汁",
+      "classifier": "杯"
+    },
+    "c-manger-chips": {
+      "label": "薯片",
+      "classifier": "包"
+    },
+    "c-manger-fromage": {
+      "label": "奶酪",
+      "classifier": "块"
+    },
+    "c-manger-pancake": {
+      "label": "松饼",
+      "classifier": "个"
+    },
     "c-manger-mcdo": "麦当劳",
-    "c-boire-coca-cola": "可口可乐",
+    "c-boire-coca-cola": {
+      "label": "可口可乐",
+      "classifier": "瓶"
+    },
     "c-jouer-trampoline": "蹦床",
-    "c-jouer-ballon": "球",
+    "c-jouer-ballon": {
+      "label": "球",
+      "classifier": "个"
+    },
     "c-jouer-tablette": "平板",
     "c-jouer-dessin-anime": "动画片",
-    "c-jouer-poupee": "娃娃",
+    "c-jouer-poupee": {
+      "label": "娃娃",
+      "classifier": "个"
+    },
     "c-jouer-musique": "音乐",
     "c-jouer-balancoire": "秋千",
     "c-actions-manger": "吃",

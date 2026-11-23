@@ -13,6 +13,7 @@
 //    - « Moi + Content » : Présent « Je suis contente / Ana fer7ana », Passé « J'étais contente / Kount fer7ana », Futur « Je serai contente / Ghadi nkoun fer7ana ».
 //    - « Je veux » : Présent « bghit », Passé « kount bghit », Futur « ghadi nbghi ».
 
+import { setLocaleChildGender } from './locales.js';
 import * as db from '../db.js';
 import { h } from './util.js';
 import { isAmazighLang, formatAmazighText, cardSpeechText, getDarijaScript } from './languages.js';
@@ -29,6 +30,7 @@ let childGenderCached = 'girl'; // 'girl' | 'boy' (configurable dans le profil)
 export async function loadMorphologyState() {
   const savedGender = await db.getSetting('childGender');
   if (savedGender === 'boy' || savedGender === 'girl') childGenderCached = savedGender;
+  setLocaleChildGender(childGenderCached); // v10.40 : les autres langues s'accordent aussi
 }
 
 export const getTense = () => currentTense;
@@ -39,6 +41,7 @@ export function setTense(tense) {
 export const getChildGender = () => childGenderCached;
 export async function setChildGender(gender) {
   childGenderCached = gender === 'boy' ? 'boy' : 'girl';
+  setLocaleChildGender(childGenderCached);
   await db.setSetting('childGender', childGenderCached);
 }
 

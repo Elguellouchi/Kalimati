@@ -1,7 +1,7 @@
 // Fait parler une carte : voix enregistrée par le parent d'abord, puis voix du téléphone.
 // Voix lente (0,85), darija lue avec une voix arabe si la graphie arabe existe, phrases mélangeant FR et darija.
 
-import { langInfo, isExtraLang, isAmazighLang, cardSpeechText, hasWord } from './modules/languages.js';
+import { langInfo, isExtraLang, isAmazighLang, cardSpeechText, hasWord, zhClassifierAt } from './modules/languages.js';
 import { cardAudio } from './data.js';
 import { inflectStrip } from './modules/morphology.js';
 import { amazighVoiceFor, parentAmazighVoice, packAmazighVoice } from './modules/voice-packs.js';
@@ -285,6 +285,10 @@ export async function sayCards(items, { onStep } = {}) {
   for (const q of queue) {
     if (token !== queueToken) return;
     if (onStep) onStep(q.step);
+    // v10.40 (Lot 2.3) : chinois, le classificateur se dit avec le nom (« 一 » + « 个苹果 »).
+    const clf = q.card === items[q.step].card ? zhClassifierAt(items, q.step) : '';
+    if (clf && !recordingFor(q.card, q.lang)) { await speak(`${clf}${cardSpeechText(q.card, q.lang)}`, { lang: 'zh' }); continue; }
+    if (clf) await speak(clf, { lang: 'zh' });
     await sayCard(q.card, q.lang);
   }
   if (onStep && token === queueToken) onStep(-1);

@@ -26,14 +26,28 @@ export const localeLexicon = (code) => (LOCALES[code] && LOCALES[code].lexicon) 
 // v10.22 (Lot 2) : une entrée de lexique peut être une simple chaîne (compat) ou un objet
 // { label, tts, gender, classifier }. « label » = mot affiché ; « tts » = forme prononcée par
 // la voix du téléphone (ex. arabe vocalisé avec les harakat, que la voix lit sans se tromper).
+// v10.40 (Lot 2.2) : accord avec l'enfant. « gender » peut valoir :
+//   - 'm' / 'f' : genre du mot lui-même (un nom) ;
+//   - { m, f } : deux formes selon l'enfant qui parle (« Cansado » / « Cansada »).
+//     Chaque forme est une chaîne, ou { label, tts } (arabe : mot affiché + forme vocalisée).
+let childGender = 'girl';
+export const setLocaleChildGender = (g) => { childGender = g === 'boy' ? 'boy' : 'girl'; };
+export const localeChildGender = () => childGender;
+const pickForm = (entry) => {
+  if (!entry || typeof entry !== 'object' || !entry.gender || typeof entry.gender !== 'object') return entry;
+  const form = entry.gender[childGender === 'boy' ? 'm' : 'f'];
+  if (form == null) return entry;
+  return typeof form === 'string' ? { ...entry, label: form, tts: form } : { ...entry, ...form };
+};
 export const localeWord = (code, cardId) => {
-  const entry = localeLexicon(code)[cardId];
+  const entry = pickForm(localeLexicon(code)[cardId]);
   if (entry == null) return undefined;
   return typeof entry === 'string' ? entry : (entry.label ?? entry.tts ?? undefined);
 };
 export const localeTtsText = (code, cardId) => {
-  const entry = localeLexicon(code)[cardId];
+  const entry = pickForm(localeLexicon(code)[cardId]);
   if (entry == null) return undefined;
   return typeof entry === 'string' ? entry : (entry.tts ?? entry.label ?? undefined);
 };
+export const localeEntry = (code, cardId) => pickForm(localeLexicon(code)[cardId]);
 export const localeHasWord = (code, cardId) => Object.prototype.hasOwnProperty.call(localeLexicon(code), cardId);
