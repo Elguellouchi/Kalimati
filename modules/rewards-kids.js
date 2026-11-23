@@ -8,6 +8,7 @@ import { speak } from '../speech.js';
 import { playClap } from '../media.js';
 import { tx, themeText } from './section-i18n.js';
 import { perChildKey } from './child-profiles.js';
+import { WARDROBE, ITEM_BY_ID, SLOTS, cleanWardrobe, coinsLeft, buyItem, toggleWear } from './wardrobe-data.js';
 
 const KEY = perChildKey('kalimati-rewards-v1'); // v10.36 : étoiles propres à chaque enfant
 const GOAL = 5;
@@ -28,13 +29,13 @@ export const THEMES = [
 ];
 const MOVES = ['float', 'sway', 'breathe'];
 
-let memory = { stars: 0, stickers: [], total: 0 };
+let memory = { stars: 0, stickers: [], total: 0, wardrobe: cleanWardrobe(null) };
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       const data = JSON.parse(raw);
-      memory = { stars: Math.max(0, Math.min(GOAL, data.stars | 0)), stickers: Array.isArray(data.stickers) ? data.stickers : [], total: data.total | 0 };
+      memory = { stars: Math.max(0, Math.min(GOAL, data.stars | 0)), stickers: Array.isArray(data.stickers) ? data.stickers : [], total: data.total | 0, wardrobe: cleanWardrobe(data.wardrobe) };
     }
   } catch { /* stockage indisponible : on garde la mémoire de la page */ }
   return memory;
@@ -141,10 +142,53 @@ export function openGarden() {
   const { stickers, total } = load();
   overlay((close) => [
     h('div', { class: 'garden-head' }, h('h2', {}, `🌷 ${tx('gardenTitle', lang)}`), btn(tx('close', lang), close, 'ghost')),
-    h('div', { class: 'garden-friends' }, FRIENDS.map((f) => h('figure', {}, friendImg(f), h('figcaption', {}, f.name)))),
+    h('div', { class: 'garden-friends' }, FRIENDS.map((f) => h('figure', {}, f.id === 'nour' ? dressedNour(load().wardrobe) : friendImg(f), h('figcaption', {}, f.name)))),
+    h('div', { class: 'row center' }, btn(`👕 Habiller Nour (${coinsLeft(total, load().wardrobe)} ⭐)`, () => { close(); openWardrobe(); }, 'primary')),
     stickers.length
       ? h('div', { class: 'garden' }, stickers.map((s, i) => h('span', { class: `sticker move-${s.move || 'float'}`, style: { animationDelay: `${(i % 5) * 0.4}s` } }, s.emoji)))
       : h('p', { class: 'note center' }, tx('gardenEmpty', lang)),
     h('p', { class: 'note center' }, tx('gardenStats', lang, { total, s: total > 1 && !['dr', 'ar'].includes(lang) ? 's' : '' })),
   ]);
+}
+
+// v10.39 (pépite « Étoiles pour habiller le compagnon ») : Nour porte les habits choisis par l'enfant.
+export function dressedNour(wardrobe, cls = 'friend') {
+  const w = cleanWardrobe(wardrobe);
+  return h('span', { class: 'nour-dressed' }, friendImg(FRIENDS[0], cls),
+    SLOTS.filter((slot) => w.worn[slot]).map((slot) => h('span', { class: `wear wear-${slot}`, 'aria-hidden': 'true' }, ITEM_BY_ID.get(w.worn[slot]).emoji)));
+}
+
+export function openWardrobe() {
+  const lang = rewardsLang;
+  overlay((close) => {
+    const body = h('div', { class: 'wardrobe' });
+    const draw = (said = '') => {
+      const { total, wardrobe } = load();
+      const coins = coinsLeft(total, wardrobe);
+      body.replaceChildren(
+        h('div', { class: 'wardrobe-stage' }, dressedNour(wardrobe, 'friend big')),
+        h('p', { class: 'wardrobe-coins', 'aria-live': 'polite' }, said || `Tu as ${coins} ⭐ à dépenser.`),
+        h('div', { class: 'wardrobe-grid' }, WARDROBE.map((item) => {
+          const owned = wardrobe.owned.includes(item.id);
+          const worn = wardrobe.worn[item.slot] === item.id;
+          const short = !owned && coins < item.price;
+          return h('button', { type: 'button', class: `wardrobe-item${owned ? ' owned' : ''}${worn ? ' worn' : ''}${short ? ' short' : ''}`,
+            'aria-pressed': owned ? String(worn) : null,
+            'aria-label': owned ? `${item.name}${worn ? ', porté' : ''}` : `${item.name}, ${item.price} étoiles`,
+            onclick: () => {
+              if (owned) { memory.wardrobe = toggleWear(wardrobe, item.id); save(); speak(item.name); draw(); return; }
+              const res = buyItem(wardrobe, item.id, total);
+              if (!res.ok) { speak(`Encore ${item.price - coins} étoiles`); draw(`Encore ${item.price - coins} ⭐ pour ${item.name}. Continue à jouer !`); return; }
+              memory.wardrobe = res.wardrobe; save();
+              try { playClap(); } catch { /* pas de son */ }
+              speak(`Bravo ! ${item.name}`); draw(`🎉 ${item.name} pour Nour !`);
+            } },
+          h('span', { class: 'wardrobe-emoji', 'aria-hidden': 'true' }, item.emoji),
+          h('span', { class: 'wardrobe-price' }, owned ? (worn ? '✔ mis' : 'mettre') : `${item.price} ⭐`));
+        })));
+    };
+    draw();
+    return [h('div', { class: 'garden-head' }, h('h2', {}, '👕 Habiller Nour'), btn(tx('close', lang), close, 'ghost')),
+      h('p', { class: 'note' }, 'Chaque étoile gagnée compte. Acheter un habit ne retire ni étoile du jeu ni autocollant.'), body];
+  });
 }

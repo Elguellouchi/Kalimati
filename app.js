@@ -30,6 +30,7 @@ import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.
 import { PLACES, PLACE_SETTING_KEY, cleanCustomBoards, newBoardId, boardItems, passingCard } from './modules/place-boards.js';
 import { tipOfDay } from './modules/caregiver-tips.js';
 import { TALK_MODES, TALK_MODE_KEY, normalizeTalkMode, showsHints, showsCoach, cardsForIntent } from './modules/talk-modes.js';
+import { VIDEO_SETTING_KEY, VIDEO_WHO, videoBlobKey, newVideoId, cleanVideos, videoProblem } from './modules/model-videos.js';
 import { GRID_SIZES, SCENE_SETTING_KEY, sceneImageKey, newSceneId, cleanScenes, EXPLORE_SCENES, cellBox } from './modules/scenes.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
@@ -59,7 +60,7 @@ const SNOOZE_MS = 10 * 60000;
 const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
   'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards', 'visualScenes', 'talkMode'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [], talkMode: 'coach', intent: null };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [], videos: [], talkMode: 'coach', intent: null };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -654,6 +655,7 @@ function renderTalk() {
     textToPictoBox(),
     state.parent ? placeEditorBox() : null,
     state.parent ? sceneEditorBox() : null,
+    state.parent ? videoEditorBox() : null,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? keyringBox() : null,
     state.parent ? twinBox() : null,
@@ -944,6 +946,12 @@ function placeBoardView(grid, tappable) {
       sceneImageUrl(scene.id).then((url) => { if (url) tile.querySelector('.place-emoji').replaceWith(h('img', { class: 'scene-thumb', src: url, alt: '' })); });
       grid.append(tile);
     }
+    // v10.39 : vidéos modèles filmées par la famille.
+    for (const v of state.videos) {
+      grid.append(h('button', { type: 'button', class: 'card place-tile video-tile', 'aria-label': `Vidéo : ${v.title}`,
+        onclick: () => { state.place = `video:${v.id}`; renderView(); } },
+      h('span', { class: 'place-emoji', 'aria-hidden': 'true' }, '🎬'), h('span', { class: 'label' }, v.title)));
+    }
     for (const scene of EXPLORE_SCENES) {
       grid.append(h('button', { type: 'button', class: 'card place-tile explore-tile', 'aria-label': scene.title,
         onclick: () => { state.place = `explore:${scene.id}`; renderView(); } },
@@ -953,6 +961,7 @@ function placeBoardView(grid, tappable) {
       placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
   }
   if (String(state.place).startsWith('explore:') || String(state.place).startsWith('scene:')) return sceneView(grid);
+  if (String(state.place).startsWith('video:')) return videoView(grid, tappable);
   if (state.place === 'intent' && state.intent) {
     state.intent.cards.forEach((card) => grid.append(tappable(card)));
     return h('div', { class: 'place-head' }, h('strong', {}, `💡 ${state.intent.title}`),
@@ -1149,6 +1158,81 @@ function sceneEditorBox() {
     h('div', { class: 'row wrap' }, title, size), file, stage,
     h('div', { class: 'row wrap' }, word, btn('Mettre ce mot', putWord, 'ghost tiny')), msg,
     btn('Enregistrer la scène', save, 'primary tiny'),
+    list.length ? h('ul', { class: 'place-list' }, list) : null);
+}
+
+// v10.39 (pépite « Vidéos d'autres enfants », version vie privée) : la famille filme le modèle.
+// La vidéo reste dans ce téléphone (base locale) : jamais dans la sauvegarde, la synchro ou le code.
+const videoUrls = new Map();
+async function videoUrl(id) {
+  if (videoUrls.has(id)) return videoUrls.get(id);
+  const blob = await db.getSetting(videoBlobKey(id)).catch(() => null);
+  if (!(blob instanceof Blob)) return null;
+  const url = URL.createObjectURL(blob);
+  videoUrls.set(id, url);
+  return url;
+}
+function videoView(grid, tappable) {
+  const id = String(state.place).slice(6);
+  const v = state.videos.find((x) => x.id === id);
+  if (!v) { state.place = 'pick'; return null; }
+  grid.classList.add('video-host');
+  const player = h('video', { class: 'model-video', controls: 'controls', playsinline: 'playsinline', preload: 'metadata', 'aria-label': v.title });
+  const box = h('div', { class: 'model-video-box' }, player);
+  grid.append(box);
+  videoUrl(v.id).then((url) => {
+    if (!url) { box.replaceChildren(h('p', { class: 'note' }, 'Cette vidéo n’est pas dans ce téléphone.')); return; }
+    player.src = url;
+    player.play().catch(() => {});
+  });
+  // La carte liée et « Revoir » passent au-dessus de la vidéo : visibles même sur un petit écran.
+  const card = v.word ? sceneWordCard(v.word) : null;
+  box.prepend(h('div', { class: 'model-video-card' }, card ? h('span', { class: 'note' }, 'À toi :') : null, card ? tappable(card) : null,
+    btn('🔁 Revoir', () => { player.currentTime = 0; player.play().catch(() => {}); }, 'ghost')));
+  return h('div', { class: 'place-head' }, h('strong', {}, `🎬 ${v.title}`),
+    placeBtn('📍', 'Choisir un autre lieu', () => { player.pause(); state.place = 'pick'; renderView(); }),
+    placeBtn('↩', 'Revenir à mes mots', () => { player.pause(); state.place = null; renderView(); }));
+}
+let videoEditorMsg = '';
+function videoEditorBox() {
+  const title = h('input', { type: 'text', maxlength: 40, placeholder: 'Ex. : Se laver les mains', 'aria-label': 'Nom de la vidéo' });
+  const word = h('input', { type: 'text', maxlength: 30, placeholder: 'Carte liée (facultatif), ex. : Laver', 'aria-label': 'Carte liée à la vidéo' });
+  const who = h('select', { 'aria-label': 'Qui est filmé' }, VIDEO_WHO.map(([k, t]) => h('option', { value: k }, t)));
+  const file = h('input', { type: 'file', accept: 'video/*', 'aria-label': 'Filmer ou choisir une vidéo' });
+  const msg = h('p', { class: 'note', 'aria-live': 'polite' }, videoEditorMsg);
+  videoEditorMsg = '';
+  const save = async () => {
+    const f = file.files && file.files[0];
+    const problem = !title.value.trim() ? 'Écrivez un nom.' : videoProblem(f);
+    if (problem) { msg.textContent = problem; return; }
+    if (state.videos.length >= 20) { msg.textContent = 'Déjà 20 vidéos : supprimez-en une d’abord.'; return; }
+    if (word.value.trim() && !sceneWordCard(word.value.trim())) { msg.textContent = `« ${word.value.trim()} » n’a pas d’image : la vidéo sera enregistrée sans carte.`; word.value = ''; }
+    const id = newVideoId();
+    msg.textContent = 'Enregistrement…';
+    try {
+      await db.setSetting(videoBlobKey(id), f);
+      state.videos = cleanVideos([...state.videos, { id, title: title.value, word: word.value, who: who.value }]);
+      await db.setSetting(VIDEO_SETTING_KEY, state.videos);
+      videoEditorMsg = 'Vidéo enregistrée ✔ (onglet 📍 Lieux)';
+    } catch (err) { console.error('[Kalimati] vidéo non enregistrée', err); videoEditorMsg = 'La vidéo n’a pas pu être enregistrée (place du téléphone ?).'; }
+    renderView();
+  };
+  const list = state.videos.map((v) => {
+    let armed = false;
+    const del = btn('🗑️', async () => {
+      if (!armed) { armed = true; del.textContent = 'Supprimer ?'; setTimeout(() => { armed = false; del.textContent = '🗑️'; }, 3000); return; }
+      state.videos = state.videos.filter((x) => x.id !== v.id);
+      try { await db.setSetting(VIDEO_SETTING_KEY, state.videos); await db.setSetting(videoBlobKey(v.id), null); } catch (err) { console.error('[Kalimati] vidéo non supprimée', err); }
+      if (videoUrls.has(v.id)) { URL.revokeObjectURL(videoUrls.get(v.id)); videoUrls.delete(v.id); }
+      videoEditorMsg = 'Vidéo supprimée'; renderView();
+    }, 'ghost tiny');
+    del.setAttribute('aria-label', `Supprimer ${v.title}`);
+    return h('li', { class: 'row' }, h('span', {}, `🎬 ${v.title}${v.word ? ` → ${v.word}` : ''}`), del);
+  });
+  return h('details', { class: 'card-box video-editor', open: msg.textContent ? true : null }, h('summary', {}, '🎬 Vidéo modèle (un proche montre l’action)'),
+    h('p', { class: 'note' }, 'Filmez un frère, une sœur, un cousin ou vous-même qui fait l’action. La vidéo reste dans ce téléphone : ni sauvegarde, ni synchro, ni envoi.'),
+    h('div', { class: 'row wrap' }, title, who), word, file, msg,
+    btn('Enregistrer la vidéo', save, 'primary tiny'),
     list.length ? h('ul', { class: 'place-list' }, list) : null);
 }
 
@@ -1765,6 +1849,7 @@ async function init() {
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
   state.placeBoards = cleanCustomBoards(await db.getSetting(PLACE_SETTING_KEY).catch(() => null)); // v10.33 : tableaux express
   state.scenes = cleanScenes(await db.getSetting(SCENE_SETTING_KEY).catch(() => null)); // v10.34 : scènes sur photo
+  state.videos = cleanVideos(await db.getSetting(VIDEO_SETTING_KEY).catch(() => null)); // v10.39 : vidéos modèles (jamais sauvegardées)
   state.talkMode = normalizeTalkMode(await db.getSetting(TALK_MODE_KEY).catch(() => null)); // v10.37 : Simple / Aide / Coach
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
   // v10.24 : écriture de la darija choisie par le parent (lettres arabes par défaut). Elle doit être
