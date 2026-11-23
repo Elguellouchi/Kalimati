@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-33'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
+const CACHE = 'kalimati-v10-34'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
 const FILES = [
   './', './index.html', './boot-guard.js', './theme-boot.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -26,7 +26,7 @@ const FILES = [
   // v10.18 : migration des cartes sans identifiant historique en dur
   './modules/card-migration.js',
   // v10.23 : moteur tactile central, langue jumelle, quadrillage des émotions
-  './modules/tap-engine.js', './modules/twin-language.js', './modules/mood-meter.js', './modules/text-to-picto.js', './modules/place-boards.js',
+  './modules/tap-engine.js', './modules/twin-language.js', './modules/mood-meter.js', './modules/text-to-picto.js', './modules/place-boards.js', './modules/scenes.js',
   // v9.14 : voix des 7 Amis (Shimmer)
   './voix/dr/ami-nour-1.mp3', './voix/dr/ami-nour-2.mp3', './voix/dr/ami-fennou-1.mp3', './voix/dr/ami-fennou-2.mp3', './voix/dr/ami-fakroun-1.mp3', './voix/dr/ami-fakroun-2.mp3', './voix/dr/ami-hmama-1.mp3', './voix/dr/ami-hmama-2.mp3', './voix/dr/ami-jmimla-1.mp3', './voix/dr/ami-jmimla-2.mp3', './voix/dr/ami-mchicha-1.mp3', './voix/dr/ami-mchicha-2.mp3', './voix/dr/ami-bouma-1.mp3', './voix/dr/ami-bouma-2.mp3', './voix/fr/ami-nour-1.mp3', './voix/fr/ami-nour-2.mp3', './voix/fr/ami-fennou-1.mp3', './voix/fr/ami-fennou-2.mp3', './voix/fr/ami-fakroun-1.mp3', './voix/fr/ami-fakroun-2.mp3', './voix/fr/ami-hmama-1.mp3', './voix/fr/ami-hmama-2.mp3', './voix/fr/ami-jmimla-1.mp3', './voix/fr/ami-jmimla-2.mp3', './voix/fr/ami-mchicha-1.mp3', './voix/fr/ami-mchicha-2.mp3', './voix/fr/ami-bouma-1.mp3', './voix/fr/ami-bouma-2.mp3',
   './assets/manifest.json', './assets/mulberry/index.json', './assets/emoji/index.json', './assets/darija-lexicon.json',

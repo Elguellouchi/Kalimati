@@ -2436,3 +2436,31 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .place-head { flex-wrap: nowrap; min-height: 52px; }
 .place-head strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .place-head .place-btn { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 0 10px; font-size: 20px; }
+
+/* v10.34 — Scènes sur vraie photo et grandes scènes à explorer. */
+.talk > .grid.scene-host, .grid.scene-host { display: flex; align-items: center; justify-content: center; padding: 6px; }
+.scene-photo { position: relative; width: 100%; max-width: 100%; border-radius: 12px; overflow: hidden; background: var(--surface); }
+.scene-photo > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; display: block; }
+.scene-photo.editor { aspect-ratio: 4 / 3; height: auto; margin: 6px 0; }
+.scene-photo.editor > img { object-fit: cover; }
+.scene-target { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; padding: 2px; border: 0; background: transparent; color: inherit; font: inherit; cursor: pointer; touch-action: manipulation; }
+.scene-target.photo-cell { box-shadow: inset 0 0 0 2px rgb(255 255 255 / .55); }
+.scene-target.photo-cell > .visual, .scene-target.photo-cell > .scene-emoji, .scene-target.photo-cell > img { display: none; }
+.scene-label { max-width: 100%; padding: 2px 8px; border-radius: 999px; background: rgb(255 255 255 / .92); color: #1d2a33; font-size: 12px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 3px rgb(0 0 0 / .25); }
+.scene-target:focus-visible { outline: 4px solid #F4B400; outline-offset: -4px; }
+.scene-target.card-just-tapped, .scene-target:active { box-shadow: inset 0 0 0 5px #F4B400; }
+.explore-stage { position: relative; width: 100%; height: 100%; min-height: 220px; border-radius: 14px; overflow: hidden; }
+.explore-item { transform: translate(-50%, -50%); width: clamp(64px, 20%, 110px); height: auto; justify-content: center; }
+.explore-item > .visual { --vs: clamp(34px, 10vw, 56px); }
+.explore-item > img { width: clamp(34px, 10vw, 56px); height: clamp(34px, 10vw, 56px); object-fit: cover; border-radius: 10px; }
+.explore-item .scene-emoji { font-size: clamp(30px, 9vw, 48px); line-height: 1; }
+.explore-item .scene-label { font-size: 11px; }
+.bg-kitchen { background: linear-gradient(#FFF4D6 0 35%, #E9C48E 35% 40%, #F7E7C6 40% 64%, #D9B27C 64% 68%, #EFD9B4 68%); }
+.bg-bedroom { background: linear-gradient(#E3ECFA 0 60%, #C9A27A 60% 63%, #E8D2B5 63%); }
+.bg-bathroom { background: repeating-linear-gradient(90deg, #E6F4F7 0 24px, #D5ECF0 24px 26px), #E6F4F7; }
+.bg-park { background: linear-gradient(#CFEFFF 0 45%, #A8DB8F 45% 100%); }
+.card.place-tile .scene-thumb { width: 70%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; }
+.scene-edit-cell { position: absolute; border: 1px dashed rgb(255 255 255 / .9); background: rgb(0 0 0 / .18); color: #fff; font-weight: 800; font-size: 12px; text-shadow: 0 1px 2px #000; }
+.scene-edit-cell.filled { background: rgb(23 107 98 / .45); }
+.scene-edit-cell.selected { outline: 4px solid #F4B400; outline-offset: -4px; }
+.scene-editor input[type="text"] { flex: 1 1 140px; font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: inherit; }

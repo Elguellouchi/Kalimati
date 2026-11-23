@@ -4,7 +4,7 @@ import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CA
 import * as db from './db.js';
 import { sayCard, sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY, lastAmazighPlay } from './speech.js';
 import { openEditor } from './editor.js';
-import { unlockSounds } from './media.js';
+import { unlockSounds, resizePhoto } from './media.js';
 import { buildBackupFile, deliverBackup, readBackup, encryptBackupFile, BACKUP_PASSWORD_MIN } from './backup.js';
 import { h, btn } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName, profile } from './modules/aba.js';
@@ -27,6 +27,7 @@ import { bindTap, tapFeedback, resetTapMemory } from './modules/tap-engine.js';
 import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/twin-language.js';
 import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.js';
 import { PLACES, PLACE_SETTING_KEY, cleanCustomBoards, newBoardId, boardItems, passingCard } from './modules/place-boards.js';
+import { GRID_SIZES, SCENE_SETTING_KEY, sceneImageKey, newSceneId, cleanScenes, EXPLORE_SCENES, cellBox } from './modules/scenes.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
@@ -53,9 +54,9 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards', 'visualScenes'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [] };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [] };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -631,6 +632,7 @@ function renderTalk() {
     personalise,
     textToPictoBox(),
     state.parent ? placeEditorBox() : null,
+    state.parent ? sceneEditorBox() : null,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? twinBox() : null,
     state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
@@ -874,9 +876,23 @@ function placeBoardView(grid, tappable) {
         onclick: () => { state.place = board.id; stopSpeaking(); speak(board.title, { lang: 'fr' }); renderView(); } },
       h('span', { class: 'place-emoji', 'aria-hidden': 'true' }, board.emoji), h('span', { class: 'label' }, board.title)));
     }
+    // v10.34 : les scènes (photo du parent, puis grandes scènes dessinées) se choisissent au même endroit.
+    for (const scene of state.scenes) {
+      const tile = h('button', { type: 'button', class: 'card place-tile scene-tile', 'aria-label': scene.title,
+        onclick: () => { state.place = `scene:${scene.id}`; renderView(); } },
+      h('span', { class: 'place-emoji', 'aria-hidden': 'true' }, '🖼️'), h('span', { class: 'label' }, scene.title));
+      sceneImageUrl(scene.id).then((url) => { if (url) tile.querySelector('.place-emoji').replaceWith(h('img', { class: 'scene-thumb', src: url, alt: '' })); });
+      grid.append(tile);
+    }
+    for (const scene of EXPLORE_SCENES) {
+      grid.append(h('button', { type: 'button', class: 'card place-tile explore-tile', 'aria-label': scene.title,
+        onclick: () => { state.place = `explore:${scene.id}`; renderView(); } },
+      h('span', { class: 'place-emoji', 'aria-hidden': 'true' }, scene.emoji), h('span', { class: 'label' }, scene.title)));
+    }
     return h('div', { class: 'place-head' }, h('strong', {}, '📍 Où allons-nous ?'),
       placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
   }
+  if (String(state.place).startsWith('explore:') || String(state.place).startsWith('scene:')) return sceneView(grid);
   const board = allPlaceBoards().find((b) => b.id === state.place);
   if (!board) { state.place = null; return null; }
   const items = boardItems(board, state.cards.filter((c) => !c.hidden), (c) => [label(c), c.fr, c.dr, c.ar]);
@@ -925,6 +941,149 @@ function placeEditorBox() {
   return h('details', { class: 'card-box place-editor', open: preview.textContent ? true : null }, h('summary', {}, '📍 Tableau express (un lieu, une sortie)'),
     h('p', { class: 'note' }, `Il s’ajoute à l’onglet 📍 Lieux de l’enfant, à côté des ${PLACES.length} lieux prêts (dentiste, médecin, école…). Les cartes de base ne bougent pas.`),
     h('div', { class: 'row wrap' }, emoji, title), words, preview, btn('Enregistrer le tableau', add, 'primary tiny'),
+    list.length ? h('ul', { class: 'place-list' }, list) : null);
+}
+
+// ---------- v10.34 : scènes (photo du parent et grandes scènes dessinées) ----------
+const sceneUrls = new Map();
+async function sceneImageUrl(id) {
+  if (sceneUrls.has(id)) return sceneUrls.get(id);
+  const blob = await db.getSetting(sceneImageKey(id)).catch(() => null);
+  if (!(blob instanceof Blob)) return null;
+  const url = URL.createObjectURL(blob);
+  sceneUrls.set(id, url);
+  return url;
+}
+let sceneIndexCache = null;
+function sceneWordCard(word) {
+  if (!sceneIndexCache || sceneIndexCache.cards !== state.cards || sceneIndexCache.lang !== state.lang) {
+    sceneIndexCache = { cards: state.cards, lang: state.lang,
+      index: buildIndex([...state.cards.filter((c) => !c.hidden), ...extraConcepts()], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar])) };
+  }
+  const item = matchPictos(word, sceneIndexCache.index, { skipSmallWords: false }).find((it) => it.card);
+  if (!item) return null;
+  return item.card.extra ? passingCard(item) : item.card;
+}
+// Un objet de scène : le dessin de la carte (ou son petit dessin) et son mot. Toucher = parler + phrase.
+function sceneTarget(card, cls, style) {
+  const visual = card.extra ? h('span', { class: 'scene-emoji', 'aria-hidden': 'true' }, card.emoji) : cardVisual(card);
+  const el = h('button', { type: 'button', class: `scene-target ${cls}`, style, 'aria-label': label(card) }, visual, h('span', { class: 'scene-label' }, label(card)));
+  return bindTap(el, () => onCardTap(card, el), { key: `scene:${card.id}`, skip: () => state.parent });
+}
+function sceneView(grid) {
+  grid.classList.add('scene-host');
+  const [kind, id] = String(state.place).split(':');
+  const back = h('div', { class: 'place-head' }, h('strong', {}, ''),
+    placeBtn('📍', 'Choisir un autre lieu', () => { state.place = 'pick'; renderView(); }),
+    placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
+  if (kind === 'explore') {
+    const scene = EXPLORE_SCENES.find((s) => s.id === id);
+    if (!scene) { state.place = 'pick'; return null; }
+    back.firstChild.replaceWith(h('strong', {}, `${scene.emoji} ${scene.title}`));
+    const stage = h('div', { class: `explore-stage bg-${scene.bg}`, role: 'group', 'aria-label': scene.title });
+    for (const item of scene.items) {
+      const card = sceneWordCard(item.word);
+      if (card) stage.append(sceneTarget(card, 'explore-item', { left: `${item.x}%`, top: `${item.y}%` }));
+    }
+    grid.append(stage);
+    return back;
+  }
+  const scene = state.scenes.find((s) => s.id === id);
+  if (!scene) { state.place = 'pick'; return null; }
+  back.firstChild.replaceWith(h('strong', {}, `🖼️ ${scene.title}`));
+  const photo = h('div', { class: 'scene-photo', role: 'group', 'aria-label': scene.title });
+  grid.append(photo);
+  sceneImageUrl(scene.id).then((url) => {
+    if (!url) { photo.append(h('p', { class: 'note' }, 'La photo de cette scène n’est pas dans ce téléphone.')); return; }
+    const img = h('img', { src: url, alt: '' });
+    img.onload = () => {
+      // La photo garde ses proportions : le quadrillage est posé exactement dessus.
+      const host = grid.getBoundingClientRect();
+      const maxW = Math.max(120, host.width - 16); const maxH = Math.max(120, host.height - 16);
+      const k = Math.min(maxW / img.naturalWidth, maxH / img.naturalHeight);
+      photo.style.width = `${Math.round(img.naturalWidth * k)}px`;
+      photo.style.height = `${Math.round(img.naturalHeight * k)}px`;
+    };
+    photo.append(img);
+    for (const [i, word] of Object.entries(scene.cells)) {
+      const card = sceneWordCard(word);
+      if (!card) continue;
+      const b = cellBox(scene.size, Number(i));
+      photo.append(sceneTarget(card, 'photo-cell', { left: `${b.left}%`, top: `${b.top}%`, width: `${b.width}%`, height: `${b.height}%` }));
+    }
+  });
+  return back;
+}
+
+// Le parent prépare une scène : une photo, un quadrillage, un mot par case utile.
+let sceneEditorMsg = '';
+function sceneEditorBox() {
+  let photoBlob = null; let photoUrl = null; let selected = -1;
+  const cells = {};
+  const title = h('input', { type: 'text', maxlength: 40, placeholder: 'Ex. : Notre cuisine', 'aria-label': 'Nom de la scène' });
+  const size = h('select', { 'aria-label': 'Nombre de cases' }, Object.keys(GRID_SIZES).map((n) => h('option', { value: n, selected: n === '9' ? 'selected' : null }, `${n} cases`)));
+  const file = h('input', { type: 'file', accept: 'image/*', 'aria-label': 'Choisir ou prendre la photo' });
+  const word = h('input', { type: 'text', maxlength: 40, placeholder: 'Mot de la case', 'aria-label': 'Mot de la case choisie', disabled: true });
+  const msg = h('p', { class: 'note', 'aria-live': 'polite' }, sceneEditorMsg || 'Choisissez une photo, puis touchez une case et écrivez son mot.');
+  sceneEditorMsg = '';
+  const stage = h('div', { class: 'scene-photo editor', hidden: true });
+  const draw = () => {
+    stage.replaceChildren(...(photoUrl ? [h('img', { src: photoUrl, alt: '' })] : []));
+    const n = Number(size.value);
+    for (let i = 0; i < n; i += 1) {
+      const b = cellBox(n, i);
+      stage.append(h('button', { type: 'button', class: `scene-edit-cell${i === selected ? ' selected' : ''}${cells[i] ? ' filled' : ''}`,
+        style: { left: `${b.left}%`, top: `${b.top}%`, width: `${b.width}%`, height: `${b.height}%` }, 'aria-label': `Case ${i + 1}${cells[i] ? ` : ${cells[i]}` : ''}`,
+        onclick: () => { selected = i; word.disabled = false; word.value = cells[i] || ''; draw(); word.focus(); } }, cells[i] || String(i + 1)));
+    }
+  };
+  file.onchange = async () => {
+    const f = file.files && file.files[0];
+    if (!f) return;
+    try { photoBlob = await resizePhoto(f, 1280); } catch { msg.textContent = 'Photo illisible. Essayez une autre photo.'; return; }
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photoUrl = URL.createObjectURL(photoBlob);
+    stage.hidden = false; draw();
+  };
+  size.onchange = () => { for (const k of Object.keys(cells)) if (Number(k) >= Number(size.value)) delete cells[k]; selected = -1; draw(); };
+  const putWord = () => {
+    if (selected < 0) return;
+    const w = word.value.trim();
+    if (w) {
+      const card = sceneWordCard(w);
+      msg.textContent = card ? `Case ${selected + 1} : « ${w} » ✔` : `« ${w} » n’a pas encore d’image : la case reste vide.`;
+      if (card) cells[selected] = w; else delete cells[selected];
+    } else delete cells[selected];
+    draw();
+  };
+  word.addEventListener('keydown', (e) => { if (e.key === 'Enter') putWord(); });
+  const save = async () => {
+    if (!photoBlob || !title.value.trim() || !Object.keys(cells).length) { msg.textContent = 'Il faut une photo, un nom et au moins une case avec un mot.'; return; }
+    const id = newSceneId();
+    try {
+      await db.setSetting(sceneImageKey(id), photoBlob);
+      state.scenes = cleanScenes([...state.scenes, { id, title: title.value, size: Number(size.value), cells }]);
+      await db.setSetting(SCENE_SETTING_KEY, state.scenes);
+      sceneEditorMsg = 'Scène enregistrée ✔ (onglet 📍 Lieux)';
+    } catch (err) { console.error('[Kalimati] scène non enregistrée', err); sceneEditorMsg = 'La scène n’a pas pu être enregistrée.'; }
+    renderView();
+  };
+  const list = state.scenes.map((sc) => {
+    let armed = false;
+    const del = btn('🗑️', async () => {
+      if (!armed) { armed = true; del.textContent = 'Supprimer ?'; setTimeout(() => { armed = false; del.textContent = '🗑️'; }, 3000); return; }
+      state.scenes = state.scenes.filter((x) => x.id !== sc.id);
+      try { await db.setSetting(SCENE_SETTING_KEY, state.scenes); await db.setSetting(sceneImageKey(sc.id), null); } catch (err) { console.error('[Kalimati] scène non supprimée', err); }
+      sceneEditorMsg = 'Scène supprimée'; renderView();
+    }, 'ghost tiny');
+    del.setAttribute('aria-label', `Supprimer ${sc.title}`);
+    return h('li', { class: 'row' }, h('span', {}, `🖼️ ${sc.title} (${sc.size} cases)`), del);
+  });
+  return h('details', { class: 'card-box scene-editor', open: sceneEditorMsg || msg.textContent.includes('✔') ? true : null }, h('summary', {}, '🖼️ Scène sur une vraie photo'),
+    h('p', { class: 'note' }, 'La photo reste dans ce téléphone : elle ne part ni dans la sauvegarde ni dans la synchro.'),
+    h('div', { class: 'row wrap' }, title, size), file, stage,
+    h('div', { class: 'row wrap' }, word, btn('Mettre ce mot', putWord, 'ghost tiny')), msg,
+    btn('Enregistrer la scène', save, 'primary tiny'),
     list.length ? h('ul', { class: 'place-list' }, list) : null);
 }
 
@@ -1527,6 +1686,7 @@ async function init() {
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
   state.placeBoards = cleanCustomBoards(await db.getSetting(PLACE_SETTING_KEY).catch(() => null)); // v10.33 : tableaux express
+  state.scenes = cleanScenes(await db.getSetting(SCENE_SETTING_KEY).catch(() => null)); // v10.34 : scènes sur photo
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
   // v10.24 : écriture de la darija choisie par le parent (lettres arabes par défaut). Elle doit être
   // connue avant le premier écran : sinon les mots s'affichent en arabizi une seconde puis sautent.
