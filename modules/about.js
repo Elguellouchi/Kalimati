@@ -73,7 +73,34 @@ export const UPPERCASE_SETTING_KEY = 'uppercaseText';
 export function applyUppercase(value) {
   document.body.classList.toggle('uppercase', value === true);
 }
+// v10.25 : thème d'affichage. « scolaire » (cahier, post-it, ardoise) par défaut, « simple » sans décor,
+// « contraste » noir et blanc (sensibilité visuelle, troubles de la vision d'origine cérébrale).
+// Le choix reste dans ce téléphone (localStorage) et s'applique avant l'affichage (theme-boot.js).
+export const THEMES = [
+  { id: 'scolaire', label: '📒 Cahier d’école (post-it, ardoise, crayons)' },
+  { id: 'simple', label: '⬜ Simple, sans décor' },
+  { id: 'contraste', label: '⬛ Noir et blanc, fort contraste' },
+];
+const THEME_KEY = 'kalimati-theme';
+export function currentTheme() {
+  const t = document.documentElement.getAttribute('data-theme');
+  return THEMES.some((x) => x.id === t) ? t : 'scolaire';
+}
+export function applyTheme(id) {
+  const theme = THEMES.some((x) => x.id === id) ? id : 'scolaire';
+  document.documentElement.setAttribute('data-theme', theme);
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', theme === 'contraste' ? '#000000' : '#1F6F5C');
+  try { localStorage.setItem(THEME_KEY, theme); } catch { /* navigation privée : le choix dure jusqu'à la fermeture */ }
+  return theme;
+}
+
 export function textDisplayBox() {
+  const themeNote = h('p', { class: 'note' }, 'Le thème change seulement l’habillage. Les cartes, leurs couleurs de rôle et leur place ne bougent pas.');
+  const themeChoices = THEMES.map((theme) => h('label', { class: 'check' },
+    h('input', { type: 'radio', name: 'ui-theme', value: theme.id, checked: currentTheme() === theme.id,
+      onchange: () => { applyTheme(theme.id); themeNote.textContent = 'Thème changé ✔'; } }),
+    ` ${theme.label}`));
   const note = h('p', { class: 'note' }, 'Certains enfants reconnaissent mieux les mots en capitales. Seuls les mots des cartes et des boutons changent ; les réglages adultes restent en minuscules.');
   const box = h('input', { type: 'checkbox', onchange: async (e) => {
     applyUppercase(e.target.checked);
@@ -82,8 +109,12 @@ export function textDisplayBox() {
   } });
   db.getSetting(UPPERCASE_SETTING_KEY).then((value) => { box.checked = value === true; }).catch(() => {});
   return h('details', { class: 'card-box' },
-    h('summary', {}, '🔠 Taille et casse du texte'),
+    h('summary', {}, '🎨 Thème et texte'),
     h('div', { class: 'stack' },
+      h('strong', {}, 'Thème'),
+      ...themeChoices,
+      themeNote,
+      h('strong', {}, 'Texte'),
       h('label', { class: 'check' }, box, ' TEXTE EN MAJUSCULES (AA)'),
       note));
 }

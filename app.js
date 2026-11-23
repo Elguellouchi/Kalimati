@@ -1,4 +1,4 @@
-// Kalimati v10.23 (moteur tactile central, barre de mots rapides toujours visible, deux langues sur la même grille).
+// Kalimati v10.25 (thèmes cahier d’école, simple et noir et blanc ; mots rapides plus compacts sur téléphone).
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
 import * as db from './db.js';
