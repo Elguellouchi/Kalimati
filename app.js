@@ -27,6 +27,7 @@ import { bindTap, tapFeedback, resetTapMemory } from './modules/tap-engine.js';
 import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/twin-language.js';
 import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.js';
 import { PLACES, PLACE_SETTING_KEY, cleanCustomBoards, newBoardId, boardItems, passingCard } from './modules/place-boards.js';
+import { tipOfDay } from './modules/caregiver-tips.js';
 import { GRID_SIZES, SCENE_SETTING_KEY, sceneImageKey, newSceneId, cleanScenes, EXPLORE_SCENES, cellBox } from './modules/scenes.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
@@ -626,6 +627,8 @@ function renderTalk() {
   // Tous les réglages adultes sont repliés derrière un seul bouton, pour laisser la place aux mots.
   const adultTools = h('details', { class: 'talk-adult', open: state.parent || state.modeling ? true : null },
     h('summary', {}, '🧑‍🏫 Outils adulte'),
+    // v10.35 (pépite « Boussole pour l'aidant ») : un conseil par jour, sans lire les phrases de l'enfant.
+    h('p', { class: 'caregiver-tip' }, h('strong', {}, '💡 Conseil du jour : '), tipOfDay(new Date(), { hasPlaceBoards: state.placeBoards.length > 0, hasScenes: state.scenes.length > 0 })),
     modelToggle, modelLine,
     askRow,
     searchBox, exploreBtn, exploreNote,
@@ -634,6 +637,7 @@ function renderTalk() {
     state.parent ? placeEditorBox() : null,
     state.parent ? sceneEditorBox() : null,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
+    state.parent ? keyringBox() : null,
     state.parent ? twinBox() : null,
     state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
   const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}${rail ? ' has-rail' : ''}` },
@@ -863,6 +867,44 @@ let motorPlanNote = '';
 // avec les voix des cartes (fichiers sons : marche aussi quand l'iPhone est en mode silencieux).
 // Rien n'est envoyé ni gardé : la phrase reste seulement à l'écran.
 let pictoDraft = '';
+// v10.35 (pépite « Porte-clés », Tawasol) : mini-cartes de 4 cm à imprimer, plastifier et accrocher
+// à un anneau (cartable, sac, ceinture). Le rond en haut à gauche indique où percer.
+const KEYRING_CORE = ['Je veux', 'Aide-moi', 'Encore', 'Fini', 'Oui', 'Non', 'Attends', "J'ai mal", 'Toilettes', 'Eau', 'Manger', 'Calme'];
+function keyringItems(setId) {
+  const usable = state.cards.filter((c) => !c.hidden);
+  const toCards = (items) => items.filter((i) => i.card).map((i) => (i.card.extra ? passingCard(i) : i.card));
+  if (setId === 'core') return toCards(boardItems({ words: KEYRING_CORE }, usable, (c) => [label(c), c.fr]));
+  if (setId.startsWith('cat:')) return usable.filter((c) => c.cat === setId.slice(4));
+  const board = allPlaceBoards().find((b) => b.id === setId);
+  return board ? toCards(boardItems(board, usable, (c) => [label(c), c.fr, c.dr])) : [];
+}
+function printKeyring(setId, title) {
+  const cards = keyringItems(setId).slice(0, 24);
+  if (!cards.length) return;
+  const name = /^(mon enfant|l’enfant|l'enfant)$/i.test(String(firstName() || '').trim()) ? '' : firstName();
+  const badge = h('div', { class: 'keyring-card keyring-badge' }, h('span', { class: 'keyring-hole', 'aria-hidden': 'true' }),
+    h('strong', {}, name ? `Je m’appelle ${name}` : 'Bonjour'), h('small', {}, 'Je parle avec des images. Montrez-moi les cartes, attendez ma réponse.'));
+  const area = h('div', { class: 'print-area' },
+    h('div', { class: 'print-sheet keyring-sheet' },
+      h('h1', {}, `Porte-clés de communication · ${title}`),
+      h('p', { class: 'note' }, 'Découpez, plastifiez, percez le rond et accrochez à un anneau.'),
+      h('div', { class: 'keyring-grid' }, badge, ...cards.map((c) => h('div', { class: 'keyring-card' }, h('span', { class: 'keyring-hole', 'aria-hidden': 'true' }),
+        c.extra ? h('span', { class: 'keyring-emoji' }, c.emoji) : cardVisual(c),
+        h('strong', {}, label(c, 'fr')), c.dr && !c.extra ? h('small', {}, c.dr) : null)))));
+  document.body.append(area);
+  const cleanup = () => { area.remove(); window.removeEventListener('afterprint', cleanup); };
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(() => window.print(), 300);
+}
+function keyringBox() {
+  const options = [['core', 'Mots essentiels (12)'], ...CATEGORIES.map((c) => [`cat:${c.id}`, `Dossier : ${categoryName(c, 'fr')}`]),
+    ...allPlaceBoards().map((b) => [b.id, `Lieu : ${b.title}`])];
+  const pick = h('select', { 'aria-label': 'Cartes du porte-clés' }, options.map(([v, t]) => h('option', { value: v }, t)));
+  return h('details', { class: 'card-box keyring-box' }, h('summary', {}, '🔑 Porte-clés à imprimer'),
+    h('p', { class: 'note' }, 'Des cartes de 4 cm avec un rond à percer, pour sortir sans téléphone. Choisissez puis « Imprimer » (ou « Enregistrer en PDF »).'),
+    h('div', { class: 'row wrap' }, pick, btn('🖨️ Imprimer', () => printKeyring(pick.value, pick.selectedOptions[0].textContent), 'primary tiny')));
+}
+
 // v10.33 (pépites « Pages par lieu » et « Tableau express ») : le choix d'un lieu remplit la grille avec
 // les mots de ce lieu. La ligne de mots de base reste en haut ; « ↩ » rend la grille habituelle.
 const placeBtn = (icon, name, onclick) => h('button', { type: 'button', class: 'btn ghost place-btn', 'aria-label': name, title: name, onclick }, icon);

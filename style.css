@@ -2464,3 +2464,18 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .scene-edit-cell.filled { background: rgb(23 107 98 / .45); }
 .scene-edit-cell.selected { outline: 4px solid #F4B400; outline-offset: -4px; }
 .scene-editor input[type="text"] { flex: 1 1 140px; font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: inherit; }
+
+/* v10.35 — Conseil du jour de l'aidant et porte-clés imprimable. */
+.caregiver-tip { margin: 6px 0; padding: 8px 10px; border-radius: 12px; background: #FFF6D8; color: #3a3320; font-size: 14px; line-height: 1.35; }
+:root[data-theme="contraste"] .caregiver-tip { background: #000; color: #fff; box-shadow: inset 0 0 0 2px #fff; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="contraste"]) .caregiver-tip { background: #2b2a20; color: #f5efd8; } }
+.keyring-sheet { padding: 8px; }
+.keyring-grid { display: grid; grid-template-columns: repeat(4, 4cm); gap: 4mm; }
+.keyring-card { position: relative; width: 4cm; height: 4cm; box-sizing: border-box; border: 2px solid #333; border-radius: 4mm; padding: 5mm 2mm 2mm; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1mm; text-align: center; background: #fff; break-inside: avoid; }
+.keyring-card .visual { --vs: 1.9cm; width: 1.9cm; height: 1.9cm; }
+.keyring-card img { width: 1.9cm; height: 1.9cm; object-fit: cover; border-radius: 2mm; }
+.keyring-card strong { font-size: 11pt; line-height: 1.1; }
+.keyring-card small { font-size: 8pt; color: #444; line-height: 1.15; }
+.keyring-emoji { font-size: 1.5cm; line-height: 1; }
+.keyring-hole { position: absolute; top: 2mm; left: 2mm; width: 4mm; height: 4mm; border: 1px dashed #555; border-radius: 50%; }
+.keyring-badge { border-style: double; border-width: 4px; }
