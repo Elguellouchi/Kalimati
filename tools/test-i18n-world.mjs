@@ -28,6 +28,11 @@ for (const lang of WORLD) {
   const m = await load(`modules/i18n-${lang}.js`);
   const TXL = m[`TX_${S}`] || {};
   const CL = m[`CLINIC_${S}`] || {};
+  // Langue pas encore générée (tables vides) : l'écran reste en français, rien d'inventé.
+  if (!Object.keys(TXL).length) {
+    check(tx('orthoTitle', lang) === tx('orthoTitle', 'fr') && clinicT('tClinic', lang) === CLINIC_FR.tClinic, `${lang} : pas encore générée, reste en français`);
+    continue;
+  }
   const missing = TX_FR_KEYS.filter((k) => !TXL[k]);
   const missingC = Object.keys(CLINIC_FR).filter((k) => !CL[k]);
   const badPh = [...TX_FR_KEYS.filter((k) => TXL[k] && ph(TXL[k]) !== ph(tx(k, 'fr'))), ...Object.keys(CL).filter((k) => CLINIC_FR[k] && ph(CL[k]) !== ph(CLINIC_FR[k]))];
