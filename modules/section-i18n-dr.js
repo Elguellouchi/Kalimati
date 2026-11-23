@@ -6,6 +6,8 @@ export const TX_DR = {
   'home': '🏠 Dar',
   'back': '← Rj3i',
   'starsOfFive': '{n} njma{s} men 5',
+  'childPlaceholder': 'wldi',
+  'languagesCount': '{n} lughat',
   'loading': 'Kanchargi...',
   'adultLocked': '🔒 M3a chi kbir',
   'gamesTitle': '🎮 L3ab dyal {name}',

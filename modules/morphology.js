@@ -15,8 +15,13 @@
 
 import * as db from '../db.js';
 import { h } from './util.js';
-import { isAmazighLang, formatAmazighText, cardSpeechText } from './languages.js';
+import { isAmazighLang, formatAmazighText, cardSpeechText, getDarijaScript } from './languages.js';
 import { amazighEntry } from './amazigh-lexicon.js';
+
+// v10.24 : le moteur conjugue déjà la darija dans les deux écritures (les tableaux « dr » et « ar »).
+// Le mot affiché sous la carte suit donc le réglage parent « Écriture darija » ; la forme latine ne
+// sert plus de secours que si la forme arabe manque.
+const drAffiche = (latin, arabe) => (getDarijaScript() === 'latin' ? latin : (arabe || latin));
 
 let currentTense = 'present'; // 'past' | 'present' | 'future'
 let childGenderCached = 'girl'; // 'girl' | 'boy' (configurable dans le profil)
@@ -635,7 +640,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
         lang,
         displayLabel: isAmazighLang(lang)
           ? formatAmazighText(amzSub || amzCardText(card, lang), scriptMode)
-          : (lang === 'dr' ? drWord : (frWord || 'Je')),
+          : (lang === 'dr' ? drAffiche(drWord, arWord) : (frWord || 'Je')),
       });
       continue;
     }
@@ -673,7 +678,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
         lang,
         displayLabel: isAmazighLang(lang)
           ? formatAmazighText(amzModal || amzModalForm(lang, activePerson, tense), scriptMode)
-          : (lang === 'dr' ? drModal : frModal),
+          : (lang === 'dr' ? drAffiche(drModal, arModal) : frModal),
       });
       continue;
     }
@@ -708,7 +713,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
         lang,
         displayLabel: isAmazighLang(lang)
           ? formatAmazighText(amzVerb || amzCardText(card, lang), scriptMode)
-          : (lang === 'dr' ? vDr : fullFrVerb),
+          : (lang === 'dr' ? drAffiche(vDr, vAr) : fullFrVerb),
       });
       continue;
     }
@@ -751,7 +756,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
           lang,
           displayLabel: isAmazighLang(lang)
             ? formatAmazighText(amzAdj || amzCardText(card, lang), scriptMode)
-            : (lang === 'dr' ? phraseDr : phraseFr),
+            : (lang === 'dr' ? drAffiche(phraseDr, phraseAr) : phraseFr),
         });
         continue;
       }
@@ -765,6 +770,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
       let impliedVerbCardId = null;
       let impliedFrWord = '';
       let impliedDrWord = '';
+      let impliedArWord = '';
       if (lastActionVerb === 'want') {
         const impliedKey = inferImpliedVerbKey(card, key);
         const impliedVerb = impliedKey ? VERBS[impliedKey] : null;
@@ -781,6 +787,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
           }
           impliedFrWord = impFr;
           impliedDrWord = impDr;
+          impliedArWord = impAr;
           lastActionVerb = impliedKey;
           impliedVerbCardId = impliedVerb.cardId || null;
         }
@@ -824,7 +831,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
         displayLabel: isAmazighLang(lang)
           ? formatAmazighText(amzNoun || amzCardText(card, lang), scriptMode)
           : (lang === 'dr'
-            ? [impliedDrWord, drNoun].filter(Boolean).join(' ')
+            ? drAffiche([impliedDrWord, drNoun].filter(Boolean).join(' '), [impliedArWord, arNoun].filter(Boolean).join(' '))
             : [impliedFrWord, frNoun].filter(Boolean).join(' ')),
       });
       continue;
@@ -844,7 +851,7 @@ export function inflectStrip(stripItems = [], { tense = currentTense, lang: optL
       lang,
       displayLabel: isAmazighLang(lang)
         ? formatAmazighText(amzFall || amzCardText(card, lang), scriptMode)
-        : (lang === 'dr' ? fallbackDr : fallbackFr),
+        : (lang === 'dr' ? drAffiche(fallbackDr, fallbackAr) : fallbackFr),
     });
   }
 
@@ -905,7 +912,7 @@ export function renderMorphologyBar(stripItems, { lang = 'fr', scriptMode = 'bot
   // le français n'apparaît qu'en écho, et seulement quand la phrase est dite dans une autre langue.
   const textMain = extraLang
     ? (sentenceExtra || sentenceFr)
-    : (amzActive ? (sentenceAmazigh || sentenceFr) : (lang === 'dr' ? `${sentenceDr}  ·  ${sentenceAr}` : sentenceFr));
+    : (amzActive ? (sentenceAmazigh || sentenceFr) : (lang === 'dr' ? (getDarijaScript() === 'latin' ? `${sentenceDr}  ·  ${sentenceAr}` : (sentenceAr || sentenceDr)) : sentenceFr));
   const extraEcho = extraLang && sentenceFr && sentenceFr !== sentenceExtra ? `🇫🇷 ${sentenceFr}` : '';
   const textSub = extraLang
     ? extraEcho

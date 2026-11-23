@@ -27,6 +27,27 @@ export function formatAmazighText({ tif = '', lat = '' } = {}, scriptMode = 'bot
   return l || t;
 }
 
+// v10.24 : la darija s'affiche en lettres arabes, comme elle se dit. Les lettres latines (« Bit lma »)
+// restent un choix du réglage parent pour les familles qui les préfèrent. Même mécanique que le double
+// écrit amazigh, mais le réglage est global : il touche aussi les titres des espaces (section-i18n.js),
+// qui ne reçoivent pas d'option à chaque appel.
+export const DARIJA_SCRIPTS = [
+  { id: 'arabe', label: 'Lettres arabes (دارجة)' },
+  { id: 'latin', label: 'Lettres latines (Arabizi)' },
+];
+export const isDarijaScript = (mode) => DARIJA_SCRIPTS.some((opt) => opt.id === mode);
+let darijaScriptMode = 'arabe';
+export const setDarijaScript = (mode) => { darijaScriptMode = isDarijaScript(mode) ? mode : 'arabe'; return darijaScriptMode; };
+export const getDarijaScript = () => darijaScriptMode;
+export const isDarijaArabicScript = () => darijaScriptMode !== 'latin';
+
+// v10.21 : « ar » = darija en lettres arabes, « dr » = la même darija en lettres latines.
+export function formatDarijaText({ ar = '', dr = '' } = {}, mode = darijaScriptMode) {
+  const a = String(ar || '').trim();
+  const l = String(dr || '').trim();
+  return mode === 'latin' ? (l || a) : (a || l);
+}
+
 // Liste d'affichage : drapeaux et sous-titres (les noms et codes TTS viennent des locales, vérifiés par les tests).
 export const LANGS = [
   { code: 'fr', short: 'FR', name: 'Français', flag: '🇫🇷', tts: 'fr-FR' },
@@ -55,7 +76,7 @@ const CATEGORY_ORDER = ['base', 'manger', 'boire', 'jouer', 'actions', 'personne
 
 // Mot d'une carte dans une langue. Carte « Moi » du profil : le prénom reste, « Moi » est traduit.
 export function cardWord(card, code, { scriptMode = 'both' } = {}) {
-  if (code === 'dr') return card.dr || card.fr;
+  if (code === 'dr') return formatDarijaText(card) || card.fr;
   if (isAmazighLang(code)) {
     const own = card[code];
     if (own && typeof own === 'object') return formatAmazighText(own, scriptMode) || card.fr;
@@ -88,17 +109,20 @@ export function cardSpeechText(card, code) {
 
 // ---------- Catégories et menus ----------
 export function categoryName(category, code) {
-  if (code === 'dr') return category.dr || category.fr;
+  if (code === 'dr') return formatDarijaText(category) || category.fr;
   const i = CATEGORY_ORDER.indexOf(category.id);
   const names = localeCategories(code);
   return (i >= 0 && names[i]) || category.fr;
 }
 
-export const ui = (key, code) => localeUi(key, code);
+// Menu d'une langue. La darija suit le réglage « Écriture darija » (lettres arabes par défaut).
+export const ui = (key, code) => localeUi(key, code, code === 'dr' ? darijaScriptMode : undefined);
 // Texte à dire avec la voix du téléphone pour un menu. Pas de voix amazighe sur les téléphones :
 // l'amazigh garde « Azul » (lu correctement en français) et dit le reste en français plutôt que de
 // prononcer du tifinagh avec un accent faux.
 export function spokenUi(key, code) {
   if (isAmazighLang(code)) return { text: key === 'hello' ? 'Azul' : localeUi(key, 'fr'), lang: 'fr' };
+  // v10.24 : la darija s'écrivant en lettres arabes, c'est la voix arabe du téléphone qui la lit.
+  if (code === 'dr') return { text: ui(key, code), lang: darijaScriptMode === 'latin' ? 'fr' : langInfo('dr').tts };
   return { text: ui(key, code), lang: isExtraLang(code) ? code : 'fr' };
 }

@@ -1,4 +1,4 @@
-// Kalimati v10.26 (arabe standard sur les écrans Jeux, Ma journée, Émotions et Ateliers ; thèmes cahier d’école, simple, noir et blanc).
+// Kalimati v10.27 (darija en lettres arabes par défaut ; arabe standard sur les écrans enfant ; thèmes cahier d’école, simple, noir et blanc).
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
 import * as db from './db.js';
@@ -17,7 +17,7 @@ import { toiletReminder, logToilet } from './modules/ex-autonomy.js';
 import { loadLevels } from './modules/levels.js';
 import { openCalm } from './modules/calm.js';
 import { logOrtho } from './modules/ex-ortho.js';
-import { LANGS, langInfo, isAmazighLang, isAmazighScript, isExtraLang, cardWord, cardSpeechText, categoryName, ui, spokenUi } from './modules/languages.js';
+import { LANGS, langInfo, isAmazighLang, isAmazighScript, isDarijaScript, setDarijaScript, isExtraLang, cardWord, cardSpeechText, categoryName, ui, spokenUi } from './modules/languages.js';
 import { loadAmazighVoices, amazighVoiceFor, autoInstallAmazighVoicePack, amazighVoiceStatus, readAmazighPackState, retryAmazighVoicePack, amazighAutoStep } from './modules/voice-packs.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './modules/core-vocabulary-plan.js';
 import { loadAacPlus, learnTap, suggestionsFor, touchSettingsBox, scanSpeed, clearConfirmNeeded, echoPracticeEnabled } from './modules/aac-plus.js';
@@ -37,7 +37,7 @@ import { initGlobalErrorLogger, logDiagnostic, recordRejectedTap, setDiagnosticF
 import { loadOnlineLookupSetting } from './modules/online-bank.js';
 import { loadNetworkMode } from './modules/network-policy.js';
 import { setTimerShowNumbers, TIMER_SETTING_KEY } from './modules/timer.js';
-import { setActiveLang } from './modules/section-i18n.js';
+import { setActiveLang, tx } from './modules/section-i18n.js';
 import { clinicHome, closeClinic } from './modules/clinique.js';
 import { clinicT } from './modules/clinic-i18n.js';
 import { cabinetScreen } from './modules/cabinet.js';
@@ -50,7 +50,7 @@ const CORE_CAT = 'base';
 const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
-const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'clinic', 'profile', 'toiletReminder', 'levels',
+const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
   'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText'];
 
 const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
@@ -536,7 +536,7 @@ function renderTalk() {
   // v10.15 (pépite 29) : deux aides qui parlent sans vider la phrase.
   const sayPill = (key, fr) => {
     unlockAudio(); stopSpeaking();
-    const words = state.lang === 'dr' ? clinicT(key, 'dr') : fr;
+    const words = state.lang === 'fr' ? fr : clinicT(key, state.lang);
     speak(String(words).replace(/^[^\p{L}\p{N}]+/u, ''), { lang: state.lang });
   };
   // v10.23 (pépite 2) : la barre des mots essentiels reste à l'écran en permanence — elle ne vide jamais
@@ -735,12 +735,13 @@ const HOME_TILES = [
 ];
 
 function homeScreen() {
-  const hello = `${ui('hello', state.lang)} ${firstName()} !`;
+  const kidName = firstName(state.lang);
+  const hello = `${ui('hello', state.lang)} ${kidName} !`;
   return h('div', { class: 'screen home' },
-    h('button', { type: 'button', class: 'home-hello', onclick: () => sayMenu('hello', ` ${firstName()} !`) },
+    h('button', { type: 'button', class: 'home-hello', onclick: () => sayMenu('hello', ` ${kidName} !`) },
       h('span', { class: 'home-nour' }, nour({ pose: 'wave', size: 96 })),
       h('span', { class: 'home-hello-text' }, h('strong', {}, `👋 ${hello}`), h('span', {}, ui('ask', state.lang)))),
-    h('button', { type: 'button', class: 'home-lang', onclick: openLangPicker }, `${langInfo(state.lang).flag} ${langInfo(state.lang).name} · 🌍 ${LANGS.length} langues`),
+    h('button', { type: 'button', class: 'home-lang', onclick: openLangPicker }, `${langInfo(state.lang).flag} ${langInfo(state.lang).name} · 🌍 ${tx('languagesCount', state.lang, { n: LANGS.length })}`),
     h('div', { class: 'home-grid' }, HOME_TILES.map(([id, emoji, titleKey, subKey, cls]) => h('button', {
       type: 'button', class: `home-tile ${cls}`, onclick: () => { sayMenu(titleKey); openSpace(id); },
     }, h('span', { class: 'home-emoji' }, emoji), h('strong', {}, ui(titleKey, state.lang)), h('small', {}, ui(subKey, state.lang)))),
@@ -916,13 +917,27 @@ function renderAll() {
 async function renderToiletCount() {
   const count = (await todayTrials('X.1')).filter((t) => t.result === 'plus').length;
   $('#toilet-count').textContent = state.parent ? `${count}/4` : '';
+  // v10.24 : l'étiquette était écrite en dur « Toilettes / Bit lma » : elle ne suivait jamais la langue.
+  // Elle prend maintenant le mot de la carte dans la langue choisie — en darija, en lettres arabes.
+  const card = state.cards.find((c) => c.id === TOILET_CARD_ID);
+  const word = card ? label(card) : ui('toiletTime', state.lang);
+  const span = $('#toilet span');
+  if (span && card) {
+    // En français, le mot darija reste en dessous : c'est ce que l'adulte apprend avec l'enfant.
+    const lines = [card.fr, label(card, 'dr')].filter((t) => t && String(t).trim());
+    const shown = state.lang === 'fr' ? lines : [word];
+    span.replaceChildren(...shown.flatMap((t, i) => (i ? [document.createElement('br'), document.createTextNode(t)] : [document.createTextNode(t)])));
+  } else if (span) {
+    span.textContent = word;
+  }
+  $('#toilet').setAttribute('aria-label', word);
 }
 
 function setupToilet() {
   $('#toilet').onclick = async () => {
     stopSpeaking();
     const card = state.cards.find((c) => c.id === TOILET_CARD_ID);
-    if (card) sayCard(card, state.lang); else speak(state.lang === 'dr' ? 'بيت الما' : 'Toilettes', { lang: state.lang === 'dr' ? 'ar' : 'fr' });
+    if (card) sayCard(card, state.lang); else speak(state.lang === 'fr' ? 'Toilettes' : state.lang === 'ar' ? 'الحمام' : 'بيت الما', { lang: state.lang === 'fr' ? 'fr' : 'ar' });
     await recordTrial('X.1', 'plus', { item: 'spontanee', meta: { source: 'bouton' } });
     $('#toilet').classList.add('pressed');
     setTimeout(() => $('#toilet').classList.remove('pressed'), 600);
@@ -1368,6 +1383,14 @@ async function init() {
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
+  // v10.24 : écriture de la darija choisie par le parent (lettres arabes par défaut). Elle doit être
+  // connue avant le premier écran : sinon les mots s'affichent en arabizi une seconde puis sautent.
+  const savedDarijaScript = await db.getSetting('darijaScript').catch(() => null);
+  setDarijaScript(isDarijaScript(savedDarijaScript) ? savedDarijaScript : 'arabe');
+  document.addEventListener('kalimati-darija-script', (e) => {
+    setDarijaScript(isDarijaScript(e?.detail) ? e.detail : 'arabe');
+    renderAll();
+  });
   // v10.7 : écriture amazighe choisie (tifinagh + latin par défaut) et voix amazighes en mémoire (sans bloquer l'ouverture).
   const savedScript = await db.getSetting('amazighScript').catch(() => null);
   state.amazighScript = isAmazighScript(savedScript) ? savedScript : 'both';

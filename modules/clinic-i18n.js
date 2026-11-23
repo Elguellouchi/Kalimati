@@ -1,10 +1,14 @@
 // Libellés des ateliers cliniques et des ajouts au cœur de communication (v10.15).
-// Le français est la source ; la darija est demandée à OpenAI hors ligne par
-// tools/gen-clinic-i18n.mjs et rangée dans clinic-i18n-dr.js. Rien ne part au serveur à l'usage.
+// Le français est la source ; les traductions sont demandées à OpenAI hors ligne par
+// tools/gen-clinic-i18n.mjs et rangées dans clinic-i18n-dr.js (arabizi), clinic-i18n-dr-ar.js
+// (darija en lettres arabes) et clinic-i18n-ar.js (arabe standard). Rien ne part au serveur à l'usage.
 import { CLINIC_DR } from './clinic-i18n-dr.js';
-// v10.26 : l'arabe standard des ateliers (déjà préparé dans le Drive par tools/gen-clinic-i18n.mjs --langue ar).
+import { CLINIC_DRA } from './clinic-i18n-dr-ar.js';
 import { CLINIC_AR } from './clinic-i18n-ar.js';
-const TABLES = { dr: CLINIC_DR, ar: CLINIC_AR };
+import { getDarijaScript } from './languages.js';
+
+// v10.24 : l'atelier se lit dans l'écriture choisie au réglage parent, et l'arabe ne tombe plus en français.
+const TABLES = { dr: () => (getDarijaScript() === 'latin' ? CLINIC_DR : CLINIC_DRA), ar: () => CLINIC_AR };
 
 export const CLINIC_FR = {
   clinic: 'Ateliers',
@@ -130,7 +134,7 @@ export const CLINIC_FR = {
 };
 
 export function clinicT(key, lang = 'fr', vars) {
-  const table = TABLES[lang] || CLINIC_FR;
+  const table = TABLES[lang] ? TABLES[lang]() : CLINIC_FR;
   const raw = table[key] ?? CLINIC_FR[key] ?? key;
   return vars ? raw.replace(/\{(\w+)\}/g, (m, name) => (vars[name] === undefined ? m : String(vars[name]))) : raw;
 }

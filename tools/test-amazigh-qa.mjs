@@ -77,7 +77,7 @@ async function main() {
   });
 
   const { amazighEntry } = await load('modules/amazigh-lexicon.js');
-  const { cardWord, isAmazighLang, formatAmazighText } = await load('modules/languages.js');
+  const { cardWord, isAmazighLang, formatAmazighText, setDarijaScript, getDarijaScript } = await load('modules/languages.js');
   const { inflectStrip } = await load('modules/morphology.js');
   const { THEMATIC_PACKS } = await load('modules/eye-and-packs.js');
   const { defaultCards } = await load('data.js');
@@ -141,8 +141,14 @@ async function main() {
     assert.equal(fr.sentenceFr, 'Je veux manger du pain');
     assert.equal(fr.sentenceDr, 'bghit nakoul l-khobz');
     assert.equal(fr.tokens[1].displayLabel, 'manger du pain');
-    const dr = inflectStrip([{ card: want, lang: 'dr' }, { card: pain, lang: 'dr' }], { tense: 'present' });
-    assert.equal(dr.tokens[1].displayLabel, 'nakoul l-khobz');
+    const phrase = () => inflectStrip([{ card: want, lang: 'dr' }, { card: pain, lang: 'dr' }], { tense: 'present' });
+    // v10.24 : l'étiquette sous la carte suit l'écriture du réglage parent (lettres arabes par défaut).
+    const scriptDepart = getDarijaScript();
+    setDarijaScript('arabe');
+    assert.equal(phrase().tokens[1].displayLabel, 'ناكل الخبز');
+    setDarijaScript('latin');
+    assert.equal(phrase().tokens[1].displayLabel, 'nakoul l-khobz');
+    setDarijaScript(scriptDepart);
   });
 
   await check('Service worker : nouvelle version, modules amazighs, police, caches des voix gardés', () => {

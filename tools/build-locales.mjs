@@ -99,6 +99,12 @@ async function migrate() {
       lexicon: isAmazigh ? {} : (lexiconByLang[code] || {}),
       ...(isAmazigh ? { lexiconSource: 'modules/amazigh-lexicon.js' } : {}),
     };
+    // v10.24 : les écritures de secours de la darija sont relues à la main, pas extraites de
+    // modules/languages.js : une migration ne doit pas les effacer.
+    const previous = fs.existsSync(path.join(LOCALES_DIR, `${code}.json`))
+      ? JSON.parse(read(path.join('locales', `${code}.json`))) : {};
+    if (previous.uiLatin) locale.uiLatin = previous.uiLatin;
+    if (previous.categoriesLatin) locale.categoriesLatin = previous.categoriesLatin;
     fs.writeFileSync(path.join(LOCALES_DIR, `${code}.json`), `${JSON.stringify(locale, null, 2)}\n`, 'utf8');
     console.log(`✍️  locales/${code}.json (${Object.keys(locale.lexicon).length} mot(s), ${Object.keys(locale.ui).length} menu(s))`);
   }
@@ -117,6 +123,10 @@ function buildBundle() {
       categories: locale.categories || [],
       lexicon: locale.lexicon || {},
       ...(locale.lexiconSource ? { lexiconSource: locale.lexiconSource } : {}),
+      // v10.24 : la darija s'affiche en lettres arabes ; les lettres latines restent disponibles si le
+      // parent les préfère (Réglages parent → Écriture darija). Ces deux tables ne concernent qu'elle.
+      ...(locale.uiLatin ? { uiLatin: locale.uiLatin } : {}),
+      ...(locale.categoriesLatin ? { categoriesLatin: locale.categoriesLatin } : {}),
     };
     meta[locale.code] = {
       code: locale.code, name: locale.name, short: locale.short, tts: locale.tts,

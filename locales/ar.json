@@ -83,6 +83,7 @@
     "c-actions-laver": { "label": "أغسل", "tts": "أَغْسِل" },
     "c-actions-dessiner": { "label": "أرسم", "tts": "أَرْسُم" },
     "c-actions-ouvrir": { "label": "أفتح", "tts": "أَفْتَح" },
+    "c-personnes-sibling": { "label": "أختي / أخي", "tts": "أُخْتِي / أَخِي" },
     "c-personnes-papa": { "label": "بابا", "tts": "بَابَا" },
     "c-personnes-maman": { "label": "ماما", "tts": "مَامَا" },
     "c-personnes-maitresse": { "label": "المعلمة", "tts": "الْمُعَلِّمَة", "gender": "f" },

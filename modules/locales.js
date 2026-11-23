@@ -7,8 +7,20 @@ import { LOCALES, LOCALE_META } from './locales-data.js';
 export const LOCALE_CODES = Object.keys(LOCALES);
 export const localeMeta = (code) => LOCALE_META[code] || LOCALE_META.fr;
 export const localeUiTable = (code) => (LOCALES[code] && LOCALES[code].ui) || {};
-export const localeUi = (key, code) => localeUiTable(code)[key] ?? LOCALES.fr.ui[key];
-export const localeCategories = (code) => (LOCALES[code] && LOCALES[code].categories) || [];
+// v10.24 : la darija tient dans deux écritures (« ui » en lettres arabes, « uiLatin » en lettres
+// latines). C'est languages.js, qui connaît le réglage parent, qui passe « script » ; les autres
+// langues n'ont qu'une écriture et gardent donc le même résultat qu'avant.
+export const localeUi = (key, code, script) => {
+  const arab = localeUiTable(code);
+  const latin = (LOCALES[code] && LOCALES[code].uiLatin) || {};
+  const chosen = script === 'latin' ? (latin[key] ?? arab[key]) : (arab[key] ?? latin[key]);
+  return chosen ?? LOCALES.fr.ui[key];
+};
+export const localeCategories = (code, script) => {
+  const arab = (LOCALES[code] && LOCALES[code].categories) || [];
+  const latin = (LOCALES[code] && LOCALES[code].categoriesLatin) || [];
+  return script === 'latin' ? (latin.length ? latin : arab) : (arab.length ? arab : latin);
+};
 export const localeLexicon = (code) => (LOCALES[code] && LOCALES[code].lexicon) || {};
 
 // v10.22 (Lot 2) : une entrée de lexique peut être une simple chaîne (compat) ou un objet

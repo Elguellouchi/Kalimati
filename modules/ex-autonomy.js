@@ -13,6 +13,7 @@ import { goalById } from './goals.js';
 import { visualTimer } from './timer.js';
 import { renderVisual } from './visuals.js';
 import { SEQUENCES, TOILET_STEPS } from './content.js';
+import { formatDarijaText, isDarijaArabicScript } from './languages.js';
 import { hygieneRoutineView } from './ex-hygiene.js';
 
 // ---------- V : « À table en famille » ----------
@@ -315,8 +316,9 @@ function toiletSteps() {
   return stage[1].map((id) => (id === 'mains' ? HANDS : TOILET_STEPS.find((step) => step.id === id)));
 }
 const toiletVisual = (step, button = false) => renderVisual({ vkey: step.vkey, emoji: step.emoji, label: step.fr }, { button });
-const toiletLabel = (step, lang) => (lang === 'dr' ? step.dr : step.fr);
-const arabicVoice = (lang) => lang === 'dr' && hasArabicVoice();
+const toiletLabel = (step, lang) => (lang === 'dr' ? formatDarijaText(step) || step.fr
+  : lang === 'ar' ? step.ar || step.fr : step.fr);
+const arabicVoice = (lang) => (lang === 'dr' || lang === 'ar') && hasArabicVoice();
 const sayToilet = (step, lang) => (arabicVoice(lang) && step.ar ? speak(step.ar, { lang: 'ar' }) : speak(step.fr));
 function shake(el) { el.classList.remove('shake-soft'); void el.offsetWidth; el.classList.add('shake-soft'); }
 const toiletCard = (step, lang) => h('button', { type: 'button', class: 'choice toilet-card' }, toiletVisual(step), h('span', { class: 'label' }, toiletLabel(step, lang)));
@@ -382,13 +384,14 @@ function toiletNextStep(ctx) {
     const far = shuffle(steps.filter((s) => ![current, answer, ...near].includes(s)));
     const distractors = [...near, ...far].slice(0, steps.length >= 6 ? 3 : 2);
     const question = `Je viens de : ${current.fr.toLowerCase()}. Qu’est-ce que je fais ensuite ?`;
-    const darija = `كملت: ${current.ar}. شنو ندير من بعد؟`;
-    const ask = () => (arabicVoice(ctx.lang) ? speak(darija, { lang: 'ar' }) : speak(question));
+    const darijaAr = `كملت: ${current.ar}. شنو ندير من بعد؟`;
+    const darija = isDarijaArabicScript() ? darijaAr : `Kmelt: ${current.dr}. Shno ndir men be3d?`;
+    const ask = () => (arabicVoice(ctx.lang) ? speak(darijaAr, { lang: 'ar' }) : speak(question));
     const after = h('div', { class: 'row center' });
     ask();
     root.replaceChildren(
-      h('p', { class: 'ask' }, question, btn('🔊', ask, 'ghost tiny')),
-      ctx.lang === 'dr' ? h('p', { class: 'note', dir: 'rtl' }, darija) : null,
+      h('p', { class: 'ask' }, ctx.lang === 'dr' ? darija : question, btn('🔊', ask, 'ghost tiny')),
+      ctx.lang === 'dr' && !isDarijaArabicScript() ? h('p', { class: 'note', dir: 'rtl' }, darijaAr) : null,
       h('div', { class: 'big-card model-card' }, toiletVisual(current), h('span', { class: 'label' }, toiletLabel(current, ctx.lang))),
       choiceBoard({ cols: 2, praise: 'Bravo !',
         choices: [answer, ...distractors].map((s) => ({ correct: s === answer, label: toiletLabel(s, ctx.lang), render: () => toiletVisual(s) })),
@@ -437,7 +440,7 @@ function toiletReal(ctx) {
     root.replaceChildren(
       h('div', { class: 'order-slots' }, TOILET_STEPS.map((_, j) => h('span', { class: `order-slot${j < index ? ' on' : ''}` }, String(j + 1)))),
       h('button', { type: 'button', class: 'big-card toilet-now', onclick: () => sayToilet(step, ctx.lang) }, toiletVisual(step, true),
-        h('span', { class: 'label' }, toiletLabel(step, ctx.lang)), ctx.lang === 'dr' ? h('small', { dir: 'rtl' }, step.ar) : null),
+        h('span', { class: 'label' }, toiletLabel(step, ctx.lang)), ctx.lang === 'dr' && !isDarijaArabicScript() ? h('small', { dir: 'rtl' }, step.ar) : null),
       step.id === 'frotter' ? bubbles(() => go(index + 1)) : null,
       btn('✅ C’est fait !', () => go(index + 1), 'primary wide'),
       index > 0 ? btn('↩︎ Étape précédente', () => go(index - 1), 'ghost tiny') : null);

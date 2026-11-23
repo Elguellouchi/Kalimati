@@ -13,6 +13,7 @@ import { sequenceBoard, praise, bigCard } from './widgets.js';
 import { getTimerShowNumbers, timerVisualState } from './timer.js';
 import { SEQUENCES } from './content.js';
 import { tx, routineLabel } from './section-i18n.js';
+import { formatDarijaText, isDarijaArabicScript } from './languages.js';
 
 // ---------- Étapes et routines par défaut ----------
 const S = (id, fr, dr, ar, emoji, minutes, extra = {}) => ({ id, fr, dr, ar, emoji, minutes, hidden: false, ...extra });
@@ -148,7 +149,8 @@ const stepCard = (step) => {
 const sayStep = (step, lang) => (step ? sayCard(stepCard(step), lang) : Promise.resolve());
 const stepVisual = (step, button = true) => renderVisual({ vkey: `step:${step.id}`, emoji: step.emoji, label: step.fr }, { button });
 const stepLabel = (step, lang) => (lang === 'dr'
-  ? h('span', { class: 'sched-label' }, step.dr || step.fr, step.ar ? h('small', { class: 'ar', dir: 'rtl' }, step.ar) : null)
+  ? h('span', { class: 'sched-label' }, formatDarijaText(step) || step.fr,
+    isDarijaArabicScript() ? null : (step.ar ? h('small', { class: 'ar', dir: 'rtl' }, step.ar) : null))
   : lang === 'ar' && step.ar
     ? h('span', { class: 'sched-label', dir: 'rtl' }, step.ar)
     : h('span', { class: 'sched-label' }, step.fr));
@@ -198,7 +200,9 @@ export function scheduleView(ctx) {
 
   const setPrefs = (patch) => { state = { ...state, prefs: { ...state.prefs, ...patch } }; savePrefs(state.prefs); rerender(); };
   const doneIds = (routineId) => new Map(state.logs.filter((l) => l.routineId === routineId).map((l) => [l.stepId, l]));
-  const voiceLang = () => (ctx.lang() === 'dr' ? 'ar' : 'fr');
+  // v10.24 : la darija et l'arabe passent par la voix arabe ; le français reste la langue de secours.
+  const arabicText = () => ctx.lang() === 'dr' || ctx.lang() === 'ar';
+  const voiceLang = () => (arabicText() ? 'ar' : 'fr');
 
   // ----- Coche d'une étape : journal + essais ABA liés + renforcement -----
   // Sur téléphone, le son et la voix ne partent que s'ils sont lancés pendant le toucher :
@@ -236,7 +240,7 @@ export function scheduleView(ctx) {
     // v10.6 (G-01) : petit encouragement doux à la moitié de la routine.
     const half = Math.max(1, Math.ceil(active.length / 2));
     if (active.length >= 4 && done.size === half) {
-      speak(ctx.lang() === 'dr' ? 'برافو، نص الطريق!' : 'Bravo, tu es à la moitié !', { lang: voiceLang() });
+      speak(arabicText() ? 'برافو، نص الطريق!' : 'Bravo, tu es à la moitié !', { lang: voiceLang() });
     }
     if (!active.some((s) => !done.has(s.id))) await finishRoutine(routine, active, done);
     rerender();
@@ -297,17 +301,17 @@ export function scheduleView(ctx) {
         t.element,
         btn(L('waitedCalm'), async () => {
           playClap();
-          speak(ctx.lang() === 'dr' ? 'برافو، تسنيتي مزيان' : `Bravo ${firstName()}, tu as très bien attendu !`, { lang: voiceLang() });
+          speak(arabicText() ? 'برافو، تسنيتي مزيان' : `Bravo ${firstName()}, tu as très bien attendu !`, { lang: voiceLang() });
           await recordTrial('A.5', nextAutonomy === 'seule' ? 'plus' : 'prompt', { item: `attente-${waitMin}min`, meta: { source: 'waiting-board' } });
           stage.append(praise(L('waitedCalm')));
         }, 'primary wide'));
     };
     const openCoping = ([emoji, fr, dr, ar, kind]) => {
-      speak(ctx.lang() === 'dr' ? ar : fr, { lang: voiceLang() });
+      speak(arabicText() ? ar : fr, { lang: voiceLang() });
       if (kind === 'breath') {
         activityBox.replaceChildren(h('div', { class: 'card-box breath-box' },
           h('div', { class: 'breath-circle' }, '🫁'),
-          h('p', { class: 'ask' }, ctx.lang() === 'dr' ? 'طلع النفس… هبط النفس…' : L('breathText'))));
+          h('p', { class: 'ask' }, arabicText() ? 'طلع النفس… هبط النفس…' : L('breathText'))));
       } else if (kind === 'count') {
         const nums = h('div', { class: 'order-slots' }, Array.from({ length: 10 }, (_, i) => {
           const b = h('button', { type: 'button', class: 'order-slot', onclick: () => { b.classList.add('on'); speak(String(i + 1), { lang: voiceLang() }); } }, String(i + 1));
@@ -315,7 +319,7 @@ export function scheduleView(ctx) {
         }));
         activityBox.replaceChildren(h('div', { class: 'card-box stack center' }, h('p', { class: 'ask' }, L('countHint')), nums));
       } else {
-        activityBox.replaceChildren(bigCard(emoji, ctx.lang() === 'dr' ? dr : fr));
+        activityBox.replaceChildren(bigCard(emoji, ctx.lang() === 'dr' ? formatDarijaText({ ar, dr }) : fr));
       }
     };
     renderTimer();
@@ -325,7 +329,7 @@ export function scheduleView(ctx) {
         h('h3', {}, L('waitingChoose')),
         h('div', { class: 'choices', style: { '--cols': 3 } }, COPING_CHOICES.map((c) => h('button', {
           type: 'button', class: 'choice', onclick: () => openCoping(c),
-        }, h('span', { class: 'emoji' }, c[0]), h('span', { class: 'label' }, ctx.lang() === 'dr' ? c[2] : c[1]))))),
+        }, h('span', { class: 'emoji' }, c[0]), h('span', { class: 'label' }, ctx.lang() === 'dr' ? formatDarijaText({ ar: c[3], dr: c[2] }) : c[1]))))),
       activityBox);
   }
 
@@ -407,7 +411,7 @@ export function scheduleView(ctx) {
     if (!step.sub || !step.sub.length) return;
     let close = () => {};
     const board = sequenceBoard(step.sub, { onComplete: () => { close(); check(step); } });
-    const label = ctx.lang() === 'dr' ? (step.dr || step.fr) : step.fr;
+    const label = ctx.lang() === 'dr' ? (formatDarijaText(step) || step.fr) : ctx.lang() === 'ar' && step.ar ? step.ar : step.fr;
     close = openDialog(`${step.emoji} ${label}`, h('p', { class: 'note' }, L('touchSub')), board.element);
   }
 
@@ -453,7 +457,7 @@ export function scheduleView(ctx) {
     let scope = onPermanent ? 'perm' : 'today';
     const customEmoji = h('input', { value: step.emoji || '⭐', maxlength: 6, style: { width: '64px' } });
     const customFr = h('input', { value: step.fr || '', placeholder: 'Activité en français (ex. Jeux de société)' });
-    const customDr = h('input', { value: step.dr || '', placeholder: 'En darija (ex. Nl3eb f dar)' });
+    const customDr = h('input', { value: step.dr || '', placeholder: 'Darija en lettres latines (ex. Nl3eb f dar)' });
     const customAr = h('input', { value: step.ar || '', placeholder: 'بالدارجة', dir: 'rtl' });
     const customMin = h('input', { type: 'number', value: String(step.minutes || 30), min: 1, max: 300, style: { width: '80px' } });
 
@@ -488,7 +492,7 @@ export function scheduleView(ctx) {
       h('h4', {}, '1. Choisir une activité prête en 1 clic :'),
       h('div', { class: 'choices', style: { '--cols': 2 } }, STEP_REPLACEMENTS.map(([emoji, fr, dr, ar, minutes]) =>
         h('button', { type: 'button', class: 'choice', onclick: () => applyReplacement(emoji, fr, dr, ar, minutes) },
-          h('span', { class: 'emoji' }, emoji), h('span', { class: 'label' }, ctx.lang() === 'dr' ? dr : fr)))),
+          h('span', { class: 'emoji' }, emoji), h('span', { class: 'label' }, ctx.lang() === 'dr' ? formatDarijaText({ ar, dr }) : fr)))),
       h('h4', {}, '2. Ou écrire votre propre activité :'),
       h('div', { class: 'ed-grid' },
         h('label', { class: 'ed-field' }, h('span', {}, 'Émoji'), customEmoji),
@@ -527,7 +531,7 @@ export function scheduleView(ctx) {
       state = { ...state, surprise };
       close();
       rerender();
-      speak(ctx.lang() === 'dr' ? `تبديل! دابا ${ar}` : `Changement ! Maintenant : ${fr}`, { lang: voiceLang() });
+      speak(arabicText() ? `تبديل! دابا ${ar}` : `Changement ! Maintenant : ${fr}`, { lang: voiceLang() });
     };
     const clear = async () => { await db.deleteScheduleConfig(SURPRISE_ID); state = { ...state, surprise: null }; close(); rerender(); };
     close = openDialog('🔀 Un changement aujourd’hui',

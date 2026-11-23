@@ -4,6 +4,7 @@ import * as db from '../db.js';
 import { addStar } from './rewards-kids.js';
 import { h, btn, uid, dayKey, weekKey, percent } from './util.js';
 import { PROFIL, NEUTRAL } from './profil.js';
+import { tx } from './section-i18n.js';
 // v10.9 (lot A) : mode calme, délai d'aide et nombre de choix rangés dans le profil ; réussite « avec aide » notée.
 import { loadLotASettings, syncLotAFromProfile, consumeLastChoiceOutcome } from './widgets.js';
 
@@ -28,7 +29,9 @@ export const clinic = { intervenant: 'parents', environment: 'home', reinforcer:
 // Profil de l'enfant : pré-rempli depuis profil.js, modifiable dans Progrès ➜ Profil.
 export const profile = { name: PROFIL.name, age: PROFIL.age, father: PROFIL.father, mother: PROFIL.mother, sister: PROFIL.sister, city: PROFIL.city, psy: PROFIL.psy };
 export const childName = () => (profile.name || NEUTRAL.name).toUpperCase();
-export const firstName = () => profile.name || NEUTRAL.name;
+// v10.24 : sans prénom renseigné par le parent, l'écran enfant doit rester dans sa langue —
+// « Mon enfant » en français sinon se lisait sur chaque titre en darija comme en arabe.
+export const firstName = (lang = 'fr') => profile.name || (lang === 'fr' ? NEUTRAL.name : tx('childPlaceholder', lang));
 export const sisterName = () => profile.sister || NEUTRAL.sister;
 export const psyName = () => profile.psy || NEUTRAL.psy;
 

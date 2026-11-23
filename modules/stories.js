@@ -48,7 +48,7 @@ export const DEFAULT_STORIES = () => [
     P('🎧', 'Quand la classe est trop bruyante, je peux mettre mon casque pour protéger mes oreilles.', 'Ila kan sda3, kandir l casque.'),
     P('📅', 'Mon planning visuel m’aide à savoir ce qu’on fait maintenant et ensuite.', 'Planning kay3awenni n3ref chnou jay.'),
     P('🤝', 'Mes camarades peuvent me montrer les jeux et attendre ma réponse calmement.', 'S7abi kaytsennawni b chwiya.'),
-    P('🌟', 'Ensemble, on est une belle équipe dans la classe !', 'Mجموعين حنا فريق زوين!'),
+    P('🌟', 'Ensemble, on est une belle équipe dans la classe !', 'M3an, 7na ferq zwina f l klas!'),
   ] },
   { id: 'fratrie_jeu', emoji: '👭', title: 'Jouer avec ma sœur (Fratrie)', pages: [
     P('👭', 'Ma sœur et moi, on aime passer de bons moments ensemble.', 'Ana w khti kanl3bou bjouj.'),

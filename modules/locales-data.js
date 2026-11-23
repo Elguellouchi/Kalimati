@@ -325,6 +325,10 @@ export const LOCALES = {
         "label": "أفتح",
         "tts": "أَفْتَح"
       },
+      "c-personnes-sibling": {
+        "label": "أختي / أخي",
+        "tts": "أُخْتِي / أَخِي"
+      },
       "c-personnes-papa": {
         "label": "بابا",
         "tts": "بَابَا"
@@ -598,6 +602,7 @@ export const LOCALES = {
       "c-actions-laver": "Waschen",
       "c-actions-dessiner": "Malen",
       "c-actions-ouvrir": "Öffnen",
+      "c-personnes-sibling": "Schwester / Bruder",
       "c-personnes-papa": "Papa",
       "c-personnes-maman": "Mama",
       "c-personnes-maitresse": "Lehrerin",
@@ -649,6 +654,41 @@ export const LOCALES = {
   },
   "dr": {
     "ui": {
+      "home": "الدار",
+      "talk": "نهضر",
+      "session": "لعب",
+      "routines": "نهاري",
+      "emotions": "إحساس",
+      "progress": "تقدم",
+      "tTalk": "كنهضر",
+      "tPlay": "كنلعب",
+      "tDay": "نهاري",
+      "tFeel": "إحساساتي",
+      "sTalk": "بالبطاقات و الصوت",
+      "sPlay": "لعب باش نتعلم",
+      "sDay": "الصباح و المساء",
+      "sFeel": "فرحانة، حزينة، معصبة…",
+      "hello": "السلام",
+      "ask": "شنو غادي نديرو اليوم؟",
+      "toiletTime": "وقت بيت الما",
+      "toiletDry": "بلا ما",
+      "toiletAccident": "الحادثة",
+      "toiletSnooze": "ف 10 دقايق"
+    },
+    "categories": [
+      "الأساسيات",
+      "الماكلة",
+      "الشرب",
+      "اللعب",
+      "الأفعال",
+      "الناس",
+      "الحاجات",
+      "الإحساسات",
+      "التوصيف",
+      "البلايص"
+    ],
+    "lexicon": {},
+    "uiLatin": {
       "home": "Dar",
       "talk": "Nhder",
       "session": "L3ab",
@@ -670,7 +710,7 @@ export const LOCALES = {
       "toiletAccident": "L7adssa",
       "toiletSnooze": "F 10 d9ayq"
     },
-    "categories": [
+    "categoriesLatin": [
       "Lmouhim",
       "Makla",
       "Chrab",
@@ -681,8 +721,7 @@ export const LOCALES = {
       "Ihsas",
       "Wsef",
       "Blayes"
-    ],
-    "lexicon": {}
+    ]
   },
   "en": {
     "ui": {
@@ -764,6 +803,7 @@ export const LOCALES = {
       "c-actions-laver": "Wash",
       "c-actions-dessiner": "Draw",
       "c-actions-ouvrir": "Open",
+      "c-personnes-sibling": "Sister / Brother",
       "c-personnes-papa": "Dad",
       "c-personnes-maman": "Mum",
       "c-personnes-maitresse": "Teacher",
@@ -893,6 +933,7 @@ export const LOCALES = {
       "c-actions-laver": "Lavar",
       "c-actions-dessiner": "Dibujar",
       "c-actions-ouvrir": "Abrir",
+      "c-personnes-sibling": "Hermana / Hermano",
       "c-personnes-papa": "Papá",
       "c-personnes-maman": "Mamá",
       "c-personnes-maitresse": "Maestra",
@@ -1059,6 +1100,7 @@ export const LOCALES = {
       "c-actions-laver": "Lavare",
       "c-actions-dessiner": "Disegnare",
       "c-actions-ouvrir": "Aprire",
+      "c-personnes-sibling": "Sorella / Fratello",
       "c-personnes-papa": "Papà",
       "c-personnes-maman": "Mamma",
       "c-personnes-maitresse": "Maestra",
@@ -1188,6 +1230,7 @@ export const LOCALES = {
       "c-actions-laver": "Wassen",
       "c-actions-dessiner": "Tekenen",
       "c-actions-ouvrir": "Openen",
+      "c-personnes-sibling": "Zus / Broer",
       "c-personnes-papa": "Papa",
       "c-personnes-maman": "Mama",
       "c-personnes-maitresse": "Juf",
@@ -1317,6 +1360,7 @@ export const LOCALES = {
       "c-actions-laver": "Lavar",
       "c-actions-dessiner": "Desenhar",
       "c-actions-ouvrir": "Abrir",
+      "c-personnes-sibling": "Irmã / Irmão",
       "c-personnes-papa": "Pai",
       "c-personnes-maman": "Mãe",
       "c-personnes-maitresse": "Professora",
@@ -1514,6 +1558,7 @@ export const LOCALES = {
       "c-actions-laver": "Yıkamak",
       "c-actions-dessiner": "Resim yapmak",
       "c-actions-ouvrir": "Açmak",
+      "c-personnes-sibling": "Kız kardeş / Erkek kardeş",
       "c-personnes-papa": "Baba",
       "c-personnes-maman": "Anne",
       "c-personnes-maitresse": "Öğretmen",
@@ -1711,6 +1756,7 @@ export const LOCALES = {
       "c-actions-laver": "洗",
       "c-actions-dessiner": "画画",
       "c-actions-ouvrir": "打开",
+      "c-personnes-sibling": "姐姐 / 哥哥",
       "c-personnes-papa": "爸爸",
       "c-personnes-maman": "妈妈",
       "c-personnes-maitresse": "老师",

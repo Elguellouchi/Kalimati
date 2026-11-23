@@ -11,17 +11,19 @@ export const GRAMMAR = {
   social: { label: 'Mots sociaux / urgences', color: '#E91E63' },
 };
 
+// v10.24 : « ar » = la même darija en lettres arabes (celle que lit la voix arabe), « dr » = lettres
+// latines. Le réglage parent « Écriture darija » choisit celle qui s'affiche.
 export const CATEGORIES = [
-  { id: 'base', fr: 'Essentiel', dr: 'Lmouhim', color: '#F4B400' },
-  { id: 'manger', fr: 'Manger', dr: 'Makla', color: '#F57C00' },
-  { id: 'boire', fr: 'Boire', dr: 'Chrab', color: '#0288D1' },
-  { id: 'jouer', fr: 'Jouer', dr: 'L3ab', color: '#43A047' },
-  { id: 'actions', fr: 'Actions', dr: 'Af3al', color: '#2E7D32' },
-  { id: 'personnes', fr: 'Personnes', dr: 'Nas', color: '#FBC02D' },
-  { id: 'besoins', fr: 'Besoins', dr: 'Hajat', color: '#8E24AA' },
-  { id: 'emotions', fr: 'Émotions', dr: 'Ihsas', color: '#E91E63' },
-  { id: 'decrire', fr: 'Décrire', dr: 'Wsef', color: '#1565C0' },
-  { id: 'lieux', fr: 'Lieux', dr: 'Blayes', color: '#00897B' },
+  { id: 'base', fr: 'Essentiel', dr: 'Lmouhim', ar: 'الأساسيات', color: '#F4B400' },
+  { id: 'manger', fr: 'Manger', dr: 'Makla', ar: 'الماكلة', color: '#F57C00' },
+  { id: 'boire', fr: 'Boire', dr: 'Chrab', ar: 'الشرب', color: '#0288D1' },
+  { id: 'jouer', fr: 'Jouer', dr: 'L3ab', ar: 'اللعب', color: '#43A047' },
+  { id: 'actions', fr: 'Actions', dr: 'Af3al', ar: 'الأفعال', color: '#2E7D32' },
+  { id: 'personnes', fr: 'Personnes', dr: 'Nas', ar: 'الناس', color: '#FBC02D' },
+  { id: 'besoins', fr: 'Besoins', dr: 'Hajat', ar: 'الحاجات', color: '#8E24AA' },
+  { id: 'emotions', fr: 'Émotions', dr: 'Ihsas', ar: 'الإحساسات', color: '#E91E63' },
+  { id: 'decrire', fr: 'Décrire', dr: 'Wsef', ar: 'التوصيف', color: '#1565C0' },
+  { id: 'lieux', fr: 'Lieux', dr: 'Blayes', ar: 'البلايص', color: '#00897B' },
 ];
 
 // v9.8 : cartes de départ neutres pour un nouveau téléphone (les téléphones déjà installés gardent leurs cartes).

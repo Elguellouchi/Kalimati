@@ -1,11 +1,17 @@
-// v10.14 : textes des espaces Jeux, Ma journée et Émotions.
-// Français et darija (les deux langues de l'enfant) ; les autres langues gardent le français
-// sur ces écrans, comme le reste des réglages adultes. Aucun texte n'est envoyé au serveur.
-// La darija est générée hors ligne par tools/gen-darija-i18n.mjs (OpenAI) et rangée dans section-i18n-dr.js.
-// v10.26 : l'arabe standard rejoint la darija sur ces écrans (traductions déjà faites dans le Drive,
-// tools/gen-darija-i18n.mjs --langue ar → section-i18n-ar.js). Les autres langues étrangères gardent
-// le français ici tant qu'aucune traduction n'a été préparée pour elles.
+// v10.24 : textes des espaces Jeux, Ma journée, Émotions et Cabinet — en darija et en arabe.
+// Avant, seule la darija sortait d'ici et tout le reste retombait sur le français : un parent qui
+// choisissait « العربية » ou « Español » voyait ses mots traduits mais des titres de sections français.
+// L'écran enfant est donc traduit en arabe aussi ; les autres langues étrangères (en, es, de…) gardent
+// le français ici, comme les réglages adultes.
+// La darija a deux écritures : lettres arabes par défaut (la voix arabe lit ce qui s'affiche), lettres
+// latines si le parent les préfère (Réglages parent → Écriture darija).
+// Généré hors ligne par tools/gen-darija-i18n.mjs (OpenAI) : section-i18n-dr.js (latin),
+// section-i18n-dr-ar.js (darija en lettres arabes), section-i18n-ar.js (arabe standard).
+// Les tables sont lues par nom (« TX_DRA », « GOAL_AR »…) : une langue qui en manque une reste
+// silencieuse plutôt que de casser l'ouverture de l'application.
+import { getDarijaScript } from './languages.js';
 import * as DR_LATIN from './section-i18n-dr.js';
+import * as DR_ARABE from './section-i18n-dr-ar.js';
 import * as ARABE from './section-i18n-ar.js';
 
 const TX = {
@@ -14,6 +20,8 @@ const TX = {
     back: '← Retour',
     starsOfFive: '{n} étoile{s} sur 5',
     loading: 'Chargement…',
+    childPlaceholder: 'Mon enfant',
+    languagesCount: '{n} langues',
     adultLocked: '🔒 Avec un adulte',
     gamesTitle: '🎮 Les jeux pour {name}',
     gamesParentHint: 'Pour l’adulte : choisissez l’intervenant et le lieu, puis un jeu.',
@@ -153,31 +161,36 @@ const TX = {
 
 // Le pluriel darija et arabe ne prennent pas de « s » latin : les appelants passent s = '' pour elles.
 
-// Les fichiers générés nomment leurs tables d'après la langue : *_DR (darija), *_AR (arabe standard).
-// Une table qui manque laisse le français, sans casser l'ouverture de l'application.
-const LANGUES = { dr: { mod: DR_LATIN, suf: 'DR' }, ar: { mod: ARABE, suf: 'AR' } };
+// Les trois fichiers générés nomment leurs tables d'après la langue : *_DR (darija latine),
+// *_DRA (darija en lettres arabes), *_AR (arabe standard).
+const LANGUES = {
+  dr: () => (getDarijaScript() === 'latin' ? { mod: DR_LATIN, suf: 'DR' } : { mod: DR_ARABE, suf: 'DRA' }),
+  ar: () => ({ mod: ARABE, suf: 'AR' }),
+};
+
 const LOTS = new Map();
 function tablesFor(lang) {
-  if (!LANGUES[lang]) return null;
-  if (!LOTS.has(lang)) {
-    const { mod, suf } = LANGUES[lang];
-    LOTS.set(lang, {
-      ui: mod[`TX_${suf}`] || {},
-      goal: mod[`GOAL_${suf}`] || {},
-      section: mod[`SECTION_${suf}`] || {},
-      emotion: mod[`EMOTION_${suf}`] || {},
-      situation: mod[`SITUATION_${suf}`] || {},
-      story: mod[`STORY_${suf}`] || {},
-      routine: mod[`ROUTINE_TEXT_${suf}`] || {},
-      theme: mod[`THEME_${suf}`] || {},
+  const cle = `${lang}|${getDarijaScript()}`;
+  if (!LOTS.has(cle)) {
+    const t = LANGUES[lang] ? LANGUES[lang]() : null;
+    LOTS.set(cle, !t ? null : {
+      ui: t.mod[`TX_${t.suf}`] || {},
+      goal: t.mod[`GOAL_${t.suf}`] || {},
+      section: t.mod[`SECTION_${t.suf}`] || {},
+      emotion: t.mod[`EMOTION_${t.suf}`] || {},
+      situation: t.mod[`SITUATION_${t.suf}`] || {},
+      story: t.mod[`STORY_${t.suf}`] || {},
+      routine: t.mod[`ROUTINE_TEXT_${t.suf}`] || {},
+      theme: t.mod[`THEME_${t.suf}`] || {},
     });
   }
-  return LOTS.get(lang);
+  return LOTS.get(cle);
 }
-// La darija garde en priorité ce que la famille a écrit elle-même sur ses cartes.
-const ecritDarija = (lang) => lang === 'dr';
 
-// Titre d'un objectif : dans la langue de l'enfant si elle existe, sinon le titre français (référence clinique du PEI).
+const ecritureLatine = (lang) => lang === 'dr' && getDarijaScript() === 'latin';
+
+// Titre d'un objectif ABA : dans la langue de l'enfant si elle existe, sinon le titre français
+// (référence clinique du PEI, que l'orthophoniste retrouve).
 export function goalTitle(goal, lang) {
   const t = tablesFor(lang);
   return (t && t.goal[goal.id]) || goal.title;
@@ -206,8 +219,8 @@ export function routineLabel(routine, lang) {
   if (!t) return routine.title;
   if (routine.id === 'weekend') {
     const city = /^Week-end à (.+)$/.exec(routine.title || '');
-    // Le nom de la ville est tapé par la famille : il reste tel quel, seule la formule change.
-    if (city) return ecritDarija(lang) ? `Week-end f ${city[1]}` : `ويكاند ف ${city[1]}`;
+    // Le nom de la ville est un mot que la famille a tapé : on le garde tel quel, seule la formule change.
+    if (city) return ecritureLatine(lang) ? `Week-end f ${city[1]}` : `ويكاند ف ${city[1]}`;
     return tx('routineWeekend', lang);
   }
   return tx(ROUTINE_KEYS[routine.id] || 'routineMorning', lang);
@@ -216,27 +229,28 @@ export function routineLabel(routine, lang) {
 export function emotionLabel(emotion, lang) {
   const t = tablesFor(lang);
   if (!t) return emotion.fr;
-  return (ecritDarija(lang) ? emotion.dr : '') || t.emotion[emotion.id] || emotion.fr;
+  // Une émotion écrite à la main par la famille garde sa priorité dans son écriture d'origine.
+  return (ecritureLatine(lang) ? emotion.dr : '') || t.emotion[emotion.id] || emotion.fr;
 }
 
 export function situationLabel(situation, lang) {
   const t = tablesFor(lang);
   if (!t) return situation.text;
-  return (ecritDarija(lang) ? situation.dr : '') || t.situation[situation.id] || situation.text;
+  return (ecritureLatine(lang) ? situation.dr : '') || t.situation[situation.id] || situation.text;
 }
 
 export function storyLabel(story, lang) {
   const t = tablesFor(lang);
   if (!t) return story.title;
-  return (ecritDarija(lang) ? story.drTitle : '') || t.story[story.id] || story.title;
+  return (ecritureLatine(lang) ? story.drTitle : '') || t.story[story.id] || story.title;
 }
 
 // Lignes des routines de la vraie vie (espace Jeux) et thèmes du jardin d'autocollants : tables indexées
-// par la phrase française, avec la darija d'origine en secours pour la darija.
+// par la phrase française, avec la darija latine d'origine en secours pour la darija seule.
 export function routineText(lang, fr, drFallback = '') {
   const t = tablesFor(lang);
   if (!t) return fr;
-  return t.routine[fr] || (ecritDarija(lang) ? (drFallback || fr) : fr);
+  return t.routine[fr] || (ecritureLatine(lang) ? drFallback : fr);
 }
 
 export function themeText(lang, fr) {

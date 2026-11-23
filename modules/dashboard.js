@@ -17,7 +17,7 @@ import { abcSummaryCard, abcScreen } from './ex-abc.js';
 import { orthoSummaryCard, orthoReportScreen } from './ortho-report.js';
 import { getAtecHistory, atecSummaryCard, atecScreen } from './atec.js';
 import { parentBetaSettingsBox } from './admin-beta.js';
-import { LANGS, isAmazighLang, isAmazighScript, AMAZIGH_SCRIPTS } from './languages.js';
+import { LANGS, isAmazighLang, isAmazighScript, AMAZIGH_SCRIPTS, DARIJA_SCRIPTS, isDarijaScript } from './languages.js';
 import { getInstalledVoicePacks, downloadAmazighVoicePack, removeAmazighVoicePack, exportDouarVoicePack, importDouarVoicePack } from './voice-packs.js';
 import { deliverBackup } from '../backup.js';
 import { errorLogSettingsBox } from './error-log.js';
@@ -159,6 +159,26 @@ function amazighScriptBox() {
     h('summary', {}, 'ⵣ Écriture amazighe (tifinagh / latin) ', helpSpeaker('Choisissez comment écrire les mots amazighs : tifinagh et lettres latines, lettres latines seules, ou tifinagh seul.')),
     h('div', { class: 'stack' },
       h('p', { class: 'note' }, 'Pour les 4 variétés amazighes : tachelhit, tamazight, tarifit et tamazight IRCAM. Les mots sont à faire relire par un locuteur natif.'),
+      select));
+}
+
+// v10.24 : écriture de la darija. Par défaut les lettres arabes — c'est ce que lit la voix arabe du
+// téléphone, et ce que reconnaît un enfant marocain scolarisé. Les lettres latines (« Bit lma »)
+// restent choisissables pour les familles qui les utilisent à la maison.
+function darijaScriptBox() {
+  const select = h('select', {
+    'aria-label': 'Écriture des mots en darija',
+    onchange: async (e) => {
+      const mode = isDarijaScript(e.target.value) ? e.target.value : 'arabe';
+      await db.setSetting('darijaScript', mode);
+      document.dispatchEvent(new CustomEvent('kalimati-darija-script', { detail: mode }));
+    },
+  }, DARIJA_SCRIPTS.map((opt) => h('option', { value: opt.id }, opt.label)));
+  db.getSetting('darijaScript').then((v) => { if (isDarijaScript(v)) select.value = v; }).catch(() => {});
+  return h('details', { class: 'card-box' },
+    h('summary', {}, '✍️ Écriture darija (arabe / latin) ', helpSpeaker('Choisissez comment écrire les mots en darija : lettres arabes, ou lettres latines.')),
+    h('div', { class: 'stack' },
+      h('p', { class: 'note' }, 'Lettres arabes : ce que voit l’enfant est ce que dit la voix arabe. Les titres des jeux, de « Ma journée » et des domaines ABA suivent le même choix. Rien ne change aux mots enregistrés ni aux fiches du thérapeute.'),
       select));
 }
 
@@ -388,6 +408,7 @@ export function dashboardScreen(nav) {
       // v10.16 : fiche de suivi pseudonymisée pour le cabinet du thérapeute (sur toucher explicite).
       safePart('Partage thérapeute', () => followupShareBox()),
       safePart('Voix', () => voiceSettingsBox()),
+      safePart('Écriture darija', () => darijaScriptBox()),
       safePart('Écriture amazighe', () => amazighScriptBox()),
       safePart('Voix amazighes', () => amazighVoicePacksBox()),
       // v10.8 : journal d'erreurs (dans le téléphone, anonyme), à lire avant chaque amélioration.

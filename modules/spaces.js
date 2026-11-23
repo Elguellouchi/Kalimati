@@ -30,6 +30,7 @@ import { storiesView } from './stories.js';
 import { orthoScreen } from './ex-ortho.js';
 import { hygieneHubScreen } from './ex-hygiene.js';
 import { tx, sectionLabel, goalTitle, routineText } from './section-i18n.js';
+import { cardWord } from './languages.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -46,7 +47,7 @@ export const routines = (lang = 'fr') => {
     { title: L('🏠 Maison & Habillage', '🏠 Dar w lbas'), items: [['U.1', '👕', L('Je m’habille', 'Kanlbess')], ['U.2', '🧥', L('Je ferme mon vêtement', 'Kansedd lbasi')], ['U.3', '👟', L('Mes chaussures', 'Sbbati')], ['U.4', '🌦️', L('Habits selon la météo', 'Lbas 3la 7sab t-t9s')]] },
     { title: L('🫧 Hygiène & Soins du corps (10 routines)', '🫧 Nadafa w soins (10 routines)'), items: [['W.4', '🫧', L('Toutes mes routines hygiène (Douche, Ongles, Shampoing…)', 'Routines d nadafa (douche, dfar, shampoing…)')], ['W.1', '🧼', L('Je me lave les mains (7 étapes)', 'Kanġsel yeddiya (7 khatwat)')], ['W.2', '😊', L('Je me lave le visage (6 étapes)', 'Kanġsel wejhi (6 khatwat)')], ['W.3', '🪥', L('Je me brosse les dents (8 étapes)', 'Kann99i snani (8 khatwat)')]] },
     { title: L('🚽 Toilettes', '🚽 Bit l ma'), items: [['X.3', '⏰', L('Rappel et journal', 'T-tnimma w l journal')], ['X.2', '🧻', L('Après les toilettes', 'Men be3d bit l ma')], ['X.1', '🌟', L('Mes demandes', 'Talabat dyali')]] },
-    { title: L('✂️ Ateliers', '✂️ Ateliers'), items: [['Z.2', '✂️', L(`Atelier découpage d'${firstName()}`, `Atelier d 9ta3 d ${firstName()}`)], ['Z.3', '📿', L('J’enfile des perles', 'Kandkhel l7beb')]] },
+    { title: L('✂️ Ateliers', '✂️ Ateliers'), items: [['Z.2', '✂️', L(`Atelier découpage d'${firstName()}`, `Atelier d 9ta3 d ${firstName('dr')}`)], ['Z.3', '📿', L('J’enfile des perles', 'Kandkhel l7beb')]] },
   ];
 };
 
@@ -171,7 +172,7 @@ export function createNavigator(app) {
   function sessionHome() {
     const L = app.state.lang;
     return h('div', { class: 'screen' }, header(''), friendBanner('session'),
-      h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, tx('gamesTitle', L, { name: firstName() })), h('p', { class: 'note' }, tx(app.state.parent ? 'gamesParentHint' : 'gamesKidHint', L)))),
+      h('div', { class: 'space-intro' }, nour({ pose: 'wave', size: 70 }), h('div', {}, h('h2', {}, tx('gamesTitle', L, { name: firstName(L) })), h('p', { class: 'note' }, tx(app.state.parent ? 'gamesParentHint' : 'gamesKidHint', L)))),
       starBar(L),
       adultClinicBar(),
       h('button', { type: 'button', class: 'section-tile big ortho-tile', onclick: () => go(orthoHome) }, h('span', { class: 'emoji' }, '🗣️'), h('span', {}, tx('orthoTitle', L)),
@@ -187,7 +188,7 @@ export function createNavigator(app) {
     const planning = scheduleView({ isParent: () => app.state.parent, lang: () => app.state.lang, onCleanup: (fn) => cleanups.push(fn) });
     const L = app.state.lang;
     return h('div', { class: 'screen' }, header(''), friendBanner('routines'),
-      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, tx('dayTitle', L, { name: firstName() })), h('p', { class: 'note' }, tx('daySub', L)))),
+      h('div', { class: 'space-intro' }, h('div', {}, h('h2', {}, tx('dayTitle', L, { name: firstName(L) })), h('p', { class: 'note' }, tx('daySub', L)))),
       planning,
       h('details', { class: 'more-day' }, h('summary', {}, tx('otherActivities', L)),
         adultClinicBar(),
@@ -220,7 +221,12 @@ export function createNavigator(app) {
   function emotionsHome() {
     const L = app.state.lang;
     const head = header('');
-    const family = [['person:child', firstName()], ['person:sibling', sisterName()], ['person:papa', 'Papa'], ['person:maman', 'Maman']];
+    const familyWord = (vkey, fallback) => {
+      const card = app.state.cards.find((c) => c.visualKey === vkey);
+      return card ? cardWord(card, L) : fallback;
+    };
+    const family = [['person:child', firstName(L)], ['person:sibling', familyWord('person:sibling', sisterName())],
+      ['person:papa', familyWord('person:papa', 'Papa')], ['person:maman', familyWord('person:maman', 'Maman')]];
     return h('div', { class: 'screen' },
       head, friendBanner('emotions'), h('h2', {}, tx('emotionsTitle', L)),
       h('div', { class: 'family-table' }, family.map(([vkey, label]) => h('div', { class: 'family-seat' }, renderVisual({ vkey, label }), h('span', {}, label)))),

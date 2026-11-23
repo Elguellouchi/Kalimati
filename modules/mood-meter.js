@@ -10,6 +10,11 @@ import { EMOTIONS, ZONE, renderVisual } from './visuals.js';
 import { COPING_CHOICES } from './ex-schedule.js';
 import { praise } from './widgets.js';
 import { tx } from './section-i18n.js';
+import { formatDarijaText } from './languages.js';
+
+// v10.24 : la voix arabe lit les lettres arabes ; l'affichage darija suit l'écriture du réglage parent.
+const voiceOf = (lang) => (lang === 'dr' || lang === 'ar' ? 'ar' : 'fr');
+const copingLabel = (c, lang) => (lang === 'dr' ? (formatDarijaText({ ar: c[3], dr: c[2] }) || c[1]) : lang === 'ar' ? (c[3] || c[1]) : c[1]);
 
 // id = la couleur de la zone ; key = le libellé traduit ; emotions = les visages rangés dans la case.
 export const MOOD_QUADRANTS = [
@@ -38,7 +43,7 @@ export function moodMeterView(ctx, { wordOf }) {
       onclick: () => {
         picked = quadrant;
         cells.forEach((c) => c.classList.toggle('on', c === cell));
-        speak(tx(quadrant.key, lang));
+        speak(tx(quadrant.key, lang), { lang: voiceOf(lang) });
         drawCoping();
       },
     },
@@ -53,16 +58,22 @@ export function moodMeterView(ctx, { wordOf }) {
     after.replaceChildren(
       h('div', { class: 'card-box' },
         h('h3', {}, tx('moodCoping', lang, { word: words })),
-        h('div', { class: 'mood-coping' }, choices.map((c) => h('button', {
-          type: 'button',
-          class: 'choice',
-          onclick: (e) => {
-            const text = lang === 'dr' ? c[2] : c[1];
-            speak(text);
-            after.replaceChildren(praise(tx('moodChosen', lang)),
-              h('div', { class: 'row center' }, btnBack()));
-          },
-        }, h('span', { class: 'emoji' }, c[0]), h('span', { class: 'label' }, lang === 'dr' ? c[2] : c[1]))))),
+        h('div', { class: 'mood-coping' }, choices.map((c) => {
+          const button = h('button', {
+            type: 'button',
+            class: 'choice',
+            onclick: () => {
+              speak(lang === 'fr' ? c[1] : c[3], { lang: voiceOf(lang) });
+              after.replaceChildren(praise(tx('moodChosen', lang)),
+                h('div', { class: 'row center' }, btnBack()));
+            },
+          });
+          button.append(
+            h('span', { class: 'emoji' }, c[0]),
+            h('span', { class: 'label' }, copingLabel(c, lang)),
+          );
+          return button;
+        }))),
       h('div', { class: 'row center' }, btnBack()));
   };
   const btnBack = () => h('button', { type: 'button', class: 'btn ghost tiny', onclick: () => { picked = null; cells.forEach((c) => c.classList.remove('on')); after.replaceChildren(); } }, tx('moodBack', lang));

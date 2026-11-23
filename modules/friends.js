@@ -8,6 +8,10 @@ import * as db from '../db.js';
 import { h, btn, dayKey } from './util.js';
 import { speak, playVoiceFile } from '../speech.js';
 import { tx } from './section-i18n.js';
+import { formatDarijaText } from './languages.js';
+
+// v10.24 : la phrase d'un ami suit l'écriture darija choisie au réglage parent ; l'arabe ne tombe plus en français.
+const phraseText = (p, lang) => (lang === 'dr' ? (formatDarijaText(p) || p.fr) : lang === 'ar' ? (p.ar || p.fr) : p.fr);
 
 const HIDE_FRIENDS_KEY = 'hideFriends';
 const ALBUM_KEY = 'friendsAlbum';
@@ -282,8 +286,13 @@ export function friendCompanionBanner(missionOrFriendId, { lang = 'fr', pose = '
   if (hideFriendsCached) return null;
   const f = FRIEND_BY_MISSION.get(missionOrFriendId) || FRIEND_BY_ID.get(missionOrFriendId) || FRIENDS[0];
   const p = f.phrases[phraseIndex] || f.phrases[0];
-  const textPrimary = (lang === 'dr') ? p.dr : (lang === 'ar') ? p.ar : p.fr;
-  const textSub = (lang === 'dr' || lang === 'ar') ? p.fr : p.dr;
+  const textPrimary = phraseText(p, lang);
+  // v10.24 : en darija comme en arabe, le bandeau ne garde que la langue de l'enfant — l'espèce de l'ami
+  // et son glossa français étaient écrits en dur sur tous les écrans. En français, la darija reste
+  // dessous : c'est ce que l'adulte apprend avec l'enfant (comme le bouton 🚽).
+  const langEnfant = lang === 'dr' || lang === 'ar';
+  const textSub = langEnfant ? null : p.dr;
+  const listen = tx('friendListen', lang, { name: f.name });
 
   const banner = h('button', {
     type: 'button',
@@ -297,9 +306,9 @@ export function friendCompanionBanner(missionOrFriendId, { lang = 'fr', pose = '
   },
   renderFriendSvg(f.id, { pose, size: 74 }),
   h('span', { class: 'friend-banner-text' },
-    h('strong', {}, `${f.name} ${f.species}`),
+    h('strong', {}, langEnfant ? f.name : `${f.name} ${f.species}`),
     h('span', { class: 'friend-speech' }, `« ${textPrimary} »`),
-    h('small', { class: 'friend-sub' }, `${textSub} · ${tx('friendListen', lang, { name: f.name })}`)));
+    h('small', { class: 'friend-sub' }, textSub ? `${textSub} · ${listen}` : listen)));
   return banner;
 }
 
@@ -326,7 +335,7 @@ export function friendCalmRewardCard(friendId, { lang = 'fr' } = {}) {
     renderFriendSvg(f.id, { pose: 'happy', size: 88 }),
     h('div', { class: 'stack' },
       h('strong', {}, tx('friendWon', lang, { name: f.name, species: f.species })),
-      h('p', { class: 'note' }, lang === 'dr' ? p.dr : p.fr),
+      h('p', { class: 'note' }, phraseText(p, lang)),
       h('div', { class: 'row wrap' },
         btn(tx('listenName', lang, { name: f.name }), () => sayFriendPhrase(f.id, { index: 1, lang }), 'ghost tiny'),
         btn(tx('openAlbum', lang), () => openFriendsAlbumModal(lang), 'primary tiny'))));
@@ -352,7 +361,7 @@ export async function openFriendsAlbumModal(lang = 'fr') {
     h('strong', {}, `${unlocked ? '🌟 ' : '🔒 '}${f.name}`),
     h('small', {}, f.species),
     h('span', { class: 'album-mission-tag' }, f.missionLabel),
-    h('p', { class: 'album-phrase' }, unlocked ? (lang === 'dr' ? p.dr : p.fr) : tx('albumLocked', lang)));
+    h('p', { class: 'album-phrase' }, unlocked ? phraseText(p, lang) : tx('albumLocked', lang)));
   });
 
   dialog.append(

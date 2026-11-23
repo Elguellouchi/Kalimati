@@ -15,6 +15,7 @@ import { draggable, hitTest } from './drag.js';
 import { levelOf } from './levels.js';
 import { renderVisual } from './visuals.js';
 import { unlockFriendSticker } from './friends.js';
+import { formatDarijaText, isDarijaArabicScript } from './languages.js';
 
 const stepItem = (prefix, [id, emoji, fr, dr, ar, timerSec = 0]) => ({
   id, emoji, fr, dr, ar, timerSec, vkey: `hyg:${prefix}:${id}`,
@@ -136,7 +137,7 @@ export const HYGIENE_ROUTINES = [
       ['eau_tiede', '💧', 'Ouvrir l’eau tiède et mouiller mes mains ou mon gant', 'Nfezzeg idiya wla l fouta b ma dafi', 'نفزك يديا ولا الفوطة بما دافي'],
       ['yeux', '😌', 'Fermer les yeux et laver doucement le coin des yeux', 'Nsedd 3iniya w nmse7hom b chwiya', 'نسد عينيا ونمسحهم بشوية'],
       ['front_joues', '😊', 'Passer l’eau sur le front, les joues et le menton', 'Nghsel jbehti w 7naki', 'نغسل جبهتي وحناكي'],
-      ['bouche_nez', '👄', 'Nettoyer autour de la bouche et du nez', 'Nغسل داير بفمي و نيفي', 'نغسل داير بفمي ونيفي'],
+      ['bouche_nez', '👄', 'Nettoyer autour de la bouche et du nez', 'Nghsel dayer b fmmi w nifi', 'نغسل داير بفمي ونيفي'],
       ['fermer_v', '🚰', 'Fermer le robinet', 'Nsedd robini', 'نسد الروبيني'],
       ['tamponner', '🧖‍♀️', 'Tamponner mon visage avec ma serviette douce', 'Nnechef wejhi b l fouta rteba', 'ننشف وجهي بالفوطة رطبة'],
     ].map((s) => stepItem('visage', s)),
@@ -146,7 +147,7 @@ export const HYGIENE_ROUTINES = [
     goalId: 'W.2',
     emoji: '🤧',
     title: 'Se moucher le nez',
-    drTitle: 'Nمسح نيفي',
+    drTitle: 'Nmse7 nifi',
     arTitle: 'نمسح نيفي',
     sub: '6 étapes pour apprendre à souffler par le nez et se laver les mains',
     sensoryTip: 'Adaptation sensorielle : mouchoirs extra-doux (boîte illustrée), s’entraîner à souffler une plume avec le nez bouche fermée.',
@@ -189,11 +190,11 @@ export const HYGIENE_ROUTINES = [
     steps: [
       ['bismillah', '🤲', 'Dire « Bismillah » et se laver les mains (3 fois)', 'Ngoul bismillah w nghsel idiya 3 mrat', 'نقول بسم الله ونغسل يديا 3 مرات'],
       ['bouche_w', '👄', 'Se rincer la bouche avec de l’eau (3 fois)', 'Nmedmed fommi 3 mrat', 'نمضمض فمي 3 مرات'],
-      ['nez_w', '👃', 'Mettre un peu d’eau au bout du nez et souffler (3 fois)', 'Nستنشق الماء 3 مرات', 'نستنشق الما 3 مرات'],
+      ['nez_w', '👃', 'Mettre un peu d’eau au bout du nez et souffler (3 fois)', 'Nstensheq l ma 3 mrat', 'نستنشق الما 3 مرات'],
       ['visage_w', '😊', 'Se laver tout le visage (3 fois)', 'Nghsel wejhi 3 mrat', 'نغسل وجهي 3 مرات'],
       ['bras_w', '💪', 'Laver le bras droit puis le bras gauche jusqu’au coude (3 fois)', 'Nghsel yeddi limna w lisra 7tta l lmerfe9', 'نغسل يدي اليمنى واليسرى حتى للمرفق'],
-      ['tete_w', '🙆‍♀️', 'Passer les mains mouillées sur la tête (1 fois)', 'Nمسح على راسي', 'نمسح على راسي'],
-      ['oreilles_w', '👂', 'Nettoyer doucement les deux oreilles avec les doigts mouillés', 'Nمسح ودنيا بجوج', 'نمسح ودنيا بجوج'],
+      ['tete_w', '🙆‍♀️', 'Passer les mains mouillées sur la tête (1 fois)', 'Nmse7 3la rasi', 'نمسح على راسي'],
+      ['oreilles_w', '👂', 'Nettoyer doucement les deux oreilles avec les doigts mouillés', 'Nmse7 wdunya b jouj', 'نمسح ودنيا بجوج'],
       ['pieds_w', '🦶', 'Laver le pied droit puis le pied gauche jusqu’aux chevilles (3 fois)', 'Nghsel rejli limna w lisra', 'نغسل رجلي اليمنى واليسرى'],
       ['tapis_w', '🧎‍♀️', 'S’essuyer et aller prier calme sur le tapis', 'Nnechef w nmchi nsalli 3la zerbiya', 'ننشف ونمشي نصلي على الزربية'],
     ].map((s) => stepItem('ablutions', s)),
@@ -203,26 +204,36 @@ export const HYGIENE_ROUTINES = [
     goalId: 'W.4',
     emoji: '👂',
     title: 'Oreilles, lèvres & corps propre',
-    drTitle: 'ودنيا و حوايجي نقيين',
+    drTitle: 'Wdunya w 7wayji n9iyin',
     arTitle: 'ودنيا وحوايجي نقيين',
     sub: '6 étapes d’hygiène fine : pavillon des oreilles, baume à lèvres, habits propres',
     sensoryTip: 'Adaptation sensorielle : nettoyer uniquement l’extérieur de l’oreille avec le coin d’une serviette humide (jamais de coton-tige profond).',
     steps: [
-      ['oreilles_ext', '👂', 'Essuyer doucement le bord et derrière les oreilles avec la serviette', 'Nمسح ودنيا و مورا ودنيا بالفوطة', 'نمسح ودنيا ومورا ودنيا بالفوطة'],
-      ['yeux_coins', '👀', 'Vérifier que les yeux et le cou sont bien propres', 'Nمسح عينيا و عنقي', 'نمسح عينيا وعنقي'],
+      ['oreilles_ext', '👂', 'Essuyer doucement le bord et derrière les oreilles avec la serviette', 'Nmse7 wdunya w mora wdunya b l fouta', 'نمسح ودنيا ومورا ودنيا بالفوطة'],
+      ['yeux_coins', '👀', 'Vérifier que les yeux et le cou sont bien propres', 'Nmse7 3yniya w 3on9i', 'نمسح عينيا وعنقي'],
       ['levres', '💄', 'Mettre un peu de baume si mes lèvres sont sèches', 'Ndir mrteb chfayef ila kanou nachfin', 'ندير مرطب الشفاه إلى كانو ناشفين'],
       ['creme', '🧴', 'Mettre un peu de crème douce sur mes mains ou mes joues', 'Ndir crème f idiya w 7naki', 'ندير كريم رطب فيديا وحناكي'],
       ['sous_vet', '🩲', 'Mettre une culotte et des chaussettes propres chaque jour', 'Nlbes t9acher w 7wayej dakhliya n9iya', 'نلبس تقاشر وملابس داخلية نقية'],
-      ['sentir_bon', '🌸', 'Vérifier que mes vêtements sont propres et sentir bon', 'Nلبس حوايج نقيين و زوينين', 'نلبس حوايج نقيين وزوينين'],
+      ['sentir_bon', '🌸', 'Vérifier que mes vêtements sont propres et sentir bon', 'Nlbes 7wayj n9iyin w zwinin', 'نلبس حوايج نقيين وزوينين'],
     ].map((s) => stepItem('soins', s)),
   },
 ];
 
 export const getHygieneRoutine = (id) => HYGIENE_ROUTINES.find((r) => r.id === id) || HYGIENE_ROUTINES[0];
 
-const arabicVoice = (lang) => lang === 'dr' && hasArabicVoice();
-const stepLabel = (step, lang) => (lang === 'dr' ? step.dr : step.fr);
+const arabicVoice = (lang) => (lang === 'dr' || lang === 'ar') && hasArabicVoice();
+const stepLabel = (step, lang) => (lang === 'dr'
+  ? (formatDarijaText(step) || step.fr)
+  : lang === 'ar' ? (step.ar || step.fr) : step.fr);
 const sayStep = (step, lang) => (arabicVoice(lang) && step.ar ? speak(step.ar, { lang: 'ar' }) : speak(step.fr));
+// v10.24 : l'écriture affichée suit le réglage parent. En lettres latines, les deux écritures restent
+// côte à côte sur le titre (pépite 2 : bilinguisme sans déplacement) ; sur les tuiles, une seule ligne.
+const routineTitle = (routine, lang) => (lang === 'dr'
+  ? (isDarijaArabicScript() ? routine.arTitle || routine.title : `${routine.drTitle} · ${routine.arTitle}`)
+  : lang === 'ar' ? routine.arTitle || routine.title : routine.title);
+const routineShort = (routine, lang) => (lang === 'dr'
+  ? formatDarijaText({ ar: routine.arTitle, dr: routine.drTitle })
+  : lang === 'ar' ? routine.arTitle || routine.title : routine.title);
 const stepVisual = (step, button = false) => renderVisual({ vkey: step.vkey, emoji: step.emoji, label: step.fr }, { button });
 function shake(el) { el.classList.remove('shake-soft'); void el.offsetWidth; el.classList.add('shake-soft'); }
 
@@ -335,13 +346,15 @@ function hygieneNextStep(routine, ctx) {
     const far = shuffle(steps.filter((s) => ![current, answer, ...near].includes(s)));
     const distractors = [...near, ...far].slice(0, steps.length >= 6 ? 3 : 2);
     const question = `Je viens de : ${current.fr.toLowerCase()}. Qu’est-ce que je fais ensuite ?`;
-    const darija = `كملت: ${current.ar}. شنو ندير من بعد؟`;
-    const ask = () => (arabicVoice(ctx.lang) ? speak(darija, { lang: 'ar' }) : speak(question));
+    // v10.24 : la consigne de séquençage s'écrit dans l'écriture darija choisie, la voix garde les lettres arabes.
+    const darijaAr = `كملت: ${current.ar}. شنو ندير من بعد؟`;
+    const darija = isDarijaArabicScript() ? darijaAr : `Kmelt: ${current.dr}. Shno ndir men be3d?`;
+    const ask = () => (arabicVoice(ctx.lang) ? speak(darijaAr, { lang: 'ar' }) : speak(question));
     const after = h('div', { class: 'row center' });
     ask();
     root.replaceChildren(
-      h('p', { class: 'ask' }, question, btn('🔊', ask, 'ghost tiny')),
-      ctx.lang === 'dr' ? h('p', { class: 'note', dir: 'rtl' }, darija) : null,
+      h('p', { class: 'ask' }, ctx.lang === 'dr' ? darija : question, btn('🔊', ask, 'ghost tiny')),
+      ctx.lang === 'dr' && !isDarijaArabicScript() ? h('p', { class: 'note', dir: 'rtl' }, darijaAr) : null,
       h('div', { class: 'big-card model-card' }, stepVisual(current), h('span', { class: 'label' }, stepLabel(current, ctx.lang))),
       choiceBoard({
         cols: 2,
@@ -423,7 +436,7 @@ function hygieneReal(routine, ctx) {
       h('button', { type: 'button', class: 'big-card toilet-now', onclick: () => sayStep(step, ctx.lang) },
         stepVisual(step, true),
         h('span', { class: 'label' }, stepLabel(step, ctx.lang)),
-        ctx.lang === 'dr' ? h('small', { dir: 'rtl' }, step.ar) : h('small', { class: 'note' }, step.dr)),
+        ctx.lang === 'dr' && !isDarijaArabicScript() ? h('small', { class: 'note' }, step.ar) : null),
       step.timerSec ? stepBubbles(step.timerSec, () => go(index + 1)) : null,
       routine.hasNailCounter && (step.id === 'main_gauche' || step.id === 'main_droite' || step.id === 'pieds')
         ? nailCounterWidget(ctx.lang)
@@ -449,7 +462,7 @@ export function hygieneRoutineView(routineId, ctx = {}, extraGame = null) {
 
   return h('div', { class: 'stack' },
     h('div', { class: 'card-box' },
-      h('h3', {}, `${routine.emoji} ${c.lang === 'dr' ? `${routine.drTitle} · ${routine.arTitle}` : routine.title}`),
+      h('h3', {}, `${routine.emoji} ${routineTitle(routine, c.lang)}`),
       h('p', { class: 'note' }, routine.sub),
       // === [DEBUT MODIF v10.5 : 4.19 · F05 — Conseil sensoriel adulte replié en mode enfant] ===
       c.parent
@@ -479,7 +492,7 @@ export function hygieneHubScreen(ctx = {}, initialRoutineId = null) {
           onclick: () => { activeId = r.id; render(); },
         },
         h('span', { class: 'emoji' }, r.emoji),
-        h('strong', {}, c.lang === 'dr' ? r.drTitle : r.title),
+        h('strong', {}, routineShort(r, c.lang)),
         h('small', { class: 'note' }, `${r.steps.length} étapes`)))));
       return;
     }

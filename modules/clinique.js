@@ -9,7 +9,7 @@ import { startListening, startRecording, canRecord, resizePhoto, playBeep } from
 import { setSetting, getSetting, getAllLifeBook, putLifeBook } from '../db.js';
 import { tx } from './section-i18n.js';
 import { clinicT } from './clinic-i18n.js';
-import { cardWord } from './languages.js';
+import { cardWord, formatDarijaText } from './languages.js';
 import { visualKeyOf } from '../data.js';
 
 let activeRoot = null;
@@ -155,8 +155,9 @@ const MATRICES = [
   },
 ];
 
+// v10.24 : les libellés des ateliers suivent l'écriture darija choisie au réglage parent.
 function itemLabel(item, lang) {
-  return lang === 'dr' ? item.dr : item.fr;
+  return lang === 'dr' ? (formatDarijaText(item) || item.fr) : lang === 'ar' ? (item.ar || item.fr) : item.fr;
 }
 
 function speakPhrase(ctx, matrix, item) {
@@ -740,7 +741,7 @@ function urgentTool(ctx) {
   const grid = h('div', { class: 'clinic-urgent' }, URGENT_CARDS.map(([emoji, fr, dr, ar]) => {
     const b = h('button', { type: 'button', class: 'clinic-urgent-card' },
       h('span', { class: 'clinic-big-emoji', 'aria-hidden': 'true' }, emoji),
-      h('span', { class: 'label' }, ctx.lang === 'dr' ? dr : fr));
+      h('span', { class: 'label' }, ctx.lang === 'dr' ? (formatDarijaText({ ar, dr }) || fr) : ctx.lang === 'ar' ? (ar || fr) : fr));
     b.onclick = () => {
       if (ctx.lang === 'dr' && hasArabicVoice()) speak(ar, { lang: 'ar' });
       else speak(fr);

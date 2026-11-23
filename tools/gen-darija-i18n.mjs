@@ -6,6 +6,10 @@
 // Usage :
 //   node tools/gen-darija-i18n.mjs --env "C:\Users\HP\My AI\crewai\.env"
 //   node tools/gen-darija-i18n.mjs --env "..." --model gpt-5.5 --seulement ui
+//   # v10.24 : darija en graphie arabe (modules/section-i18n-dr-ar.js, tables *_DRA)
+//   node tools/gen-darija-i18n.mjs --env "..." --graphie arabe
+//   # arabe standard pour les titres des domaines ABA et des jeux (modules/section-i18n-ar.js, tables *_AR)
+//   node tools/gen-darija-i18n.mjs --env "..." --langue ar
 import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
@@ -20,7 +24,16 @@ const opt = (name, def) => { const i = args.indexOf(name); return i >= 0 ? args[
 const envPath = opt('--env', path.join(root, 'scripts', 'voix-openai', '.env'));
 const MODEL = opt('--model', 'gpt-5.5');
 const ONLY = opt('--seulement', '');
-const OUT = opt('--out', path.join(root, 'modules', 'section-i18n-dr.js'));
+// v10.24 : la même chaîne fabrique la darija en lettres latines (historique), la darija en graphie
+// arabe (ce que lit l'enfant marocain scolarisé, et ce que dit la voix arabe) et l'arabe standard.
+const LANGUE = opt('--langue', 'dr');
+const GRAPHIE = opt('--graphie', LANGUE === 'dr' ? 'latine' : 'arabe');
+if (!['dr', 'ar'].includes(LANGUE)) { console.error(`--langue inconnu : ${LANGUE} (dr ou ar)`); process.exit(1); }
+if (!['latine', 'arabe'].includes(GRAPHIE)) { console.error(`--graphie inconnue : ${GRAPHIE} (latine ou arabe)`); process.exit(1); }
+// Suffixe des tables exportées, pour que les trois fichiers coexistent sans se marcher dessus.
+const SUFFIX = opt('--suffix', LANGUE === 'ar' ? 'AR' : (GRAPHIE === 'arabe' ? 'DRA' : 'DR'));
+const OUT = opt('--out', path.join(root, 'modules', LANGUE === 'ar' ? 'section-i18n-ar.js'
+  : (GRAPHIE === 'arabe' ? 'section-i18n-dr-ar.js' : 'section-i18n-dr.js')));
 
 function keyFromEnv() {
   const text = fs.existsSync(envPath) ? fs.readFileSync(envPath, 'utf8') : '';
@@ -107,55 +120,130 @@ const groups = {
 };
 
 // --- Appel OpenAI ------------------------------------------------------------
-const SYSTEM = [
-  'Tu es traducteur natif marocain (darija de Rabat-Salé) et rédacteur pour une application de communication alternative (CAA)',
-  'utilisée par une petite fille de 8 ans avec autisme et sa famille. Tu traduis du français vers la darija marocaine.',
+const SCRIPT_RULES = {
+  latine: [
+    '- Écris UNIQUEMENT en lettres latines, avec les chiffres conventionnels : 7 = ح, 3 = ع, 9 = ق, 2 = ء/أ, ġ = غ, kh, ch, ou.',
+    '- Jamais de caractères arabes, jamais d’explication, jamais de ponctuation superflue.',
+  ],
+  arabe: [
+    '- Écris UNIQUEMENT en graphie arabe, telle qu’elle est écrite au Maroc, sans voyelles courtes (harakat).',
+    '- N’utilise JAMAIS les chiffres 3, 7, 9, 2 à la place des lettres, ni une translittération latine.',
+    '- Jamais d’explication, jamais de ponctuation superflue.',
+  ],
+};
+
+// Vocabulaire imposé et style de référence, dans l'écriture demandée.
+const DR_VOCABULAIRE = {
+  latine: [
+    '',
+    'Vocabulaire imposé (garde ces mots darija partout) :',
+    'accueil = Dar ; jeu/jeux/jouer = l3ba/l3ab/tl3ab ; exercice = tamrin ; activité = nachat ; niveau = mostawa ;',
+    'critère = chort ; adulte/parent = kbir/l kbar ; photo/image = tswira/tswrat ; histoire = 7kaya/7kayat ;',
+    'émotion = i7sas/i7sasat ; miroir = mraya ; texte = ktba ; tableau = planning ; sans = bla ; rupture = t9ta3 ;',
+    'étoile = njma/njoum ; jardin = jnanti ; câlin = 7dana ; une seule fois = marra wa7da ; attendre = tsenn.',
+    'Emprunts admis car utilisés par les familles : planning, séance, autocollant, sablier, téléphone, week-end, mission, routine, album, camera, réglages.',
+    '',
+    'Style de référence déjà utilisé dans l’application :',
+    '« Sba7 », « L3chiya », « Khatwa b khatwa », « Sbert mzyan b hdou2 », « Nbdaw », « Chwiya b chwiya. »,',
+    '« Mzyan bezzaf, gelti jemla dyalek! », « Nemchi l tbib », « Nfter », « Nrettab n-namousiya », « Nqra qissa ».',
+  ],
+  arabe: [
+    '',
+    'Vocabulaire imposé (en graphie arabe, garde ces mots darija partout) :',
+    'accueil = الدار ; jeu/jeux/jouer = اللعبة / نلعب ; exercice = تمرين ; activité = نشاط ; niveau = المستوى ;',
+    'critère = الشرط ; adulte/parent = الكبير / الكبار ; photo/image = الصورة ; histoire = قصة / قصص ;',
+    'émotion = الإحساس / الأحاسيس ; miroir = المرآة ; texte = الكتابة ; planning = البلانينغ ; sans = بلا ;',
+    'rupture = الانقطاع ; étoile = نجمة / نجوم ; câlin = الحضنة ; une seule fois = مرة وحدة ; attendre = صبر / تسنى.',
+    'Les mots techniques empruntés (routine, sablier, téléphone, week-end, mission, album, réglages, planning) ',
+    's’écrivent AVEC des lettres arabes, comme les familles les prononcent (روتين، التليفون، الويكاند).',
+    'Seuls les sigles PEI, ABA, ABLLS-R, PECS et Time Timer gardent leurs lettres latines : aucun autre mot latin ne doit rester.',
+    '',
+    'Style de référence déjà utilisé dans l’application, à retrouver en arabe :',
+    '« الصباح », « العشيا », « خطوة ب خطوة », « شوية بشوية », « صبرتي مزيان », « نمشي للحمام »,',
+    '« مزيان بزاف، قلتي جملة ديالك! », « نرتب النومية », « نقرا قصة ».',
+  ],
+};
+
+const AR_VOCABULAIRE = [
   '',
-  'Règles absolues :',
-  '- Darija marocaine naturelle, comme une maman qui parle à sa fille. Jamais d’arabe classique ni d’arabe oriental.',
-  '- Écris UNIQUEMENT en lettres latines, avec les chiffres conventionnels : 7 = ح, 3 = ع, 9 = ق, 2 = ء/أ, ġ = غ, kh, ch, ou.',
-  '- Jamais de caractères arabes, jamais d’explication, jamais de ponctuation superflue.',
-  '- Phrases très courtes, concrètes, positives, faciles à lire pour un enfant.',
-  '- Traduis vraiment en darija : ne garde pas un mot français quand une maman marocaine dirait le mot darija. Pas de français décalqué, pas de mot à mot.',
-  '- Quand tu parles à l’enfant, utilise le féminin singulier (ex. « rbe7ti », « 9riti », « bo7dha », « khtari »).',
-  '- Garde exactement les mêmes clés JSON, les emojis et les variables entre accolades : {name} {n} {s} {min} {ruptures} {total} {word} {text} {msg} {sister}.',
-  '- Ne traduis pas les sigles ni les noms propres : PEI, ABA, ABLLS-R, PECS, PECS phase 1, Time Timer.',
-  '',
-  'Vocabulaire imposé (garde ces mots darija partout) :',
-  'accueil = Dar ; jeu/jeux/jouer = l3ba/l3ab/tl3ab ; exercice = tamrin ; activité = nachat ; niveau = mostawa ;',
-  'critère = chort ; adulte/parent = kbir/l kbar ; photo/image = tswira/tswrat ; histoire = 7kaya/7kayat ;',
-  'émotion = i7sas/i7sasat ; miroir = mraya ; texte = ktba ; tableau = planning ; sans = bla ; rupture = t9ta3 ;',
-  'étoile = njma/njoum ; jardin = jnanti ; câlin = 7dana ; une seule fois = marra wa7da ; attendre = tsenn.',
-  'Emprunts admis car utilisés par les familles : planning, séance, autocollant, sablier, téléphone, week-end, mission, routine, album, camera, réglages.',
-  '',
-  'Style de référence déjà utilisé dans l’application :',
-  '« Sba7 », « L3chiya », « Khatwa b khatwa », « Sbert mzyan b hdou2 », « Nbdaw », « Chwiya b chwiya. »,',
-  '« Mzyan bezzaf, gelti jemla dyalek! », « Nemchi l tbib », « Nfter », « Nrettab n-namousiya », « Nqra qissa ».',
-  '',
-  'Réponds STRICTEMENT par un objet JSON valide ayant exactement les mêmes clés que l’objet fourni.',
-].join('\n');
+  'Arabe standard (fousha) simple, celui des manuels scolaires marocains pour les 8-10 ans.',
+  'Vocabulaire de référence : الدار (accueil), اللعبة / اللعب (jeu), تمرين (exercice), نشاط (activité),',
+  'المستوى (niveau), الشرط (critère), الصورة (photo), قصة (histoire), الإحساس / المشاعر (émotion),',
+  'المرآة (miroir), نجمة / نجوم (étoile), الحضنة (câlin), الانتظار (attendre), الهدوء (calme).',
+  'Les sigles PEI, ABA, ABLLS-R, PECS et « Time Timer » restent en lettres latines.',
+];
+
+function systemPrompt() {
+  const common = [
+    '- Phrases très courtes, concrètes, positives, faciles à lire pour un enfant.',
+    '- Garde exactement les mêmes clés JSON, les emojis et les variables entre accolades : {name} {n} {s} {min} {ruptures} {total} {word} {text} {msg} {sister}.',
+    '- Ne traduis pas les sigles ni les noms propres : PEI, ABA, ABLLS-R, PECS, PECS phase 1, Time Timer.',
+    '',
+    `Réponds STRICTEMENT par un objet JSON valide ayant exactement les mêmes clés que l’objet fourni.`,
+  ];
+  if (LANGUE === 'ar') {
+    return [
+      'Tu es traducteur arabe natif (Maroc) et rédacteur pour une application de communication alternative (CAA)',
+      'utilisée par une petite fille de 8 ans avec autisme. Tu traduis du français vers l’arabe standard pour enfant.',
+      '',
+      'Règles absolues :',
+      '- Arabe standard clair et très simple, jamais d’arabe oriental ni de tournure littéraire compliquée.',
+      '- Quand tu parles à l’enfant, utilise le féminin singulier.',
+      ...SCRIPT_RULES[GRAPHIE],
+      ...AR_VOCABULAIRE,
+      ...common,
+    ].join('\n');
+  }
+  return [
+    'Tu es traducteur natif marocain (darija de Rabat-Salé) et rédacteur pour une application de communication alternative (CAA)',
+    'utilisée par une petite fille de 8 ans avec autisme et sa famille. Tu traduis du français vers la darija marocaine.',
+    '',
+    'Règles absolues :',
+    '- Darija marocaine naturelle, comme une maman qui parle à sa fille. Jamais d’arabe classique ni d’arabe oriental.',
+    ...SCRIPT_RULES[GRAPHIE],
+    '- Traduis vraiment en darija : ne garde pas un mot français quand une maman marocaine dirait le mot darija. Pas de français décalqué, pas de mot à mot.',
+    '- Quand tu parles à l’enfant, utilise le féminin singulier.',
+    ...DR_VOCABULAIRE[GRAPHIE],
+    ...common,
+  ].join('\n');
+}
 
 // Deuxième passe : le modèle relit ses propres traductions et supprime les calques français.
-const REVIEW = [
-  'Tu es relecteur natif marocain (darija de Rabat-Salé). Voici des traductions français → darija d’une application pour enfants.',
-  'Réécris les valeurs qui sonnent comme du français décalqué, gardent un mot français alors qu’un mot darija courant existe,',
-  'ou utilisent une tournure qu’une maman marocaine ne dirait pas à sa fille.',
-  '',
-  'Termes déjà validés par l’équipe, à ne PAS remplacer : routine, sablier, autocollant, album, week-end, planning,',
-  'Orthophonie, PEI, ABA, ABLLS-R, PECS, téléphone, camera, mission.',
-  'Orthographe imposée : 9 pour ق, 7 pour ح, 3 pour ع, 2 pour ء, ġ pour غ ; jamais la lettre q seule ; jamais de caractères arabes.',
-  'Quand on parle à l’enfant (une fille), féminin singulier : khtari, kebsi, rbe7ti, bo7dha, sali, 3awdi, rj3i.',
-  'Si la phrase parle de l’enfant à la troisième personne, accorde au féminin.',
-  'Chargement = « Kanchargi... » ; critère = « Chort » ; jeux = « l3ab » ; exercice = « tamrin » ; texte = « ktba » ;',
-  'photo = « tswira » ; étoile = « njma » ; encore = « 3awd » ; calme = « hadi/hdoud » ; attendre = « tsenn » ;',
-  'sans = « bla » ; rupture = « t9ta3 ».',
-  '',
-  'Mêmes règles que la première traduction : latin uniquement, mêmes clés, mêmes emojis, mêmes variables {…},',
-  'sigles PEI/ABA/ABLLS-R/PECS inchangés.',
-  'Réponds STRICTEMENT par l’objet JSON complet, avec toutes les clés.',
-].join('\n');
+function reviewPrompt() {
+  const orthographe = GRAPHIE === 'latine'
+    ? 'Orthographe imposée : 9 pour ق, 7 pour ح, 3 pour ع, 2 pour ء, ġ pour غ ; jamais la lettre q seule ; jamais de caractères arabes.'
+    : 'Orthographe imposée : graphie arabe uniquement, sans harakat ; jamais les chiffres 3/7/9/2 à la place des lettres.';
+  const style = LANGUE === 'ar'
+    ? 'Arabe standard simple d’enfant, féminin singulier quand on s’adresse à elle.'
+    : 'Quand on parle à l’enfant (une fille), féminin singulier. Si la phrase parle de l’enfant à la troisième personne, accorde au féminin.';
+  return [
+    LANGUE === 'ar'
+      ? 'Tu es relecteur arabe natif (Maroc). Voici des traductions français → arabe standard d’une application pour enfants.'
+      : 'Tu es relecteur natif marocain (darija de Rabat-Salé). Voici des traductions français → darija d’une application pour enfants.',
+    LANGUE === 'ar'
+      ? 'Réécris les valeurs qui sonnent littéraires, orientales, ou trop longues pour un enfant de 8 ans.'
+      : 'Réécris les valeurs qui sonnent comme du français décalqué, gardent un mot français alors qu’un mot darija courant existe,',
+    LANGUE === 'ar' ? '' : 'ou utilisent une tournure qu’une maman marocaine ne dirait pas à sa fille.',
+    '',
+    'Termes déjà validés par l’équipe, à ne PAS remplacer : routine, sablier, autocollant, album, week-end, planning,',
+    'Orthophonie, PEI, ABA, ABLLS-R, PECS, téléphone, camera, mission.',
+    orthographe,
+    style,
+    GRAPHIE === 'latine' ? 'Chargement = « Kanchargi... » ; critère = « Chort » ; jeux = « l3ab » ; exercice = « tamrin » ; texte = « ktba » ;' : '',
+    GRAPHIE === 'latine' ? 'photo = « tswira » ; étoile = « njma » ; encore = « 3awd » ; calme = « hadi/hdoud » ; attendre = « tsenn » ;' : '',
+    GRAPHIE === 'latine' ? 'sans = « bla » ; rupture = « t9ta3 ».' : '',
+    '',
+    `Mêmes règles que la première traduction : ${GRAPHIE === 'latine' ? 'latin uniquement' : 'graphie arabe uniquement'}, mêmes clés, mêmes emojis, mêmes variables {…},`,
+    'sigles PEI/ABA/ABLLS-R/PECS inchangés.',
+    'Réponds STRICTEMENT par l’objet JSON complet, avec toutes les clés.',
+  ].filter((line) => line !== '').join('\n');
+}
 
-async function callOpenAI(payload, system = SYSTEM, instruction = 'Traduis les valeurs de cet objet JSON en darija marocaine. Garde les clés telles quelles.') {
+const SYSTEM = systemPrompt();
+const REVIEW = reviewPrompt();
+
+const TARGET = LANGUE === 'ar' ? 'l’arabe standard pour enfant' : 'la darija marocaine';
+async function callOpenAI(payload, system = SYSTEM, instruction = `Traduis les valeurs de cet objet JSON en ${TARGET}. Garde les clés telles quelles.`) {
   const body = {
     model: MODEL,
     messages: [
@@ -188,12 +276,28 @@ const placeholders = (s) => [...String(s).matchAll(/\{(\w+)\}/g)].map((m) => m[1
 const emojis = (s) => (String(s).match(/\p{Extended_Pictographic}/gu) || []).sort().join('');
 const latinOnly = (s) => !/[\u0600-\u06FF\u0750-\u077F]/.test(String(s));
 
+// « mar7ala », « l3ab » : une lettre collée à un chiffre = de l'arabizi, pas de la graphie arabe.
+const ARABIC_ONLY = /[؀-ۿݐ-ݿ]/;
+// Un jeton « {name} », « {n} », « {text} » reste tel quel dans la traduction : ce n'est pas un mot
+// latin. Sans ce masque, toute phrase comportant un jeton serait rejetée comme « écriture mixte ».
+const sansJetons = (s) => String(s).replace(/\{\w+\}/g, ' ');
+const arabizi = (s) => /[A-Za-z]\d|\d[A-Za-z]/.test(sansJetons(s));
+const SIGLES = /PEI|ABA|ABLLS-R|PECS|Time Timer/g;
+// Une valeur sans rien à traduire (sigle, emoji, chiffres seuls) a droit de rester latine.
+const translatable = (fr) => String(fr).replace(SIGLES, '').replace(/[\p{Extended_Pictographic}\p{N}\p{P}\s{}]/gu, '').length > 0;
+// En graphie arabe, un mot latin resté dans la valeur (hors sigles et jetons) est une erreur : la carte doit se lire d'une traite.
+const latinRestant = (s) => /[A-Za-zÀ-ÿ]{2,}/.test(sansJetons(String(s).replace(SIGLES, '')));
+const scriptOk = (s) => (GRAPHIE === 'latine' ? latinOnly(s) : ARABIC_ONLY.test(s) && !latinRestant(s)) && !arabizi(s);
+
 function validate(source, out) {
   const errors = [];
   for (const [key, fr] of Object.entries(source)) {
     const value = out[key];
     if (typeof value !== 'string' || !value.trim()) { errors.push(`${key} : traduction vide`); continue; }
-    if (!latinOnly(value)) { errors.push(`${key} : caractères arabes interdits`); continue; }
+    if (GRAPHIE === 'latine' && !latinOnly(value)) { errors.push(`${key} : caractères arabes interdits en écriture latine`); continue; }
+    if (GRAPHIE === 'arabe' && arabizi(value)) { errors.push(`${key} : arabizi interdit en graphie arabe`); continue; }
+    if (GRAPHIE === 'arabe' && latinRestant(value)) { errors.push(`${key} : mot latin resté dans une valeur en graphie arabe`); continue; }
+    if (GRAPHIE === 'arabe' && !ARABIC_ONLY.test(value) && translatable(fr)) { errors.push(`${key} : aucun caractère arabe`); continue; }
     if (placeholders(value) !== placeholders(fr)) errors.push(`${key} : variables {…} modifiées`);
     if (emojis(value) !== emojis(fr)) errors.push(`${key} : emojis modifiés`);
     if (value.includes('\n')) errors.push(`${key} : saut de ligne`);
@@ -215,7 +319,7 @@ async function translate(name, source) {
   let errors = validate(source, result);
   if (errors.length) {
     console.log(`  reprise de ${errors.length} entrée(s)…`);
-    const retrySource = Object.fromEntries(Object.keys(source).filter((k) => !result[k] || !latinOnly(result[k]) || placeholders(result[k]) !== placeholders(source[k]) || errors.some((e) => e.startsWith(k + ' '))).map((k) => [k, source[k]]));
+    const retrySource = Object.fromEntries(Object.keys(source).filter((k) => !result[k] || !scriptOk(result[k]) || placeholders(result[k]) !== placeholders(source[k]) || errors.some((e) => e.startsWith(k + ' '))).map((k) => [k, source[k]]));
     const fixed = await callOpenAI(retrySource);
     Object.assign(result, fixed);
     errors = validate(source, result);
@@ -237,15 +341,16 @@ function table(name, obj, indent = '  ') {
 async function main() {
   const out = {};
   const wanted = (g) => !ONLY || ONLY.split(',').includes(g);
-  if (wanted('ui')) out.TX_DR = await translate('ui', groups.ui);
-  if (wanted('goals')) out.GOAL_DR = await translate('goals', groups.goals);
-  if (wanted('sections')) out.SECTION_DR = await translate('sections', groups.sections);
+  const name = (base) => `${base}_${SUFFIX}`;
+  if (wanted('ui')) out[name('TX')] = await translate('ui', groups.ui);
+  if (wanted('goals')) out[name('GOAL')] = await translate('goals', groups.goals);
+  if (wanted('sections')) out[name('SECTION')] = await translate('sections', groups.sections);
   if (wanted('other')) {
-    out.EMOTION_DR = await translate('émotions', groups.other.emotions);
-    out.SITUATION_DR = await translate('situations', groups.other.situations);
-    out.STORY_DR = await translate('histoires', groups.other.stories);
-    out.ROUTINE_TEXT_DR = await translate('routines (accueil)', groups.other.routines);
-    out.THEME_DR = await translate('thèmes autocollants', groups.other.themes);
+    out[name('EMOTION')] = await translate('émotions', groups.other.emotions);
+    out[name('SITUATION')] = await translate('situations', groups.other.situations);
+    out[name('STORY')] = await translate('histoires', groups.other.stories);
+    out[name('ROUTINE_TEXT')] = await translate('routines (accueil)', groups.other.routines);
+    out[name('THEME')] = await translate('thèmes autocollants', groups.other.themes);
   }
 
   // Une génération partielle réutilise les tables déjà présentes.
@@ -256,7 +361,7 @@ async function main() {
     text = re.test(text) ? text.replace(re, block) : `${text}${text.endsWith('\n') || !text ? '' : '\n\n'}${block}`;
   }
   if (!text.startsWith('//')) {
-    text = `// Généré par tools/gen-darija-i18n.mjs — ne pas modifier à la main.\n// Traductions darija (latin) demandées à OpenAI ${MODEL}, générées le ${new Date().toISOString().slice(0, 10)}.\n// Aucun texte n'est envoyé au serveur lors de l'utilisation de l'application.\n\n${text}`;
+    text = `// Généré par tools/gen-darija-i18n.mjs — ne pas modifier à la main.\n// Traductions ${LANGUE === 'ar' ? 'arabe standard' : 'darija'} (${GRAPHIE}) demandées à OpenAI ${MODEL}, générées le ${new Date().toISOString().slice(0, 10)}.\n// Aucun texte n'est envoyé au serveur lors de l'utilisation de l'application.\n\n${text}`;
   }
   fs.writeFileSync(OUT, text, 'utf8');
   console.log(`✅ ${path.relative(root, OUT)} écrit (${Object.keys(out).join(', ')}).`);
