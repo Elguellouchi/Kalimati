@@ -2,7 +2,7 @@
 import { h, btn, pick, sample, shuffle } from './util.js';
 import { speak } from '../speech.js';
 import { recordTrial, ratingPanel } from './aba.js';
-import { choiceBoard, sorter, bigCard, praise } from './widgets.js';
+import { choiceBoard, sorter, bigCard, praise, autoNext } from './widgets.js';
 import { PAIRS, FUNCTION_BASKETS, CATEGORY_BOXES } from './content.js';
 import { B1_OBJECTS } from './visuals.js';
 
@@ -14,7 +14,7 @@ export function trialLoop(render) {
   return root;
 }
 
-const nextButton = (next) => btn('➜ Essai suivant', next, 'primary');
+const nextButton = (next) => autoNext(next); // v10.43 : passage automatique
 
 // B.1 : associer deux représentations différentes du MÊME objet (illustration réaliste ou photo ↔ pictogramme).
 function b1() {
@@ -207,7 +207,7 @@ function sortExercise(goalId, groups, perGroup) {
           if (!correct) { tries.set(key, true); return; }
           recordTrial(goalId, tries.get(key) ? 'prompt' : 'plus', { item: item.bin, meta: { object: item.fr } });
         },
-        onDone: () => { speak('Bravo, tout est rangé !'); after.replaceChildren(praise('Tout est rangé !'), btn('🔀 Recommencer', next, 'primary')); },
+        onDone: () => { speak('Bravo, tout est rangé !'); after.replaceChildren(praise('Tout est rangé !'), autoNext(next, { delay: 2500 })); },
       }),
       after);
   });

@@ -4,7 +4,7 @@ import { h, btn, shuffle, pick, sample, sleep } from './util.js';
 import { speak, sayCard, sayCards, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
 import { startListening, canRecord, playClap } from '../media.js';
 import { recordTrial, ratingPanel, profile } from './aba.js';
-import { bigCard, videoModel, praise, choiceBoard } from './widgets.js';
+import { bigCard, videoModel, praise, choiceBoard, autoNext } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { hourglass } from './timer.js';
 import { nour, setBubbleLevel } from './nour.js';
@@ -246,7 +246,7 @@ function completion(goalId, items) {
           playClap();
           answer.replaceChildren(bigCard(current.emoji, current.end, 'reveal-card', answerKey(current)));
           recordTrial(goalId, 'prompt', { item: current.id, prompt: 'visuel', meta: { aide: 'choix-visuel', first } });
-          body.append(btn('➜ Suivant', next, 'primary'));
+          body.append(autoNext(next, { delay: 2500 }));
         } }));
       }
       const say = () => speak(current.start);

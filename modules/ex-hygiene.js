@@ -10,7 +10,7 @@ import { h, btn, shuffle } from './util.js';
 import { speak, hasArabicVoice } from '../speech.js';
 import { playBeep, playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName } from './aba.js';
-import { choiceBoard, praise, modeTabs } from './widgets.js';
+import { choiceBoard, praise, modeTabs, autoNext } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { levelOf } from './levels.js';
 import { renderVisual } from './visuals.js';
@@ -366,7 +366,7 @@ function hygieneNextStep(routine, ctx) {
         })),
         onAnswer: (ok) => {
           recordTrial(routine.goalId, ok ? 'plus' : 'prompt', { item: `${routine.id}-next-${answer.id}`, meta: { routine: routine.id, game: 'next' } });
-          after.replaceChildren(btn('➜ Question suivante', round, 'primary'));
+          after.replaceChildren(autoNext(round));
         },
       }),
       after);

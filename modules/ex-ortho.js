@@ -10,7 +10,7 @@ import { iconLabel } from './ui-icons.js';
 import { speak, stopSpeaking, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, startListening, canRecord } from '../media.js';
 import { clinic, firstName, sisterName } from './aba.js';
-import { choiceBoard, modeTabs } from './widgets.js';
+import { choiceBoard, modeTabs, autoNext } from './widgets.js';
 import { voiceMaskWorkshop } from './voice-mask.js';
 import { orthoPathWorkshop } from './ortho-path.js';
 
@@ -299,7 +299,7 @@ function phonoWorkshop(ctx) {
   }
   function round() {
     const after = h('div', { class: 'row center' });
-    const nextBtn = () => after.replaceChildren(btn('➜ Suivant', round, 'primary'));
+    const nextBtn = () => after.replaceChildren(autoNext(round));
     if (mode === 'tone') { toneRound(after, nextBtn); return; }
     const [contrast, a, b] = pick(PAIRS);
     const [word, other] = Math.random() < 0.5 ? [a, b] : [b, a];

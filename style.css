@@ -2563,3 +2563,6 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .with-cam .mask-face { opacity: .88; }
 .mask-mouth { position: absolute; top: 64%; left: 50%; width: 46px; height: 6px; transform: translateX(-50%); border-radius: 0 0 26px 26px; background: #5b2a2a; }
 .mask-count { font-size: 20px; min-width: 2em; }
+
+/* v10.43 : passage automatique après une bonne réponse (court temps de félicitation). */
+.auto-next { margin: 0.4rem auto; font-size: 1.6rem; text-align: center; opacity: 0.85; }

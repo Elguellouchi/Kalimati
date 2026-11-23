@@ -4,7 +4,7 @@ import { h, btn, pick, sample } from './util.js';
 import { speak } from '../speech.js';
 import { captureVideoFrame, playClap } from '../media.js';
 import { firstName, sisterName, people } from './aba.js';
-import { choiceBoard, bigCard, praise, modeTabs } from './widgets.js';
+import { choiceBoard, bigCard, praise, modeTabs, autoNext } from './widgets.js';
 import { trialLoop } from './ex-visual.js';
 import { EMOTIONS, B1_OBJECTS, renderVisual, setVisual, clearVisual, hasPhoto, openPhotoPickerModal, fillWithArasaac, keyFor } from './visuals.js';
 import { SITUATIONS, SEQUENCES, TACT_ITEMS, VERBS, PAIRS, FUNCTION_BASKETS, CATEGORY_BOXES, ECHO_WORDS, RHYMES, ASSOCIATIONS, REINFORCERS, GESTURE_SEQUENCE, TWO_STEP_OBJECTS } from './content.js';
@@ -27,7 +27,7 @@ const emotionChoices = (target, lang) => [
   ...sample(EMOTIONS.filter((e) => e.id !== target.id), 3).map((e) => ({ vkey: e.vkey, label: emotionWord(e, lang), correct: false })),
   // === [FIN MODIF v10.9-lot-A] ===
 ];
-const nextBtn = (next, lang) => btn(tx('again', lang), next, 'primary');
+const nextBtn = (next) => autoNext(next); // v10.43 : passage automatique
 
 // Mode 1 : « Montre qui est contente / triste / en colère… »
 const receptive = (ctx) => trialLoop((next) => {
@@ -38,7 +38,7 @@ const receptive = (ctx) => trialLoop((next) => {
   const after = h('div', { class: 'row center' });
   setTimeout(() => speak(ask), 300);
   return h('div', { class: 'stack' }, h('p', { class: 'ask' }, btn('🔊', () => speak(ask), 'ghost'), word),
-    h('div', { class: 'emotion-choices' }, choiceBoard({ choices: emotionChoices(target, lang), cols: 3, praise: word, onAnswer: () => { playClap(); after.replaceChildren(nextBtn(next, lang)); } })),
+    h('div', { class: 'emotion-choices' }, choiceBoard({ choices: emotionChoices(target, lang), cols: 3, praise: word, onAnswer: () => { playClap(); after.replaceChildren(nextBtn(next)); } })),
     after);
 });
 
@@ -56,7 +56,7 @@ const situations = (ctx) => trialLoop((next) => {
     bigCard(situation.scene, '', 'scene-card', `situation:${situation.id}`),
     h('p', { class: 'ask' }, btn('🔊', () => speak(ask), 'ghost'), tx('howFeels', lang)),
     h('details', {}, h('summary', {}, tx('adultText', lang)), h('p', { class: 'adult-text' }, text)),
-    h('div', { class: 'emotion-choices' }, choiceBoard({ choices: emotionChoices(target, lang), cols: 3, praise: word, onAnswer: () => { playClap(); after.replaceChildren(nextBtn(next, lang)); } })),
+    h('div', { class: 'emotion-choices' }, choiceBoard({ choices: emotionChoices(target, lang), cols: 3, praise: word, onAnswer: () => { playClap(); after.replaceChildren(nextBtn(next)); } })),
     after);
 });
 

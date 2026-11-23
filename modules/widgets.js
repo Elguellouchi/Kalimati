@@ -710,3 +710,13 @@ export function modeTabs(modes, start = 0) {
 }
 
 export const praise =(text = 'Bravo !') => h('div', { class: 'praise' }, nour({ pose: 'wave', size: 70, says: text }));
+
+// v10.43 : après une bonne réponse, l'essai suivant arrive tout seul (plus de bouton « Essai suivant »).
+// Un court temps pour la félicitation, puis on continue. Rien ne se passe si l'écran a changé entre-temps.
+export const AUTO_NEXT_MS = 2000;
+export function autoNext(next, { delay = AUTO_NEXT_MS } = {}) {
+  const el = h('p', { class: 'auto-next', role: 'status', 'aria-label': '👏' }, '✨ 👏 ✨');
+  let done = false;
+  setTimeout(() => { if (!done && el.isConnected) { done = true; next(); } }, delay);
+  return el;
+}

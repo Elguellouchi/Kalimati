@@ -2,7 +2,7 @@
 import { h, btn, pick, sample, shuffle } from './util.js';
 import { speak } from '../speech.js';
 import { recordTrial, ratingPanel } from './aba.js';
-import { choiceBoard, praise, modeTabs } from './widgets.js';
+import { choiceBoard, praise, modeTabs, autoNext } from './widgets.js';
 import { trialLoop } from './ex-visual.js';
 import { renderVisual } from './visuals.js';
 import { COMMANDS, FUNCTION_QUESTIONS, TWO_STEP_OBJECTS, TWO_STEP_REAL } from './content.js';
@@ -36,7 +36,7 @@ function c2() {
       h('p', { class: 'ask' }, q.ask, btn('🔊', () => speak(q.ask), 'ghost tiny')),
       choiceBoard({ choices: [{ emoji: q.answer, correct: true }, ...q.others.map((emoji) => ({ emoji, correct: false }))], cols: 2, onAnswer: (first) => {
         recordTrial('C.2', first ? 'plus' : 'prompt', { item: q.id });
-        after.replaceChildren(btn('➜ Essai suivant', next, 'primary'));
+        after.replaceChildren(autoNext(next));
       } }),
       after);
   });
@@ -60,7 +60,7 @@ function c3screen() {
       const ok = clickOrder[0] === target1.id && clickOrder[1] === target2.id;
       recordTrial('C.3', ok ? 'plus' : 'minus', { item: `${target1.id}>${target2.id}`, meta: { mode: 'ecran', clickOrder: [...clickOrder] } });
       if (ok) speak('Bravo !');
-      after.replaceChildren(ok ? praise('Dans le bon ordre !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), btn('➜ Essai suivant', next, 'primary'));
+      after.replaceChildren(ok ? praise('Dans le bon ordre !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), ok ? autoNext(next) : btn('➜ Essai suivant', next, 'primary'));
     } }, renderVisual({ emoji: o.emoji, fr: o.fr.replace(/^(la|le) /, '') })));
     return h('div', { class: 'stack' }, h('p', { class: 'ask' }, ask, btn('🔊', () => speak(ask), 'ghost tiny')),
       h('div', { class: 'choices', style: { '--cols': 2 } }, buttons), after);

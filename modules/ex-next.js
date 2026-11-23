@@ -6,7 +6,7 @@ import { h, btn, escapeHtml } from './util.js';
 import { speak, recognizeSpeech, canRecognizeSpeech, SPEECH_CLOUD_NOTE } from '../speech.js';
 import { playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName, sisterName, people } from './aba.js';
-import { choiceBoard, sequenceBoard, tokenBoard, praise, bigCard } from './widgets.js';
+import { choiceBoard, sequenceBoard, tokenBoard, praise, bigCard, autoNext } from './widgets.js';
 import { visualTimer, hourglass } from './timer.js';
 import { trialLoop, buildPuzzle } from './ex-visual.js';
 import { workshop, SHAPES, LOWER_LETTERS } from './ex-writing.js';
@@ -24,7 +24,8 @@ const emojiTile = (emoji, variant = 0) => { const s = h('span', { class: 'visual
 const pic = (c, style = 'picto') => conceptVisual(c, { style });
 const say = (text) => setTimeout(() => speak(text), 300);
 const askLine = (text) => h('p', { class: 'ask' }, text, btn('🔊', () => speak(text), 'ghost tiny'));
-const nextBtn = (next) => btn('➜ Essai suivant', next, 'primary');
+const nextBtn = (next) => autoNext(next); // v10.43 : passage automatique
+const retryBtn = (next) => btn('➜ Essai suivant', next, 'primary'); // après une erreur, l'adulte aide puis continue
 const items = (n, emoji) => h('div', { class: 'object-group' }, Array.from({ length: n }, () => h('span', {}, emoji)));
 
 // Choisir la bonne image. make(rand, p) → { ask, top?, choices: [{ correct, render | emoji | label }], item, cols? }
@@ -300,7 +301,7 @@ const c8 = () => trialLoop((next) => {
     const ok = targets.every((t, i) => order[i] === t);
     recordTrial('C.8', ok ? 'plus' : 'minus', { item: targets.map((t) => t.id).join('>'), meta: { level: p.level } });
     if (ok) playClap();
-    after.replaceChildren(ok ? praise('Bravo !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), nextBtn(next));
+    after.replaceChildren(ok ? praise('Bravo !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), ok ? nextBtn(next) : retryBtn(next));
   } }, pic(o)))), after);
 });
 

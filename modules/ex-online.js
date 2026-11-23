@@ -3,7 +3,7 @@
 import { h, btn } from './util.js';
 import { speak } from '../speech.js';
 import { recordTrial, ratingPanel, childName } from './aba.js';
-import { choiceBoard, sorter, bigCard, praise } from './widgets.js';
+import { choiceBoard, sorter, bigCard, praise, autoNext } from './widgets.js';
 import { hourglass } from './timer.js';
 import { trialLoop, buildPuzzle } from './ex-visual.js';
 import { copyCanvas } from './ex-writing.js';
@@ -18,7 +18,8 @@ const pool = (goalId, filter) => conceptsForLevel(params(goalId).catalogShare, f
 // === [DEBUT MODIF v10.9-lot-A : Pépite 27 — Fournir 4 candidats à choiceBoard pour l’adaptation 2..4] ===
 const cap = (n, max) => Math.max(4, Math.min(max, n));
 // === [FIN MODIF v10.9-lot-A] ===
-const nextBtn = (next) => btn('➜ Essai suivant', next, 'primary');
+const nextBtn = (next) => autoNext(next); // v10.43 : passage automatique
+const retryBtn = (next) => btn('➜ Essai suivant', next, 'primary'); // après une erreur, l'adulte aide puis continue
 // Un mot hors catalogue (paires, etc.) devient un « concept » : ses pictogrammes sont cherchés par son nom.
 const asConcept = (x) => ({ id: slug(x.fr), fr: x.fr, emoji: x.emoji, wiki: x.fr.charAt(0).toUpperCase() + x.fr.slice(1) });
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -153,7 +154,7 @@ function sortGame(goalId, groups) {
           if (!correct) { tries.set(item.fr, true); return; }
           recordTrial(goalId, tries.get(item.fr) ? 'prompt' : 'plus', { item: item.bin, meta: { object: item.fr, level: p.level } });
         },
-        onDone: () => { speak('Bravo, tout est rangé !'); after.replaceChildren(praise('Tout est rangé !'), btn('➜ Tri suivant', next, 'primary')); },
+        onDone: () => { speak('Bravo, tout est rangé !'); after.replaceChildren(praise('Tout est rangé !'), autoNext(next, { delay: 2500 })); },
       }),
       after);
   });
@@ -214,7 +215,7 @@ function c3() {
       const ok = targets.every((t, i) => order[i] === t.id);
       recordTrial('C.3', ok ? 'plus' : 'minus', { item: targets.map((t) => t.id).join('>'), meta: { mode: 'ecran', steps: targets.length, level: p.level } });
       if (ok) speak('Bravo !');
-      after.replaceChildren(ok ? praise('Dans le bon ordre !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), nextBtn(next));
+      after.replaceChildren(ok ? praise('Dans le bon ordre !') : h('p', { class: 'note' }, 'On réessaie ensemble.'), ok ? nextBtn(next) : retryBtn(next));
     } }, conceptVisual(o, { style: 'picto' }))));
     return h('div', { class: 'stack' }, h('p', { class: 'ask' }, ask, btn('🔊', () => speak(ask), 'ghost tiny')), grid, after);
   });

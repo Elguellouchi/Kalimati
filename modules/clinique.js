@@ -3,7 +3,7 @@
 // Tout se passe dans le téléphone : aucune photo, aucune voix, aucun mot n'est envoyé sur internet.
 import { h, btn, pick, sample, shuffle, dayKey } from './util.js';
 import { speak, sayCard, stopSpeaking, playBlob, hasArabicVoice } from '../speech.js';
-import { choiceBoard, stopAllChoiceTimers } from './widgets.js';
+import { choiceBoard, stopAllChoiceTimers, autoNext } from './widgets.js';
 import { renderVisual } from './visuals.js';
 import { startListening, startRecording, canRecord, resizePhoto, playBeep } from '../media.js';
 import { setSetting, getSetting, getAllLifeBook, putLifeBook } from '../db.js';
@@ -186,7 +186,7 @@ function matrixRound(stage, ctx, onNext) {
     onAnswer: () => {
       speakPhrase(ctx, matrix, target);
       nextRow.hidden = false;
-      nextRow.replaceChildren(btn(T('next'), onNext, 'primary'));
+      nextRow.replaceChildren(autoNext(onNext, { delay: 2500 }));
     },
   });
   stage.replaceChildren(
@@ -235,7 +235,7 @@ function dailyTool(ctx) {
         sayCard(card, ctx.lang);
         el.classList.add('seen');
         seen.add(card.id);
-        if (seen.size >= teach.length) nextBtn.hidden = false;
+        if (seen.size >= teach.length && !stage.querySelector('.auto-next')) grid.after(autoNext(() => go(1), { delay: 2500 }));
       };
       grid.append(el);
     });
@@ -265,6 +265,8 @@ function dailyTool(ctx) {
       if (why === 'mic') { hint.textContent = T('voiceMicOff'); return; }
       balloon.classList.add('full');
       sayBravo();
+      nextBtn.hidden = true;
+      nextBtn.after(autoNext(() => go(3), { delay: 2500 }));
     };
     ctx.onLeave(() => { token += 1; finished = true; if (stopListen) { try { stopListen(); } catch { /* rien */ } } });
     const begin = async () => {
@@ -437,7 +439,7 @@ function signsTool(ctx) {
       onAnswer: () => {
         round += 1;
         nextRow.hidden = false;
-        nextRow.replaceChildren(btn(T('next'), drawRound, 'primary'));
+        nextRow.replaceChildren(autoNext(drawRound));
       },
     });
     const nextRow = h('div', { class: 'row center' });

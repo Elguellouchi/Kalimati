@@ -4,7 +4,7 @@ import { h, btn, sleep, formatTime, shuffle } from './util.js';
 import { speak, hasArabicVoice } from '../speech.js';
 import { playBeep, playClap } from '../media.js';
 import { recordTrial, ratingPanel, firstName, sisterName } from './aba.js';
-import { sequenceBoard, bigCard, praise, videoModel, choiceBoard, modeTabs } from './widgets.js';
+import { sequenceBoard, bigCard, praise, videoModel, choiceBoard, modeTabs, autoNext } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { levelOf } from './levels.js';
 import { sequenceExercise } from './ex-social.js';
@@ -395,7 +395,7 @@ function toiletNextStep(ctx) {
       h('div', { class: 'big-card model-card' }, toiletVisual(current), h('span', { class: 'label' }, toiletLabel(current, ctx.lang))),
       choiceBoard({ cols: 2, praise: 'Bravo !',
         choices: [answer, ...distractors].map((s) => ({ correct: s === answer, label: toiletLabel(s, ctx.lang), render: () => toiletVisual(s) })),
-        onAnswer: () => after.replaceChildren(btn('➜ Question suivante', round, 'primary')) }),
+        onAnswer: () => after.replaceChildren(autoNext(round)) }),
       after);
   };
   round();

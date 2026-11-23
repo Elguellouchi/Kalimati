@@ -2,7 +2,7 @@
 import { h, btn, pick, sample, shuffle, sleep } from './util.js';
 import { speak } from '../speech.js';
 import { recordTrial, ratingPanel, childName } from './aba.js';
-import { choiceBoard, praise, modeTabs } from './widgets.js';
+import { choiceBoard, praise, modeTabs, autoNext } from './widgets.js';
 import { draggable, hitTest } from './drag.js';
 import { trialLoop } from './ex-visual.js';
 import { copyCanvas } from './ex-writing.js';
@@ -12,7 +12,7 @@ const letterChoices = (answer, pool, n = 4) => [
   { emoji: answer, correct: true },
   ...sample(pool.filter((l) => l !== answer), n - 1).map((l) => ({ emoji: l, correct: false })),
 ];
-const nextBtn = (next) => btn('➜ Essai suivant', next, 'primary');
+const nextBtn = (next) => autoNext(next); // v10.43 : passage automatique
 
 // Q.1 : réceptif (montre le M) et expressif (comment s'appelle cette lettre ?).
 const q1receptive = () => trialLoop((next) => {
