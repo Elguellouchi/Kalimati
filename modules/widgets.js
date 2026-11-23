@@ -714,8 +714,30 @@ export const praise =(text = 'Bravo !') => h('div', { class: 'praise' }, nour({ 
 // v10.43 : après une bonne réponse, l'essai suivant arrive tout seul (plus de bouton « Essai suivant »).
 // Un court temps pour la félicitation, puis on continue. Rien ne se passe si l'écran a changé entre-temps.
 export const AUTO_NEXT_MS = 2000;
+// v10.44 : bravo plus festif. Grand bandeau coloré, applaudissement qui rebondit une fois,
+// confettis doux qui tombent une seule fois (pas de clignotement, pas de rouge),
+// petite barre qui se remplit jusqu'à la question suivante. Mode calme / mouvement réduit : bravo fixe.
+const CONFETTI_COLORS = ['#FFD54F', '#81C784', '#64B5F6', '#BA68C8', '#FFB74D', '#4DD0E1'];
 export function autoNext(next, { delay = AUTO_NEXT_MS } = {}) {
-  const el = h('p', { class: 'auto-next', role: 'status', 'aria-label': '👏' }, '✨ 👏 ✨');
+  const confetti = h('div', { class: 'auto-next-confetti', 'aria-hidden': 'true' },
+    Array.from({ length: 18 }, (_, i) => {
+      const piece = h('i', {});
+      piece.style.setProperty('--x', `${Math.round((i / 17) * 92 + 4 + (Math.random() * 6 - 3))}%`);
+      piece.style.setProperty('--d', `${Math.round(Math.random() * 350)}ms`);
+      piece.style.setProperty('--r', `${Math.round(Math.random() * 360)}deg`);
+      piece.style.setProperty('--c', CONFETTI_COLORS[i % CONFETTI_COLORS.length]);
+      return piece;
+    }));
+  const bar = h('span', { class: 'auto-next-bar', 'aria-hidden': 'true' }, h('span', {}));
+  bar.firstChild.style.setProperty('--t', `${delay}ms`);
+  const el = h('div', { class: 'auto-next', role: 'status', 'aria-label': '👏' },
+    confetti,
+    h('div', { class: 'auto-next-burst' },
+      h('span', { class: 'auto-next-side' }, '🎉'),
+      h('span', { class: 'auto-next-clap' }, '👏'),
+      h('span', { class: 'auto-next-side' }, '🎉')),
+    h('div', { class: 'auto-next-stars', 'aria-hidden': 'true' }, '⭐ 🌟 ⭐'),
+    bar);
   let done = false;
   setTimeout(() => { if (!done && el.isConnected) { done = true; next(); } }, delay);
   return el;

@@ -2127,6 +2127,45 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .mood-cell.on { border-color: var(--brand); box-shadow: 0 4px 12px rgb(0 0 0 / .18); transform: scale(1.02); }
 .mood-coping { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
 
+/* v10.43 : passage automatique après une bonne réponse (court temps de félicitation). */
+/* v10.44 : bravo festif mais doux (une seule fois, pas de clignotement, pas de rouge). */
+/* Posé au milieu de l'écran : toujours visible, même sur un petit téléphone ; ne bloque aucun toucher. */
+.auto-next { position: fixed; z-index: 60; left: 0; right: 0; top: 34vh; width: min(86vw, 320px); margin: 0 auto; pointer-events: none; padding: 14px 12px 12px; border-radius: 24px;
+  text-align: center; background: linear-gradient(135deg, #FFF6D5 0%, #E3F6E9 50%, #E2F0FD 100%); border: 3px solid #FFD54F;
+  box-shadow: 0 6px 0 rgb(0 0 0 / .06); overflow: visible; animation: auto-next-pop .45s ease-out both; }
+.auto-next-burst { display: flex; justify-content: center; align-items: center; gap: 14px; line-height: 1; }
+.auto-next-clap { font-size: 64px; display: inline-block; animation: auto-next-bounce .9s ease-out .15s both; }
+.auto-next-side { font-size: 38px; display: inline-block; animation: auto-next-tilt 1s ease-out .2s both; }
+.auto-next-side:last-child { transform: scaleX(-1); animation-name: auto-next-tilt-r; }
+.auto-next-stars { margin-top: 6px; font-size: 24px; letter-spacing: 6px; animation: auto-next-fade .6s ease-out .35s both; }
+.auto-next-bar { display: block; height: 8px; margin: 10px 18px 0; border-radius: 99px; background: rgb(0 0 0 / .08); overflow: hidden; }
+.auto-next-bar > span { display: block; height: 100%; width: 100%; border-radius: inherit; background: #81C784; transform-origin: left center; animation: auto-next-fill var(--t, 2s) linear both; }
+[dir="rtl"] .auto-next-bar > span { transform-origin: right center; }
+.auto-next-confetti { position: absolute; inset: -30px 0 0; pointer-events: none; overflow: visible; }
+.auto-next-confetti i { position: absolute; top: 0; left: var(--x); width: 9px; height: 14px; border-radius: 3px; background: var(--c);
+  opacity: 0; animation: auto-next-fall 1.6s ease-in var(--d) both; }
+.auto-next-confetti i:nth-child(3n) { width: 11px; height: 11px; border-radius: 50%; }
+@keyframes auto-next-pop { from { opacity: 0; transform: scale(.8); } 70% { transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+@keyframes auto-next-bounce { 0% { transform: scale(.4); } 45% { transform: scale(1.25); } 70% { transform: scale(.95); } 100% { transform: scale(1); } }
+@keyframes auto-next-tilt { from { opacity: 0; transform: rotate(-30deg) scale(.6); } to { opacity: 1; transform: rotate(0) scale(1); } }
+@keyframes auto-next-tilt-r { from { opacity: 0; transform: scaleX(-1) rotate(-30deg) scale(.6); } to { opacity: 1; transform: scaleX(-1) rotate(0) scale(1); } }
+@keyframes auto-next-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes auto-next-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes auto-next-fall { 0% { opacity: 0; transform: translateY(0) rotate(0); } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(150px) rotate(var(--r)); } }
+body.calm-mode .auto-next, body.calm-mode .auto-next * { animation: none !important; }
+body.calm-mode .auto-next-confetti { display: none; }
+body.calm-mode .auto-next-bar > span { animation: auto-next-fill var(--t, 2s) linear both !important; }
+@media (prefers-reduced-motion: reduce) {
+  .auto-next, .auto-next * { animation: none !important; }
+  .auto-next-confetti { display: none; }
+}
+:root[data-theme="contraste"] .auto-next { background: #000; border-color: #FFEB3B; box-shadow: none; }
+:root[data-theme="contraste"] .auto-next-bar { background: #333; }
+:root[data-theme="contraste"] .auto-next-bar > span { background: #FFEB3B; }
+:root[data-theme="contraste"] .auto-next-confetti { display: none; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="contraste"]) .auto-next { background: linear-gradient(135deg, #3A3320 0%, #1F3A2A 50%, #1E2F40 100%); } }
+
+
 /* ============================================================
    v10.25 — Thèmes : « Cahier d'école » (par défaut), « Simple », « Noir et blanc ».
    Cahier d'école : la phrase s'écrit sur une ardoise, les grandes tuiles
@@ -2563,6 +2602,3 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .with-cam .mask-face { opacity: .88; }
 .mask-mouth { position: absolute; top: 64%; left: 50%; width: 46px; height: 6px; transform: translateX(-50%); border-radius: 0 0 26px 26px; background: #5b2a2a; }
 .mask-count { font-size: 20px; min-width: 2em; }
-
-/* v10.43 : passage automatique après une bonne réponse (court temps de félicitation). */
-.auto-next { margin: 0.4rem auto; font-size: 1.6rem; text-align: center; opacity: 0.85; }
