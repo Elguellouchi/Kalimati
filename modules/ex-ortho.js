@@ -11,6 +11,7 @@ import { speak, stopSpeaking, hasArabicVoice } from '../speech.js';
 import { playClap, playBeep, startListening, canRecord } from '../media.js';
 import { clinic, firstName, sisterName } from './aba.js';
 import { choiceBoard, modeTabs } from './widgets.js';
+import { orthoPathWorkshop } from './ortho-path.js';
 
 // ---------- Journal ----------
 export function logOrtho(fields) {
@@ -315,6 +316,6 @@ function phonoWorkshop(ctx) {
 export function orthoScreen(ctx) {
   const c = { lang: 'fr', onCleanup() {}, ...ctx };
   return h('div', { class: 'stack ortho' },
-    h('p', { class: 'note' }, 'Quatre ateliers d’orthophonie. L’adulte note chaque essai. Les voix enregistrées restent dans le téléphone.'),
-    modeTabs([['🗣️ Articulation', () => dttcWorkshop(c)], ['🧱 Phrases', () => mluWorkshop(c)], ['🤝 Situations', () => pragmaticWorkshop(c)], ['👂 Sons', () => phonoWorkshop(c)]]));
+    h('p', { class: 'note' }, 'Cinq ateliers d’orthophonie. L’adulte note chaque essai. Les voix enregistrées restent dans le téléphone.'),
+    modeTabs([['🎈 Parcours', () => orthoPathWorkshop(c)], ['🗣️ Articulation', () => dttcWorkshop(c)], ['🧱 Phrases', () => mluWorkshop(c)], ['🤝 Situations', () => pragmaticWorkshop(c)], ['👂 Sons', () => phonoWorkshop(c)]]));
 }

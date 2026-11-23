@@ -2495,3 +2495,25 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .talk-mode-btn.on { border-color: #176B62; background: #176B62; color: #fff; }
 .grid .card.hint-glow { box-shadow: 0 0 0 4px #F4B40099, 0 2px 0 rgb(0 0 0 / .1); }
 .grid .card.hint-first { box-shadow: 0 0 0 6px #F4B400CC, 0 2px 0 rgb(0 0 0 / .1); } /* fixe : aucune animation (charte calme) */
+
+/* v10.38 — Parcours souffle → mots et ballon à la voix. */
+.path-map { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+.path-stop { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 72px; padding: 4px 2px; border-radius: 14px; border: 3px solid var(--line); background: var(--surface); color: inherit; font: inherit; }
+.path-stop.here { border-color: #176B62; box-shadow: 0 0 0 3px #176B6233; }
+.path-stop.locked { opacity: .6; }
+.path-emoji { font-size: 24px; line-height: 1; }
+.path-name { font-size: 11px; font-weight: 800; text-align: center; line-height: 1.1; }
+.path-stars { font-size: 10px; min-height: 12px; }
+.path-target { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 28px; }
+.path-target-emoji { font-size: 40px; }
+.balloon-wrap { display: flex; flex-direction: column; align-items: center; height: 190px; justify-content: flex-end; }
+.balloon { width: 130px; height: 150px; border-radius: 50% 50% 48% 48%; background: radial-gradient(circle at 35% 30%, #FFE9A8, #F4B400 60%, #D99A00); display: flex; align-items: center; justify-content: center; font-size: 44px; transform-origin: 50% 100%; transition: transform .12s linear; box-shadow: inset -8px -10px 0 rgb(0 0 0 / .08); }
+.balloon.full { background: radial-gradient(circle at 35% 30%, #D8F5E6, #4CAF83 60%, #2E8B63); }
+.balloon-string { width: 2px; height: 28px; background: #8a7a5a; }
+.balloon-gauge { height: 12px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.balloon-gauge > div { height: 100%; background: #F4B400; border-radius: 999px; }
+@media (prefers-reduced-motion: reduce) { .balloon { transition: none; } }
+.voice-wizard { display: grid; gap: 8px; }
+.voice-wizard-step { display: flex; align-items: center; gap: 10px; font-size: 18px; }
+.voice-wizard-step .visual { --vs: 56px; }
+.voice-ok { color: #176B62; font-size: 13px; font-weight: 700; }

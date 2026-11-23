@@ -92,6 +92,8 @@ export async function startListening({ onLevel, record = false } = {}) {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   const context = new AudioCtx();
+  // v10.38 : sur téléphone, le contexte peut naître « en pause » (créé après l'autorisation du micro) : on le réveille.
+  if (context.state === 'suspended') context.resume().catch(() => {});
   const analyser = context.createAnalyser();
   analyser.fftSize = 1024;
   context.createMediaStreamSource(stream).connect(analyser);

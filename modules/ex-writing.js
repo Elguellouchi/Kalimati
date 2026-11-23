@@ -4,6 +4,7 @@ import { h, btn } from './util.js';
 import { speak } from '../speech.js';
 import { recordTrial, childName } from './aba.js';
 import { praise } from './widgets.js';
+import { humStart, humMove, humStop, sayLetter } from './trace-sound.js';
 
 const TOLERANCE = 20;
 const WIDE_TOLERANCE = 30; // couloir large pour les courbes (tolérance à la dyspraxie fine)
@@ -113,7 +114,7 @@ function layout(spec, width) {
     const bh = bw * 1.25;
     const left = (width - letters.length * bw) / 2;
     const boxes = letters.map((letter, i) => ({
-      x: left + i * bw, y: 14, w: bw, h: bh,
+      x: left + i * bw, y: 14, w: bw, h: bh, letter,
       strokes: LOWER_LETTERS[letter] || LETTERS[letter.toUpperCase()] || [],
     }));
     return { height: bh + 28, boxes };
@@ -169,16 +170,20 @@ export function traceScore(target, user, tolerance = TOLERANCE) {
 }
 
 // spec : { strokes } pour une forme, ou { word } pour copier un mot.
-export function writingPad(spec, level, tolerance = TOLERANCE) {
+export function writingPad(spec, level, tolerance = TOLERANCE, { sound = () => false } = {}) {
   const canvas = h('canvas', { class: 'write-pad' });
   const user = [];
   let strokes = [];
+  let boxes = [];
+  let lastLetterBox = -1;
   let target = [];
   let current = null;
   let ready = false;
   const setup = () => {
     const width = Math.min(canvas.parentElement ? canvas.parentElement.clientWidth : 340, 560) || 340;
-    const { height, boxes } = layout(spec, width);
+    const laid = layout(spec, width);
+    const { height } = laid;
+    boxes = laid.boxes;
     const dpr = window.devicePixelRatio || 1;
     canvas.width = width * dpr; canvas.height = height * dpr;
     canvas.style.width = `${width}px`; canvas.style.height = `${height}px`;
@@ -200,9 +205,18 @@ export function writingPad(spec, level, tolerance = TOLERANCE) {
   };
   const point = (e) => { const r = canvas.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
   canvas.style.touchAction = 'none';
-  canvas.onpointerdown = (e) => { if (!ready) setup(); canvas.setPointerCapture(e.pointerId); current = [point(e)]; };
-  canvas.onpointermove = (e) => { if (!current) return; current.push(point(e)); redraw(); };
-  canvas.onpointerup = () => { if (current) user.push(current); current = null; redraw(); };
+  // v10.38 : son du tracé (hauteur selon le doigt) et son de la lettre à l'entrée dans chaque lettre.
+  const soundAt = ([x, y], start) => {
+    if (!sound()) return;
+    const i = boxes.findIndex((b) => x >= b.x && x <= b.x + b.w);
+    const box = boxes[i];
+    if (box) humMove((y - box.y) / box.h);
+    if (box && box.letter && (start || i !== lastLetterBox)) { lastLetterBox = i; sayLetter(box.letter); }
+  };
+  canvas.onpointerdown = (e) => { if (!ready) setup(); canvas.setPointerCapture(e.pointerId); current = [point(e)]; if (sound()) { humStart(); soundAt(current[0], true); } };
+  canvas.onpointermove = (e) => { if (!current) return; const pt = point(e); current.push(pt); soundAt(pt, false); redraw(); };
+  canvas.onpointerup = () => { if (current) user.push(current); current = null; humStop(); redraw(); };
+  canvas.onpointercancel = () => { current = null; humStop(); redraw(); };
   requestAnimationFrame(setup);
   return {
     element: canvas,
@@ -219,8 +233,9 @@ export function workshop({ goalId, options, plusFromLevel, tolerance = TOLERANCE
   const holder = h('div', { class: 'pad-holder' });
   const result = h('div');
   let pad = null;
+  const soundBox = h('input', { type: 'checkbox', checked: 'checked', 'aria-label': 'Son pendant le tracé' });
   const build = () => {
-    pad = writingPad(option.spec(), level, tolerance);
+    pad = writingPad(option.spec(), level, tolerance, { sound: () => soundBox.checked });
     holder.replaceChildren(pad.element);
     result.replaceChildren();
   };
@@ -240,7 +255,7 @@ export function workshop({ goalId, options, plusFromLevel, tolerance = TOLERANCE
     h('option', { value: 1 }, '1. Rail guidé avec flèches'), h('option', { value: 2 }, '2. Pointillés'), h('option', { value: 3 }, '3. Points repères seuls'));
   requestAnimationFrame(build);
   return h('div', { class: 'stack' },
-    h('div', { class: 'row center' }, optionSelect, levelSelect),
+    h('div', { class: 'row center wrap' }, optionSelect, levelSelect, h('label', { class: 'check' }, soundBox, ' 🔊 Son du tracé')),
     option.spec().word ? h('div', { class: 'model-word' }, option.spec().word) : null,
     holder,
     h('div', { class: 'row center' }, btn('🧽 Effacer', () => pad.clear(), 'ghost'), btn('✔ Vérifier', check, 'primary')),

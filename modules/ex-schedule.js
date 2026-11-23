@@ -190,6 +190,7 @@ export function scheduleView(ctx) {
   const root = h('div', { class: 'schedule' }, h('p', { class: 'note' }, L('loadingPlanning')));
   let state = null;
   let view = 'child';
+  let wizard = null; // v10.38 : { lang, i } pendant l'enregistrement de la voix étape par étape
   let nextAutonomy = 'seule';
   let stopTimer = () => {};
   const rerender = () => { stopTimer(); stopTimer = () => {}; root.replaceChildren(view === 'editor' ? editorView() : childView()); };
@@ -600,11 +601,46 @@ export function scheduleView(ctx) {
       rerender();
     };
     return h('div', { class: 'sched-wrap editor' },
-      h('div', { class: 'row' }, btn('✔ Terminé', () => { view = 'child'; rerender(); }, 'primary'), btn('↺ Remettre le tableau d’origine', reset, 'ghost tiny')),
+      h('div', { class: 'row' }, btn('✔ Terminé', () => { view = 'child'; wizard = null; rerender(); }, 'primary'), btn('↺ Remettre le tableau d’origine', reset, 'ghost tiny')),
       routineTabs(routine),
+      voiceWizard(routine, actions),
       h('p', { class: 'note' }, '📷 sur l’image : mettre une vraie photo (son lit, son tapis de prière, sa brosse à dents). 🎙️ : enregistrer votre voix.'),
       h('div', { class: 'ed-steps' }, routine.steps.map((step, i) => stepEditor(step, i, actions))),
       btn('➕ Ajouter une étape', add, 'primary'));
+  }
+
+  // v10.38 (pépite « Séquences avec voix sécurisante », First Then) : la voix du parent sur chaque étape,
+  // enregistrée à la suite, étape par étape. Les voix restent dans le téléphone.
+  function voiceWizard(routine, { patch }) {
+    const steps = routine.steps;
+    const count = (key) => steps.filter((s) => s[key]).length;
+    const summary = h('p', { class: 'note voice-summary' }, `🎙️ Votre voix : français ${count('audioFr')}/${steps.length} étapes · darija ${count('audioDr')}/${steps.length} étapes.`);
+    if (!canRecord()) return summary;
+    if (!wizard) {
+      return h('div', { class: 'voice-wizard-start' }, summary,
+        h('div', { class: 'row wrap' },
+          btn('🎙️ Ma voix étape par étape (FR)', () => { wizard = { lang: 'fr', i: 0 }; rerender(); }, 'ghost tiny'),
+          btn('🎙️ Étape par étape (darija)', () => { wizard = { lang: 'dr', i: 0 }; rerender(); }, 'ghost tiny')));
+    }
+    const i = Math.min(wizard.i, steps.length - 1);
+    const step = steps[i];
+    if (!step) { wizard = null; return summary; }
+    const key = wizard.lang === 'dr' ? 'audioDr' : 'audioFr';
+    const text = wizard.lang === 'dr' ? (formatDarijaText(step) || step.fr) : step.fr;
+    let stop = null;
+    const rec = btn(step[key] ? '🎙️ Refaire' : '🎙️ Enregistrer', async () => {
+      if (stop) { const blob = await stop(); stop = null; await patch(i, { [key]: blob }); return; }
+      try { stop = await startRecording(); rec.textContent = '⏹ Arrêter'; rec.classList.add('recording'); } catch { rec.textContent = 'Micro refusé'; }
+    }, 'primary');
+    const go = (d) => { wizard = { ...wizard, i: Math.max(0, Math.min(steps.length - 1, i + d)) }; rerender(); };
+    return h('div', { class: 'voice-wizard card-box' },
+      h('p', { class: 'note' }, `Étape ${i + 1} sur ${steps.length} · ${wizard.lang === 'dr' ? 'darija' : 'français'}. Dites la phrase calmement, comme à la maison.`),
+      h('div', { class: 'voice-wizard-step' }, stepVisual(step, false), h('strong', {}, text), step[key] ? h('span', { class: 'voice-ok' }, '✔ voix enregistrée') : null),
+      h('div', { class: 'row wrap center' },
+        btn('←', () => go(-1), 'ghost tiny'), rec,
+        step[key] ? btn('▶ Écouter', () => playBlob(step[key]), 'ghost tiny') : null,
+        i < steps.length - 1 ? btn('Suivante →', () => go(1), 'ghost') : btn('✔ Fini', () => { wizard = null; rerender(); }, 'ghost')),
+      summary);
   }
 
   function stepEditor(step, i, { patch, move, remove }) {
