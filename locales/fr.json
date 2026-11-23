@@ -1,0 +1,42 @@
+{
+  "code": "fr",
+  "name": "Français",
+  "short": "FR",
+  "tts": "fr-FR",
+  "rtl": false,
+  "ui": {
+    "home": "Accueil",
+    "talk": "Parler",
+    "session": "Jeux",
+    "routines": "Ma journée",
+    "emotions": "Émotions",
+    "progress": "Progrès",
+    "tTalk": "Je parle",
+    "tPlay": "Je joue",
+    "tDay": "Ma journée",
+    "tFeel": "Mes émotions",
+    "sTalk": "Mes cartes et ma voix",
+    "sPlay": "Les jeux pour apprendre",
+    "sDay": "Ma routine du matin et du soir",
+    "sFeel": "Content, triste, fâché…",
+    "hello": "Bonjour",
+    "ask": "Qu’est-ce qu’on fait aujourd’hui ?",
+    "toiletTime": "C’est l’heure des toilettes",
+    "toiletDry": "Passage sec",
+    "toiletAccident": "Accident",
+    "toiletSnooze": "Dans 10 min"
+  },
+  "categories": [
+    "Essentiel",
+    "Manger",
+    "Boire",
+    "Jouer",
+    "Actions",
+    "Personnes",
+    "Besoins",
+    "Émotions",
+    "Décrire",
+    "Lieux"
+  ],
+  "lexicon": {}
+}

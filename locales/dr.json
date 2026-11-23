@@ -1,0 +1,42 @@
+{
+  "code": "dr",
+  "name": "Darija",
+  "short": "DR",
+  "tts": "ar-MA",
+  "rtl": false,
+  "ui": {
+    "home": "Dar",
+    "talk": "Nhder",
+    "session": "L3ab",
+    "routines": "Nhari",
+    "emotions": "Ihsas",
+    "progress": "Taqaddum",
+    "tTalk": "Kanhder",
+    "tPlay": "Kanl3eb",
+    "tDay": "Nhari",
+    "tFeel": "Ihsasati",
+    "sTalk": "Bitaqati w souti",
+    "sPlay": "L3ab bach net3llem",
+    "sDay": "Sba7 w l3chiya",
+    "sFeel": "Fer7ana, 7zina, m3esba…",
+    "hello": "Salam",
+    "ask": "Chnou ghadi ndirou lyoum ?",
+    "toiletTime": "W9t bit lma",
+    "toiletDry": "Bla ma",
+    "toiletAccident": "L7adssa",
+    "toiletSnooze": "F 10 d9ayq"
+  },
+  "categories": [
+    "Lmouhim",
+    "Makla",
+    "Chrab",
+    "L3ab",
+    "Af3al",
+    "Nas",
+    "Hajat",
+    "Ihsas",
+    "Wsef",
+    "Blayes"
+  ],
+  "lexicon": {}
+}

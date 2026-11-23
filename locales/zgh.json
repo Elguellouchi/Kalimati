@@ -1,0 +1,40 @@
+{
+  "code": "zgh",
+  "name": "Tamazight IRCAM",
+  "short": "ZGH",
+  "tts": "zgh",
+  "rtl": false,
+  "amazigh": true,
+  "ui": {
+    "home": "ⵜⴰⴷⴷⴰⵔⵜ",
+    "talk": "ⵙⴰⵡⵍ",
+    "session": "ⵓⵔⴰⵔ",
+    "routines": "ⴰⵙⵙ ⵉⵏⵓ",
+    "emotions": "ⵉⵃⵓⵍⴼⴰⵏ",
+    "progress": "ⴰⴼⴰⵔⴰ",
+    "tTalk": "ⴰⵔ ⵙⴰⵡⴰⵍⵖ",
+    "tPlay": "ⴰⵔ ⵜⵜⵓⵔⴰⵔⵖ",
+    "tDay": "ⴰⵙⵙ ⵉⵏⵓ",
+    "tFeel": "ⵉⵃⵓⵍⴼⴰⵏ ⵉⵏⵓ",
+    "sTalk": "ⵜⵉⴼⵔⴽⵉⵡⵉⵏ ⴷ ⵡⴰⵡⴰⵍ ⵉⵏⵓ",
+    "sPlay": "ⵓⵔⴰⵔⵏ ⵉ ⵓⵍⵎⵎⵓⴷ",
+    "sDay": "ⵜⵉⴼⴰⵡⵜ ⴷ ⵜⵎⴷⴷⵉⵜ",
+    "sFeel": "ⴼⵔⵃⵖ, ⵃⵣⵏⵖ…",
+    "hello": "ⴰⵣⵓⵍ",
+    "ask": "ⵎⴰⴷ ⵔⴰⴷ ⵏⵙⴽⵔ ⴰⵙⵙ-ⴰ ?"
+  },
+  "categories": [
+    "ⵜⴰⵙⵉⵍⴰ",
+    "ⵓⵛⵛⵉ",
+    "ⵜⵉⵙⵙⵉⵜ",
+    "ⵓⵔⴰⵔ",
+    "ⵜⵉⴳⴰⵡⵉⵏ",
+    "ⵎⵉⴷⴷⵏ",
+    "ⵜⵉⵙⵔⵉⵡⵉⵏ",
+    "ⵉⵃⵓⵍⴼⴰⵏ",
+    "ⴰⴳⵍⴰⵎ",
+    "ⵉⴷⵖⴰⵔⵏ"
+  ],
+  "lexicon": {},
+  "lexiconSource": "modules/amazigh-lexicon.js"
+}

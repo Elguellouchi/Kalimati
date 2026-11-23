@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob: https://api.arasaac.org https://static.arasaac.org https://*.wikimedia.org https://*.wikipedia.org; media-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://api.arasaac.org https://static.arasaac.org https://*.wikipedia.org https://*.wikimedia.org; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data:; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'self'">
+  <meta name="theme-color" content="#1F6F5C">
+  <meta name="kalimati-version" content="v10.20">
+  <title>Kalimati</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a href="#view" class="skip-link">Aller au contenu</a>
+  <header class="top">
+    <div id="strip" class="strip empty" aria-label="Phrase">
+      <div id="strip-cards" class="strip-cards" role="region" aria-label="Phrase en cours" aria-live="polite"></div>
+      <button type="button" id="btn-play" class="strip-btn play" aria-label="Dire la phrase">▶</button>
+      <button type="button" id="btn-back" class="strip-btn" aria-label="Effacer le dernier mot">⌫</button>
+      <button type="button" id="btn-clear" class="strip-btn" aria-label="Tout effacer (appui long)" title="Appui long pour tout effacer">✕</button>
+      <button type="button" id="btn-lang" class="strip-btn lang" aria-label="Choisir la langue">FR</button>
+    </div>
+    <button type="button" id="toilet" class="toilet" aria-label="Toilettes / Bit lma">🚽<span>Toilettes<br>Bit lma</span><b id="toilet-count"></b></button>
+    <button type="button" id="calm" class="calm-btn" aria-label="Coin calme">🌈<span>Calme</span></button>
+    <button type="button" id="lock" class="lock" aria-pressed="false" aria-label="Mode parent verrouillé : rester appuyé 3 secondes pour ouvrir">🔒</button>
+  </header>
+  <div id="morph-slot" class="morph-slot" hidden></div>
+
+  <div id="reminder" class="reminder" role="status" aria-live="polite" hidden></div>
+
+  <section id="parent-bar" class="parent-bar" aria-label="Réglages du parent">
+    <button type="button" id="pb-toggle" class="pb-head" aria-expanded="false" aria-controls="parent-bar">
+      <span class="pb-title">⚙️ Réglages parent</span><span class="pb-chevron" aria-hidden="true">▾</span>
+    </button>
+    <div class="seg">
+      <button type="button" data-lang-choice="fr">Français</button>
+      <button type="button" data-lang-choice="dr">Darija</button>
+    </div>
+    <label>Taille
+      <select id="cols" aria-label="Taille des cartes dans la grille">
+        <option value="2">Très grandes</option>
+        <option value="3">Grandes</option>
+        <option value="4">Moyennes</option>
+        <option value="5">Petites</option>
+      </select>
+    </label>
+    <button type="button" id="photos" class="btn primary">📸 Nos vraies photos</button>
+    <button type="button" id="wizard-btn" class="btn ghost">🪄 Assistant profil</button>
+    <button type="button" id="export" class="btn ghost">💾 Sauvegarder</button>
+    <label class="pb-hint backup-media-choice"><input type="checkbox" id="backup-media"> Inclure exceptionnellement les photos et les voix</label>
+    <label class="pb-hint backup-media-choice"><input type="checkbox" id="backup-encrypt"> Chiffrer la sauvegarde par mot de passe</label>
+    <span id="backup-age" class="pb-hint backup-age" role="status"></span>
+    <div id="backup-panel" class="backup-panel" role="status" aria-live="polite" hidden></div>
+    <label class="btn ghost">📂 Restaurer<input type="file" id="import" accept="application/json,.json" hidden></label>
+    <span class="pb-hint">Touchez une carte pour la modifier, ou le petit 📷 d'une image pour y mettre une vraie photo. Touchez 🔓 pour revenir au mode enfant.</span>
+  </section>
+
+  <main id="view" class="view" tabindex="-1"></main>
+  <nav id="spaces" class="spaces" aria-label="Espaces"></nav>
+
+  <dialog id="editor" aria-label="Éditeur de carte"></dialog>
+  <div id="print-area" class="print-area" aria-hidden="true"></div>
+  <script src="boot-guard.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

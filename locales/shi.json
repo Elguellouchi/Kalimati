@@ -1,0 +1,40 @@
+{
+  "code": "shi",
+  "name": "Tachelhit",
+  "short": "SHI",
+  "tts": "shi",
+  "rtl": false,
+  "amazigh": true,
+  "ui": {
+    "home": "Taddart",
+    "talk": "Sawal",
+    "session": "Urar",
+    "routines": "Ass inu",
+    "emotions": "Iḥulfan",
+    "progress": "Afara",
+    "tTalk": "Ar sawalɣ",
+    "tPlay": "Ar tturarɣ",
+    "tDay": "Ass inu",
+    "tFeel": "Iḥulfan inu",
+    "sTalk": "Tiferkiwin d wawal inu",
+    "sPlay": "Uraren i ulmmud",
+    "sDay": "Zik d tmeddit",
+    "sFeel": "Ferḥɣ, ḥzenɣ…",
+    "hello": "Azul",
+    "ask": "Ma rad nskr ass-ad ?"
+  },
+  "categories": [
+    "Lmouhim",
+    "Učči",
+    "Tissit",
+    "Urar",
+    "Tigawin",
+    "Midden",
+    "Tiɣawsiwin",
+    "Iḥulfan",
+    "Aglam",
+    "Idɣaren"
+  ],
+  "lexicon": {},
+  "lexiconSource": "modules/amazigh-lexicon.js"
+}

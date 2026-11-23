@@ -1,0 +1,194 @@
+// v7.1 : histoires sociales (inspirées de la méthode de Carol Gray) : une page à la fois, une image, une phrase simple et positive.
+// Le parent remplace les images par ses vraies photos (visual_overrides « story:<id>:<page> ») et enregistre sa voix.
+// Tout reste dans le téléphone (réglage « stories »).
+import * as db from '../db.js';
+import { h, btn, uid } from './util.js';
+import { speak, playBlob, stopSpeaking } from '../speech.js';
+import { playClap, canRecord, startRecording } from '../media.js';
+import { renderVisual } from './visuals.js';
+import { firstName, sisterName } from './aba.js';
+import { unlockFriendSticker } from './friends.js';
+import { tx, storyLabel } from './section-i18n.js';
+
+const STORIES_KEY = 'stories';
+const P = (emoji, text, dr = '') => ({ emoji, text, dr, audio: null });
+
+export const DEFAULT_STORIES = () => [
+  { id: 'docteur', emoji: '🩺', title: 'Je vais chez le docteur', pages: [
+    P('🚗', 'Aujourd’hui, je vais chez le docteur avec Papa ou Maman.', 'Lyoum ghadi nemchi l tbib.'),
+    P('🪑', 'Dans la salle d’attente, j’attends sur une chaise. Je peux regarder un livre.', 'Ntsenna f l kursi.'),
+    P('🩺', 'Le docteur écoute mon cœur. C’est froid, mais ça ne fait pas mal.', 'Tbib kaysme3 l9elbi.'),
+    P('👄', 'Il regarde dans ma bouche et dans mes oreilles. J’ouvre grand la bouche.', 'N7el fommi.'),
+    P('🙂', 'Le docteur m’aide à rester en bonne santé.', 'Tbib kay3awenni.'),
+    P('🌟', 'C’est fini ! Je suis fière de moi.', 'Salina! Ana fer7ana.'),
+  ] },
+  { id: 'coiffeur', emoji: '💇‍♀️', title: 'Je vais chez le coiffeur', pages: [
+    P('🏪', 'Je vais chez le coiffeur pour couper mes cheveux.', 'Ghadi n9ess cha3ri.'),
+    P('🪑', 'Je m’assois sur le grand fauteuil.', 'Ngles f l kursi.'),
+    P('✂️', 'Les ciseaux font un petit bruit. Ça ne fait pas mal.', 'L m9ess kaydir sout sghir.'),
+    P('💨', 'Le séchoir souffle de l’air chaud. Je peux fermer les yeux.', 'Nsedd 3ayniya.'),
+    P('🪞', 'Je regarde dans le miroir. Mes cheveux sont jolis !', 'Cha3ri zwin!'),
+  ] },
+  { id: 'courses', emoji: '🛒', title: 'On fait les courses', pages: [
+    P('🛒', 'Nous allons au supermarché avec la liste.', 'Ghadi ntqdaw.'),
+    P('🧍', 'Je reste à côté de Maman ou Papa et je tiens le chariot.', 'Nb9a 7da Mama.'),
+    P('🔊', 'Il peut y avoir du bruit et du monde. Je peux mettre mon casque.', 'Ila kan sda3, nlbes l casque.'),
+    P('🍎', 'Je peux choisir un fruit et le mettre dans le chariot.', 'Nkhtar fakya.'),
+    P('💳', 'On attend à la caisse. Ensuite on rentre à la maison.', 'Ntsennaw w nrj3ou l dar.'),
+  ] },
+  { id: 'bruit', emoji: '🔊', title: 'Quand il y a un gros bruit', pages: [
+    P('🔊', 'Parfois, il y a un gros bruit. Ça peut me faire peur.', 'Mrat kayn sda3 kbir.'),
+    P('🎧', 'Je peux mettre mes mains sur mes oreilles ou mon casque.', 'N7et ydiya 3la wdniya.'),
+    P('🫁', 'Je respire doucement : j’inspire, je souffle.', 'Ntnffes b chwiya.'),
+    P('🤝', 'Je peux dire « Aide-moi » ou « J’ai peur ».', 'Ngoul 3awnni.'),
+    P('🙂', 'Le bruit s’arrête. Je suis en sécurité.', 'Sda3 sala. Ana mzyana.'),
+  ] },
+  { id: 'ecole_inclusion', emoji: '🏫', title: 'À l’école avec mes camarades (Inclusion)', pages: [
+    P('👧', 'À l’école, chaque enfant apprend à sa façon. Moi, j’utilise parfois des images pour parler.', 'F l medrasa, kanhder b tsawer.'),
+    P('🎧', 'Quand la classe est trop bruyante, je peux mettre mon casque pour protéger mes oreilles.', 'Ila kan sda3, kandir l casque.'),
+    P('📅', 'Mon planning visuel m’aide à savoir ce qu’on fait maintenant et ensuite.', 'Planning kay3awenni n3ref chnou jay.'),
+    P('🤝', 'Mes camarades peuvent me montrer les jeux et attendre ma réponse calmement.', 'S7abi kaytsennawni b chwiya.'),
+    P('🌟', 'Ensemble, on est une belle équipe dans la classe !', 'Mجموعين حنا فريق زوين!'),
+  ] },
+  { id: 'fratrie_jeu', emoji: '👭', title: 'Jouer avec ma sœur (Fratrie)', pages: [
+    P('👭', 'Ma sœur et moi, on aime passer de bons moments ensemble.', 'Ana w khti kanl3bou bjouj.'),
+    P('⏳', 'Chacune son tour : d’abord toi, ensuite moi, avec le sablier.', 'Marra nti, marra ana.'),
+    P('🗣️', 'Si je veux un jouet ou une pause, je le demande avec ma carte ou mes mots.', 'Ila bghit chi 7aja, kantlebha b l karta.'),
+    P('🫂', 'On se respecte et on reste calmes même quand on n’est pas d’accord.', 'Kan7tarmo b3diyatna.'),
+  ] },
+];
+
+async function loadStories() {
+  const saved = await db.getSetting(STORIES_KEY);
+  const defaults = DEFAULT_STORIES();
+  if (!Array.isArray(saved) || !saved.length) return defaults;
+  const ids = new Set(saved.map((s) => s.id));
+  const missing = defaults.filter((d) => !ids.has(d.id));
+  return missing.length ? [...saved, ...missing] : saved;
+}
+const saveStories = (stories) => db.setSetting(STORIES_KEY, stories);
+const pageVisual = (story, i, page, button = true) => renderVisual({ vkey: `story:${story.id}:${i}`, emoji: page.emoji, label: page.text }, { button });
+
+function readPage(page, lang) {
+  stopSpeaking();
+  if (page.audio) return playBlob(page.audio);
+  return speak(lang === 'dr' && page.dr ? page.dr : page.text);
+}
+
+// ctx : { isParent(), lang(), onCleanup(fn) }
+export function storiesView(ctx) {
+  const root = h('div', { class: 'stories' }, h('p', { class: 'note' }, tx('loading', ctx.lang())));
+  let stories = [];
+  let boumaTimer = 0;
+  const clearBoumaTimer = () => { if (boumaTimer) { clearTimeout(boumaTimer); boumaTimer = 0; } };
+  const persist = async (next) => { stories = next; await saveStories(stories); };
+  ctx.onCleanup(() => { stopSpeaking(); clearBoumaTimer(); });
+
+  let confirmResetStories = false;
+  const list = () => {
+    clearBoumaTimer();
+    root.replaceChildren(
+      h('p', { class: 'note' }, tx('storiesIntro', ctx.lang(), { name: firstName() })),
+      h('div', { class: 'section-grid' }, stories.map((story) => h('button', { type: 'button', class: 'section-tile big', onclick: () => reader(story, 0) },
+        h('span', { class: 'emoji' }, story.emoji), h('span', {}, storyLabel(story, ctx.lang()))))),
+      ctx.isParent() ? h('div', { class: 'row' },
+        btn('➕ Nouvelle histoire', async () => {
+          const story = { id: uid('story'), emoji: '📖', title: 'Mon histoire', pages: [P('⭐', 'Écrivez ici la première phrase.')] };
+          await persist([...stories, story]);
+          editor(story);
+        }, 'primary'),
+        btn('↺ Remettre les histoires d’origine', async (e) => {
+          const b = e.currentTarget;
+          if (!confirmResetStories) {
+            confirmResetStories = true;
+            b.textContent = 'Confirmer la remise à zéro ?';
+            setTimeout(() => { if (confirmResetStories) { confirmResetStories = false; b.textContent = '↺ Remettre les histoires d’origine'; } }, 4000);
+            return;
+          }
+          confirmResetStories = false;
+          await persist(DEFAULT_STORIES());
+          list();
+        }, 'ghost tiny')) : null);
+  };
+
+  function reader(story, index) {
+    // === [DEBUT MODIF v10.5 : 4.22 · F08 — Déblocage de Bouma le hibou après 20 secondes de lecture d'une histoire] ===
+    if (index === 0 && !boumaTimer) {
+      boumaTimer = setTimeout(() => {
+        boumaTimer = 0;
+        if (!ctx.isParent()) unlockFriendSticker('bouma').catch(() => {});
+      }, 20000);
+    }
+    // === [FIN MODIF v10.5 : 4.22 · F08] ===
+    const lang = ctx.lang();
+    const page = story.pages[index];
+    const last = index === story.pages.length - 1;
+    const label = lang === 'dr' && page.dr ? page.dr : page.text;
+    const go = (i) => { reader(story, i); readPage(story.pages[i], ctx.lang()); };
+    root.replaceChildren(
+      h('div', { class: 'row' }, btn(tx('allStories', lang), list, 'ghost'), ctx.isParent() ? btn('✏️ Modifier', () => editor(story), 'ghost') : null),
+      h('h3', {}, `${story.emoji} ${storyLabel(story, lang)}`),
+      h('button', { type: 'button', class: 'big-card story-page', onclick: () => readPage(page, ctx.lang()) }, pageVisual(story, index, page),
+        h('span', { class: 'label' }, label), lang === 'dr' && page.text && page.dr ? h('small', {}, page.text) : null),
+      h('div', { class: 'order-slots' }, story.pages.map((_, j) => h('span', { class: `order-slot${j <= index ? ' on' : ''}` }, String(j + 1)))),
+      h('div', { class: 'row center' },
+        index > 0 ? btn('◀', () => go(index - 1), 'ghost big-arrow') : null,
+        last ? btn(tx('storyFinished', lang), () => {
+          if (!ctx.isParent()) unlockFriendSticker('bouma').catch(() => {});
+          playClap();
+          speak(tx('storyFinishedPraise', lang));
+          list();
+        }, 'primary') : btn(tx('nextPage', lang), () => go(index + 1), 'primary')));
+  }
+
+  function editor(story) {
+    if (!ctx.isParent()) { reader(story, 0); return; }
+    const update = async (patch) => {
+      const next = { ...story, ...patch };
+      await persist(stories.map((s) => (s.id === story.id ? next : s)));
+      editor(next);
+    };
+    const setPage = (i, patch) => update({ pages: story.pages.map((p, j) => (j === i ? { ...p, ...patch } : p)) });
+    const input = (value, onchange, attrs = {}) => h('input', { value: value || '', ...attrs, onchange: (e) => onchange(e.target.value) });
+    root.replaceChildren(
+      h('div', { class: 'row' }, btn('✔ Terminé', () => reader(story, 0), 'primary'),
+        btn('🗑 Supprimer l’histoire', async (e) => {
+          const b = e.currentTarget;
+          if (!b._confirmDel) {
+            b._confirmDel = true;
+            b.textContent = 'Confirmer la suppression ?';
+            setTimeout(() => { if (b._confirmDel) { b._confirmDel = false; b.textContent = '🗑 Supprimer l’histoire'; } }, 4000);
+            return;
+          }
+          await persist(stories.filter((s) => s.id !== story.id));
+          list();
+        }, 'ghost tiny')),
+      h('div', { class: 'ed-grid' }, h('label', { class: 'ed-field' }, h('span', {}, 'Titre'), input(story.title, (v) => update({ title: v }))),
+        h('label', { class: 'ed-field' }, h('span', {}, 'Image du titre'), input(story.emoji, (v) => update({ emoji: v }), { maxlength: 8 }))),
+      h('p', { class: 'note' }, '📷 sur l’image : mettre une vraie photo (le cabinet du docteur, le coiffeur du quartier…). Phrases courtes, positives, au « je ».'),
+      h('div', { class: 'ed-steps' }, story.pages.map((page, i) => h('div', { class: 'ed-step' },
+        h('div', { class: 'ed-step-head' }, h('span', { class: 'ed-num' }, String(i + 1)), pageVisual(story, i, page),
+          h('div', { class: 'row' },
+            btn('↑', () => { if (i) { const p = [...story.pages]; [p[i - 1], p[i]] = [p[i], p[i - 1]]; update({ pages: p }); } }, 'ghost tiny'),
+            btn('🗑', () => { if (story.pages.length > 1) update({ pages: story.pages.filter((_, j) => j !== i) }); }, 'ghost tiny'))),
+        h('div', { class: 'ed-grid' },
+          h('label', { class: 'ed-field' }, h('span', {}, 'Image'), input(page.emoji, (v) => setPage(i, { emoji: v }), { maxlength: 8 })),
+          h('label', { class: 'ed-field' }, h('span', {}, 'Phrase (français)'), input(page.text, (v) => setPage(i, { text: v }))),
+          h('label', { class: 'ed-field' }, h('span', {}, 'Darija'), input(page.dr, (v) => setPage(i, { dr: v })))),
+        voiceButton(page, (audio) => setPage(i, { audio }))))),
+      btn('➕ Ajouter une page', () => update({ pages: [...story.pages, P('⭐', 'Nouvelle phrase.')] }), 'primary'));
+  }
+
+  function voiceButton(page, save) {
+    if (!canRecord()) return h('span', { class: 'note' }, 'Micro indisponible');
+    let stop = null;
+    const rec = btn(page.audio ? '🎙️ Réenregistrer ma voix' : '🎙️ Enregistrer ma voix', async () => {
+      if (stop) { const blob = await stop(); stop = null; save(blob); return; }
+      try { stop = await startRecording(); rec.textContent = '⏹ Arrêter'; rec.classList.add('recording'); } catch { rec.textContent = 'Micro refusé'; }
+    }, 'ghost tiny');
+    return h('div', { class: 'row' }, rec, page.audio ? btn('▶', () => playBlob(page.audio), 'ghost tiny') : null, page.audio ? btn('✖', () => save(null), 'ghost tiny') : null);
+  }
+
+  loadStories().then((s) => { stories = s; list(); }).catch((e) => root.replaceChildren(h('p', { class: 'note' }, `Histoires indisponibles : ${e.message}`)));
+  return root;
+}

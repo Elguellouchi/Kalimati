@@ -1,0 +1,1178 @@
+{
+"source": "Darija Open Dataset (DODa), https://github.com/darija-open-dataset/dataset",
+"licence": "CC BY-NC 4.0 : usage non commercial, auteurs Aissam Outchakoucht et Hamza Es-Samaali",
+"note": "Mots choisis via la traduction anglaise de DODa. À faire relire par un locuteur natif.",
+"words": [
+{
+"fr": "pain",
+"dr_lat": "khbz",
+"dr_ar": "خبز",
+"cat": "food"
+},
+{
+"fr": "lait",
+"dr_lat": "7lib",
+"dr_ar": "حليب",
+"cat": "food"
+},
+{
+"fr": "jus",
+"dr_lat": "3aSir",
+"dr_ar": "عصير",
+"cat": "food"
+},
+{
+"fr": "thé",
+"dr_lat": "atay",
+"dr_ar": "أتاي",
+"cat": "food"
+},
+{
+"fr": "café",
+"dr_lat": "9ahwa",
+"dr_ar": "قهوة",
+"cat": "food"
+},
+{
+"fr": "pomme",
+"dr_lat": "tfa7",
+"dr_ar": "تفاح",
+"cat": "food"
+},
+{
+"fr": "banane",
+"dr_lat": "banan",
+"dr_ar": "بنان",
+"cat": "food"
+},
+{
+"fr": "orange",
+"dr_lat": "limoun",
+"dr_ar": "ليمون",
+"cat": "food"
+},
+{
+"fr": "fraise",
+"dr_lat": "friz",
+"dr_ar": "فريز",
+"cat": "food"
+},
+{
+"fr": "poire",
+"dr_lat": "bou3ouid",
+"dr_ar": "بوعويد",
+"cat": "food"
+},
+{
+"fr": "pastèque",
+"dr_lat": "dla7",
+"dr_ar": "دلاح",
+"cat": "food"
+},
+{
+"fr": "melon",
+"dr_lat": "mnoun",
+"dr_ar": "منون",
+"cat": "food"
+},
+{
+"fr": "pêche",
+"dr_lat": "khoukh",
+"dr_ar": "خوخ",
+"cat": "food"
+},
+{
+"fr": "citron",
+"dr_lat": "7amd",
+"dr_ar": "حامض",
+"cat": "food"
+},
+{
+"fr": "datte",
+"dr_lat": "tmr",
+"dr_ar": "تمر",
+"cat": "food"
+},
+{
+"fr": "carotte",
+"dr_lat": "khizo",
+"dr_ar": "خيزو",
+"cat": "food"
+},
+{
+"fr": "tomate",
+"dr_lat": "maticha",
+"dr_ar": "مطيشة",
+"cat": "food"
+},
+{
+"fr": "pomme de terre",
+"dr_lat": "btata",
+"dr_ar": "بطاطا",
+"cat": "food"
+},
+{
+"fr": "oignon",
+"dr_lat": "bsla",
+"dr_ar": "بصلة",
+"cat": "food"
+},
+{
+"fr": "concombre",
+"dr_lat": "khyar",
+"dr_ar": "خيار",
+"cat": "food"
+},
+{
+"fr": "olive",
+"dr_lat": "zitoun",
+"dr_ar": "زيتون",
+"cat": "food"
+},
+{
+"fr": "légumes",
+"dr_lat": "khDra",
+"dr_ar": "خضرة",
+"cat": "food"
+},
+{
+"fr": "viande",
+"dr_lat": "l7m",
+"dr_ar": "لحم",
+"cat": "food"
+},
+{
+"fr": "poisson",
+"dr_lat": "7outa",
+"dr_ar": "حوتة",
+"cat": "food"
+},
+{
+"fr": "œuf",
+"dr_lat": "biDa",
+"dr_ar": "بيضة",
+"cat": "food"
+},
+{
+"fr": "fromage",
+"dr_lat": "frmaj",
+"dr_ar": "فرماج",
+"cat": "food"
+},
+{
+"fr": "beurre",
+"dr_lat": "zbda",
+"dr_ar": "زبدة",
+"cat": "food"
+},
+{
+"fr": "sucre",
+"dr_lat": "skkar",
+"dr_ar": "سكّر",
+"cat": "food"
+},
+{
+"fr": "sel",
+"dr_lat": "ml7a",
+"dr_ar": "ملحة",
+"cat": "food"
+},
+{
+"fr": "gâteau",
+"dr_lat": "kika",
+"dr_ar": "كيكا",
+"cat": "food"
+},
+{
+"fr": "glace",
+"dr_lat": "laglas",
+"dr_ar": "لاڭلاس",
+"cat": "food"
+},
+{
+"fr": "maman",
+"dr_lat": "mama",
+"dr_ar": "ماما",
+"cat": "family"
+},
+{
+"fr": "papa",
+"dr_lat": "baba",
+"dr_ar": "بابا",
+"cat": "family"
+},
+{
+"fr": "mère",
+"dr_lat": "lwalida",
+"dr_ar": "لواليدة",
+"cat": "family"
+},
+{
+"fr": "père",
+"dr_lat": "lwalid",
+"dr_ar": "لواليد",
+"cat": "family"
+},
+{
+"fr": "sœur",
+"dr_lat": "okht",
+"dr_ar": "أخت",
+"cat": "family"
+},
+{
+"fr": "grand-mère",
+"dr_lat": "jdda",
+"dr_ar": "جدّة",
+"cat": "family"
+},
+{
+"fr": "grand-père",
+"dr_lat": "jdd",
+"dr_ar": "جدّ",
+"cat": "family"
+},
+{
+"fr": "famille",
+"dr_lat": "3a2ila",
+"dr_ar": "عائلة",
+"cat": "family"
+},
+{
+"fr": "enfant",
+"dr_lat": "derri sghir",
+"dr_ar": "درّي صغير",
+"cat": "family"
+},
+{
+"fr": "maison",
+"dr_lat": "dar",
+"dr_ar": "دار",
+"cat": "house"
+},
+{
+"fr": "chambre",
+"dr_lat": "bit",
+"dr_ar": "بيت",
+"cat": "house"
+},
+{
+"fr": "cuisine",
+"dr_lat": "kouzina",
+"dr_ar": "كوزينة",
+"cat": "house"
+},
+{
+"fr": "porte",
+"dr_lat": "bab",
+"dr_ar": "باب",
+"cat": "house"
+},
+{
+"fr": "fenêtre",
+"dr_lat": "chrjm",
+"dr_ar": "شرجم",
+"cat": "house"
+},
+{
+"fr": "lit",
+"dr_lat": "namousia",
+"dr_ar": "ناموسية",
+"cat": "house"
+},
+{
+"fr": "table",
+"dr_lat": "tabla",
+"dr_ar": "طبلة",
+"cat": "house"
+},
+{
+"fr": "chaise",
+"dr_lat": "korsi",
+"dr_ar": "كرسي",
+"cat": "house"
+},
+{
+"fr": "verre",
+"dr_lat": "kas",
+"dr_ar": "كاس",
+"cat": "house"
+},
+{
+"fr": "assiette",
+"dr_lat": "Tbsil",
+"dr_ar": "طبسيل",
+"cat": "house"
+},
+{
+"fr": "cuillère",
+"dr_lat": "m3il9a",
+"dr_ar": "معيلقة",
+"cat": "house"
+},
+{
+"fr": "fourchette",
+"dr_lat": "frchiTa",
+"dr_ar": "فرشيطة",
+"cat": "house"
+},
+{
+"fr": "couteau",
+"dr_lat": "mous",
+"dr_ar": "موس",
+"cat": "house"
+},
+{
+"fr": "clé",
+"dr_lat": "sarout",
+"dr_ar": "ساروت",
+"cat": "house"
+},
+{
+"fr": "miroir",
+"dr_lat": "mraya",
+"dr_ar": "مراية",
+"cat": "house"
+},
+{
+"fr": "savon",
+"dr_lat": "Sabon",
+"dr_ar": "صابون",
+"cat": "house"
+},
+{
+"fr": "serviette",
+"dr_lat": "foTa",
+"dr_ar": "فوطة",
+"cat": "house"
+},
+{
+"fr": "téléphone",
+"dr_lat": "tilifoun",
+"dr_ar": "تيليفون",
+"cat": "house"
+},
+{
+"fr": "télévision",
+"dr_lat": "tlfaza",
+"dr_ar": "تلفازة",
+"cat": "house"
+},
+{
+"fr": "école",
+"dr_lat": "mdrasa",
+"dr_ar": "مدرسة",
+"cat": "school"
+},
+{
+"fr": "élève",
+"dr_lat": "tlmid",
+"dr_ar": "تلميد",
+"cat": "school"
+},
+{
+"fr": "livre",
+"dr_lat": "ktab",
+"dr_ar": "كتاب",
+"cat": "school"
+},
+{
+"fr": "cahier",
+"dr_lat": "dftar",
+"dr_ar": "دفتر",
+"cat": "school"
+},
+{
+"fr": "stylo",
+"dr_lat": "stilo",
+"dr_ar": "ستيلو",
+"cat": "school"
+},
+{
+"fr": "crayon",
+"dr_lat": "9alam",
+"dr_ar": "قلم",
+"cat": "school"
+},
+{
+"fr": "triste",
+"dr_lat": "7azin",
+"dr_ar": "حزين",
+"cat": "emotions"
+},
+{
+"fr": "en colère",
+"dr_lat": "cha3l",
+"dr_ar": "شاعل",
+"cat": "emotions"
+},
+{
+"fr": "peur",
+"dr_lat": "khouf",
+"dr_ar": "خوف",
+"cat": "emotions"
+},
+{
+"fr": "fatigué",
+"dr_lat": "3yyan",
+"dr_ar": "عيّان",
+"cat": "emotions"
+},
+{
+"fr": "amour",
+"dr_lat": "7obb",
+"dr_ar": "حبّ",
+"cat": "emotions"
+},
+{
+"fr": "joie",
+"dr_lat": "fara7",
+"dr_ar": "فرح",
+"cat": "emotions"
+},
+{
+"fr": "tête",
+"dr_lat": "ras",
+"dr_ar": "راس",
+"cat": "body"
+},
+{
+"fr": "œil",
+"dr_lat": "3in",
+"dr_ar": "عين",
+"cat": "body"
+},
+{
+"fr": "oreille",
+"dr_lat": "wdn",
+"dr_ar": "ودن",
+"cat": "body"
+},
+{
+"fr": "nez",
+"dr_lat": "nif",
+"dr_ar": "نيف",
+"cat": "body"
+},
+{
+"fr": "bouche",
+"dr_lat": "fom",
+"dr_ar": "فم",
+"cat": "body"
+},
+{
+"fr": "langue",
+"dr_lat": "lsan",
+"dr_ar": "لسان",
+"cat": "body"
+},
+{
+"fr": "main",
+"dr_lat": "yedd",
+"dr_ar": "يدّ",
+"cat": "body"
+},
+{
+"fr": "pied",
+"dr_lat": "rjl",
+"dr_ar": "رجل",
+"cat": "body"
+},
+{
+"fr": "dos",
+"dr_lat": "D8r",
+"dr_ar": "ضهر",
+"cat": "body"
+},
+{
+"fr": "bras",
+"dr_lat": "dra3",
+"dr_ar": "دراع",
+"cat": "body"
+},
+{
+"fr": "jambe",
+"dr_lat": "rjl",
+"dr_ar": "رجل",
+"cat": "body"
+},
+{
+"fr": "cheveux",
+"dr_lat": "ch3r",
+"dr_ar": "شعر",
+"cat": "body"
+},
+{
+"fr": "doigt",
+"dr_lat": "Sb3",
+"dr_ar": "صبع",
+"cat": "body"
+},
+{
+"fr": "chat",
+"dr_lat": "mch",
+"dr_ar": "مش",
+"cat": "animals"
+},
+{
+"fr": "chien",
+"dr_lat": "klb",
+"dr_ar": "كلب",
+"cat": "animals"
+},
+{
+"fr": "âne",
+"dr_lat": "7mar",
+"dr_ar": "حمار",
+"cat": "animals"
+},
+{
+"fr": "cheval",
+"dr_lat": "3awd",
+"dr_ar": "عاود",
+"cat": "animals"
+},
+{
+"fr": "vache",
+"dr_lat": "bgra",
+"dr_ar": "بڭرة",
+"cat": "animals"
+},
+{
+"fr": "mouton",
+"dr_lat": "khrouf",
+"dr_ar": "خروف",
+"cat": "animals"
+},
+{
+"fr": "chèvre",
+"dr_lat": "m3za",
+"dr_ar": "معزة",
+"cat": "animals"
+},
+{
+"fr": "oiseau",
+"dr_lat": "Twiyer",
+"dr_ar": "طويير",
+"cat": "animals"
+},
+{
+"fr": "lapin",
+"dr_lat": "9niwna",
+"dr_ar": "قنيونة",
+"cat": "animals"
+},
+{
+"fr": "lion",
+"dr_lat": "sb3",
+"dr_ar": "سبع",
+"cat": "animals"
+},
+{
+"fr": "éléphant",
+"dr_lat": "fil",
+"dr_ar": "فيل",
+"cat": "animals"
+},
+{
+"fr": "singe",
+"dr_lat": "9rd",
+"dr_ar": "قرد",
+"cat": "animals"
+},
+{
+"fr": "chameau",
+"dr_lat": "jml",
+"dr_ar": "جمل",
+"cat": "animals"
+},
+{
+"fr": "souris",
+"dr_lat": "far",
+"dr_ar": "فار",
+"cat": "animals"
+},
+{
+"fr": "serpent",
+"dr_lat": "7nch",
+"dr_ar": "حنش",
+"cat": "animals"
+},
+{
+"fr": "tortue",
+"dr_lat": "fkroun",
+"dr_ar": "فكرون",
+"cat": "animals"
+},
+{
+"fr": "papillon",
+"dr_lat": "faracha",
+"dr_ar": "فراشة",
+"cat": "animals"
+},
+{
+"fr": "abeille",
+"dr_lat": "n7la",
+"dr_ar": "نحلة",
+"cat": "animals"
+},
+{
+"fr": "fourmi",
+"dr_lat": "nmla",
+"dr_ar": "نملة",
+"cat": "animals"
+},
+{
+"fr": "vêtements",
+"dr_lat": "7wayj",
+"dr_ar": "حوايج",
+"cat": "clothes"
+},
+{
+"fr": "chaussettes",
+"dr_lat": "t9achr",
+"dr_ar": "تقاشر",
+"cat": "clothes"
+},
+{
+"fr": "pantalon",
+"dr_lat": "srwal",
+"dr_ar": "سروال",
+"cat": "clothes"
+},
+{
+"fr": "robe",
+"dr_lat": "kswa",
+"dr_ar": "كسوة",
+"cat": "clothes"
+},
+{
+"fr": "chemise",
+"dr_lat": "9amija",
+"dr_ar": "قميجة",
+"cat": "clothes"
+},
+{
+"fr": "manteau",
+"dr_lat": "kbbot",
+"dr_ar": "كبّوط",
+"cat": "clothes"
+},
+{
+"fr": "rouge",
+"dr_lat": "7mr",
+"dr_ar": "حمر",
+"cat": "colors"
+},
+{
+"fr": "vert",
+"dr_lat": "khdr",
+"dr_ar": "خضر",
+"cat": "colors"
+},
+{
+"fr": "bleu",
+"dr_lat": "zr9",
+"dr_ar": "زرق",
+"cat": "colors"
+},
+{
+"fr": "jaune",
+"dr_lat": "Sfr",
+"dr_ar": "صفر",
+"cat": "colors"
+},
+{
+"fr": "blanc",
+"dr_lat": "byed",
+"dr_ar": "بيض",
+"cat": "colors"
+},
+{
+"fr": "noir",
+"dr_lat": "k7l",
+"dr_ar": "كحل",
+"cat": "colors"
+},
+{
+"fr": "orange (couleur)",
+"dr_lat": "limouni",
+"dr_ar": "ليموني",
+"cat": "colors"
+},
+{
+"fr": "rose",
+"dr_lat": "fanidi",
+"dr_ar": "فانيدي",
+"cat": "colors"
+},
+{
+"fr": "marron",
+"dr_lat": "9hwi",
+"dr_ar": "قهوي",
+"cat": "colors"
+},
+{
+"fr": "gris",
+"dr_lat": "gri",
+"dr_ar": "ڭري",
+"cat": "colors"
+},
+{
+"fr": "violet",
+"dr_lat": "banafsaji",
+"dr_ar": "بنفسجي",
+"cat": "colors"
+},
+{
+"fr": "parc",
+"dr_lat": "jerDa",
+"dr_ar": "جردة",
+"cat": "places"
+},
+{
+"fr": "hôpital",
+"dr_lat": "sbiTar",
+"dr_ar": "سبيطار",
+"cat": "places"
+},
+{
+"fr": "mer",
+"dr_lat": "b7er",
+"dr_ar": "بحر",
+"cat": "places"
+},
+{
+"fr": "marché",
+"dr_lat": "sou9",
+"dr_ar": "سوق",
+"cat": "places"
+},
+{
+"fr": "magasin",
+"dr_lat": "7anout",
+"dr_ar": "حانوت",
+"cat": "places"
+},
+{
+"fr": "rue",
+"dr_lat": "chari3",
+"dr_ar": "شارع",
+"cat": "places"
+},
+{
+"fr": "ville",
+"dr_lat": "mdina",
+"dr_ar": "مدينة",
+"cat": "places"
+},
+{
+"fr": "aujourd'hui",
+"dr_lat": "lyom",
+"dr_ar": "ليوم",
+"cat": "time"
+},
+{
+"fr": "demain",
+"dr_lat": "ghdda",
+"dr_ar": "غدّا",
+"cat": "time"
+},
+{
+"fr": "hier",
+"dr_lat": "lbar7",
+"dr_ar": "لبارح",
+"cat": "time"
+},
+{
+"fr": "matin",
+"dr_lat": "Sba7",
+"dr_ar": "صباح",
+"cat": "time"
+},
+{
+"fr": "soir",
+"dr_lat": "3chia",
+"dr_ar": "عشية",
+"cat": "time"
+},
+{
+"fr": "nuit",
+"dr_lat": "lil",
+"dr_ar": "ليل",
+"cat": "time"
+},
+{
+"fr": "semaine",
+"dr_lat": "simana",
+"dr_ar": "سيمانة",
+"cat": "time"
+},
+{
+"fr": "heure",
+"dr_lat": "sa3a",
+"dr_ar": "ساعة",
+"cat": "time"
+},
+{
+"fr": "soleil",
+"dr_lat": "chmch",
+"dr_ar": "شمش",
+"cat": "nature"
+},
+{
+"fr": "lune",
+"dr_lat": "9amar",
+"dr_ar": "قمر",
+"cat": "nature"
+},
+{
+"fr": "étoile",
+"dr_lat": "njma",
+"dr_ar": "نجمة",
+"cat": "nature"
+},
+{
+"fr": "pluie",
+"dr_lat": "chta",
+"dr_ar": "شتا",
+"cat": "nature"
+},
+{
+"fr": "arbre",
+"dr_lat": "chjra",
+"dr_ar": "شجرة",
+"cat": "nature"
+},
+{
+"fr": "grand",
+"dr_lat": "kbir",
+"dr_ar": "كبير",
+"cat": "adj"
+},
+{
+"fr": "petit",
+"dr_lat": "Sghir",
+"dr_ar": "صغير",
+"cat": "adj"
+},
+{
+"fr": "chaud",
+"dr_lat": "skhoun",
+"dr_ar": "سخون",
+"cat": "adj"
+},
+{
+"fr": "froid",
+"dr_lat": "bard",
+"dr_ar": "بارد",
+"cat": "adj"
+},
+{
+"fr": "beau",
+"dr_lat": "zwin",
+"dr_ar": "زوين",
+"cat": "adj"
+},
+{
+"fr": "bon",
+"dr_lat": "zwin",
+"dr_ar": "زوين",
+"cat": "adj"
+},
+{
+"fr": "nouveau",
+"dr_lat": "jdid",
+"dr_ar": "جديد",
+"cat": "adj"
+},
+{
+"fr": "propre",
+"dr_lat": "n9i",
+"dr_ar": "نقي",
+"cat": "adj"
+},
+{
+"fr": "sale",
+"dr_lat": "mossekh",
+"dr_ar": "موسّخ",
+"cat": "adj"
+},
+{
+"fr": "lourd",
+"dr_lat": "t9il",
+"dr_ar": "تقيل",
+"cat": "adj"
+},
+{
+"fr": "long",
+"dr_lat": "Twil",
+"dr_ar": "طويل",
+"cat": "adj"
+},
+{
+"fr": "court",
+"dr_lat": "9Sir",
+"dr_ar": "قصير",
+"cat": "adj"
+},
+{
+"fr": "rapide",
+"dr_lat": "sri3",
+"dr_ar": "سريع",
+"cat": "adj"
+},
+{
+"fr": "lent",
+"dr_lat": "t9il",
+"dr_ar": "تقيل",
+"cat": "adj"
+},
+{
+"fr": "plein",
+"dr_lat": "3aamr",
+"dr_ar": "عامر",
+"cat": "adj"
+},
+{
+"fr": "vide",
+"dr_lat": "khawi",
+"dr_ar": "خاوي",
+"cat": "adj"
+},
+{
+"fr": "manger",
+"dr_lat": "kla",
+"dr_ar": "كلا",
+"cat": "verbs",
+"dr_je": "nakl"
+},
+{
+"fr": "boire",
+"dr_lat": "chrb",
+"dr_ar": "شرب",
+"cat": "verbs",
+"dr_je": "nchrb"
+},
+{
+"fr": "dormir",
+"dr_lat": "n3s",
+"dr_ar": "نعس",
+"cat": "verbs",
+"dr_je": "nn3s"
+},
+{
+"fr": "jouer",
+"dr_lat": "l3b",
+"dr_ar": "لعب",
+"cat": "verbs",
+"dr_je": "nl3b"
+},
+{
+"fr": "courir",
+"dr_lat": "jra",
+"dr_ar": "جرا",
+"cat": "verbs",
+"dr_je": "njri"
+},
+{
+"fr": "marcher",
+"dr_lat": "tmchcha",
+"dr_ar": "تمشّا",
+"cat": "verbs",
+"dr_je": "ntmchcha"
+},
+{
+"fr": "sauter",
+"dr_lat": "tla7",
+"dr_ar": "تلاح",
+"cat": "verbs",
+"dr_je": "ntla7"
+},
+{
+"fr": "s'asseoir",
+"dr_lat": "gles",
+"dr_ar": "ڭلس",
+"cat": "verbs",
+"dr_je": "ngles"
+},
+{
+"fr": "venir",
+"dr_lat": "ja",
+"dr_ar": "جا",
+"cat": "verbs",
+"dr_je": "nji"
+},
+{
+"fr": "aller",
+"dr_lat": "mcha",
+"dr_ar": "مشا",
+"cat": "verbs",
+"dr_je": "nmchi"
+},
+{
+"fr": "entrer",
+"dr_lat": "dkhel",
+"dr_ar": "دخل",
+"cat": "verbs"
+},
+{
+"fr": "sortir",
+"dr_lat": "khrj",
+"dr_ar": "خرج",
+"cat": "verbs"
+},
+{
+"fr": "ouvrir",
+"dr_lat": "7ell",
+"dr_ar": "حلّ",
+"cat": "verbs",
+"dr_je": "n7ell"
+},
+{
+"fr": "fermer",
+"dr_lat": "sdd",
+"dr_ar": "سدّ",
+"cat": "verbs",
+"dr_je": "nsdd"
+},
+{
+"fr": "laver",
+"dr_lat": "ghsl",
+"dr_ar": "غسل",
+"cat": "verbs",
+"dr_je": "nghsl"
+},
+{
+"fr": "donner",
+"dr_lat": "3Ta",
+"dr_ar": "عطا",
+"cat": "verbs",
+"dr_je": "n3Ti"
+},
+{
+"fr": "prendre",
+"dr_lat": "khda",
+"dr_ar": "خدا",
+"cat": "verbs"
+},
+{
+"fr": "regarder",
+"dr_lat": "chaf",
+"dr_ar": "شاف",
+"cat": "verbs",
+"dr_je": "nchouf"
+},
+{
+"fr": "voir",
+"dr_lat": "chaf",
+"dr_ar": "شاف",
+"cat": "verbs",
+"dr_je": "nchouf"
+},
+{
+"fr": "écouter",
+"dr_lat": "sme3",
+"dr_ar": "سمع",
+"cat": "verbs",
+"dr_je": "nsme3"
+},
+{
+"fr": "parler",
+"dr_lat": "hDer",
+"dr_ar": "هضر",
+"cat": "verbs",
+"dr_je": "nhDer"
+},
+{
+"fr": "lire",
+"dr_lat": "9ra",
+"dr_ar": "قرا",
+"cat": "verbs",
+"dr_je": "n9ra"
+},
+{
+"fr": "écrire",
+"dr_lat": "ktb",
+"dr_ar": "كتب",
+"cat": "verbs",
+"dr_je": "nktb"
+},
+{
+"fr": "dessiner",
+"dr_lat": "rsem",
+"dr_ar": "رسم",
+"cat": "verbs",
+"dr_je": "nrsem"
+},
+{
+"fr": "chanter",
+"dr_lat": "ghnna",
+"dr_ar": "غنّا",
+"cat": "verbs",
+"dr_je": "nghnni"
+},
+{
+"fr": "danser",
+"dr_lat": "chTe7",
+"dr_ar": "شطح",
+"cat": "verbs",
+"dr_je": "nchTe7"
+},
+{
+"fr": "pleurer",
+"dr_lat": "bka",
+"dr_ar": "بكا",
+"cat": "verbs",
+"dr_je": "nbki"
+},
+{
+"fr": "rire",
+"dr_lat": "D7k",
+"dr_ar": "ضحك",
+"cat": "verbs",
+"dr_je": "nD7k"
+},
+{
+"fr": "aider",
+"dr_lat": "3awn",
+"dr_ar": "عاون",
+"cat": "verbs",
+"dr_je": "n3awn"
+},
+{
+"fr": "attendre",
+"dr_lat": "tsnna",
+"dr_ar": "تسنّا",
+"cat": "verbs",
+"dr_je": "ntsnna"
+},
+{
+"fr": "aimer",
+"dr_lat": "7bb",
+"dr_ar": "حبّ",
+"cat": "verbs",
+"dr_je": "n7bb"
+},
+{
+"fr": "couper",
+"dr_lat": "9TT3",
+"dr_ar": "قطّع",
+"cat": "verbs",
+"dr_je": "n9TT3"
+},
+{
+"fr": "cuisiner",
+"dr_lat": "Tyyb",
+"dr_ar": "طيّب",
+"cat": "verbs",
+"dr_je": "nTyyb"
+},
+{
+"fr": "nager",
+"dr_lat": "3am",
+"dr_ar": "عام",
+"cat": "verbs",
+"dr_je": "n3oum"
+}
+]
+}

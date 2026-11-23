@@ -1,0 +1,40 @@
+{
+  "code": "tzm",
+  "name": "Tamazight",
+  "short": "TZM",
+  "tts": "tzm",
+  "rtl": false,
+  "amazigh": true,
+  "ui": {
+    "home": "Taddart",
+    "talk": "Siwel",
+    "session": "Urar",
+    "routines": "Ass inu",
+    "emotions": "Iḥulfan",
+    "progress": "Afara",
+    "tTalk": "Da ssawalɣ",
+    "tPlay": "Da tturarɣ",
+    "tDay": "Ass inu",
+    "tFeel": "Iḥulfan inu",
+    "sTalk": "Tiferkiwin d wawal inu",
+    "sPlay": "Uraren i ulmmud",
+    "sDay": "Zik d tmeddit",
+    "sFeel": "Ferḥɣ, ḥzenɣ…",
+    "hello": "Azul",
+    "ask": "Mayd nttgga ass-a ?"
+  },
+  "categories": [
+    "Axatar",
+    "Učči",
+    "Tissit",
+    "Urar",
+    "Tigawin",
+    "Midden",
+    "Tisriwin",
+    "Iḥulfan",
+    "Aglam",
+    "Idɣaren"
+  ],
+  "lexicon": {},
+  "lexiconSource": "modules/amazigh-lexicon.js"
+}

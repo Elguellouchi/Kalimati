@@ -1,0 +1,12 @@
+_vendor/
+node_modules/
+bonnes-pratiques/
+*.pdf
+*.gdoc
+PROMPT_*.txt
+
+# Journaux, transcripts et brouillons locaux : jamais publiés (aucune donnée d'enfant dans le dépôt).
+transcripts_autisme/
+transcripts_autisme_chaines/
+Transcript Vidéos/
+.mimocode/

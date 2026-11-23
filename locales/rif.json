@@ -1,0 +1,40 @@
+{
+  "code": "rif",
+  "name": "Tarifit",
+  "short": "RIF",
+  "tts": "rif",
+  "rtl": false,
+  "amazigh": true,
+  "ui": {
+    "home": "Taddart",
+    "talk": "Siwer",
+    "session": "Irar",
+    "routines": "Ass inu",
+    "emotions": "Iḥulfan",
+    "progress": "Afara",
+    "tTalk": "Ssawareɣ",
+    "tPlay": "Ttirareɣ",
+    "tDay": "Ass inu",
+    "tFeel": "Iḥulfan inu",
+    "sTalk": "Tiferkiwin d wawal inu",
+    "sPlay": "Iraren i ulmmud",
+    "sDay": "Ṣbaḥ d tmeddit",
+    "sFeel": "Ferḥeɣ, ḥzeneɣ…",
+    "hello": "Azul",
+    "ask": "Min ɣa negg ass-a ?"
+  },
+  "categories": [
+    "Lmouhim",
+    "Mačča",
+    "Tessit",
+    "Irar",
+    "Tigawin",
+    "Iwdan",
+    "Tiɣawsiwin",
+    "Iḥulfan",
+    "Aglam",
+    "Imukan"
+  ],
+  "lexicon": {},
+  "lexiconSource": "modules/amazigh-lexicon.js"
+}
