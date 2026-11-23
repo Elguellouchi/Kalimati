@@ -2271,3 +2271,56 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 
 /* v10.25 : en mode sombre, le titre « Atelier Orthophonie » était écrit gris foncé sur fond sombre (illisible). */
 @media (prefers-color-scheme: dark) { .ortho-tile { color: var(--text); } }
+
+/* ============================================================
+   v10.29 — Écran Parler sur téléphone (retour d'Aziz, iPhone) :
+   1. La phrase a sa propre ligne, pleine largeur, avec ▶ à côté ; les autres boutons
+      (⌫ ✕ langue, Toilettes, Calme, cadenas) passent sur une seule ligne fine dessous.
+      Le 🌈 ne flotte plus par-dessus les cartes.
+   2. La barre des mots rapides ne répète plus Oui / Non tant que les six grands mots
+      du début sont à l'écran ; ensuite, ses six cartes tiennent sur une ligne, sans défiler.
+   ============================================================ */
+.talk:not(.has-phrase) .talk-rail .rail-cards { display: none; }
+/* Sur téléphone, une seule ligne à la fois : les trois aides avant la phrase, les six mots rapides pendant. */
+@media (max-width: 600px) { .talk.has-phrase .talk-rail .rail-help { display: none; } }
+@media (max-width: 600px) {
+  :root .top { flex-wrap: wrap; gap: 6px; padding: 6px 8px; align-items: stretch; }
+  :root .top > .strip { display: contents; }
+  :root .top::after { content: ''; order: 3; flex: 0 0 100%; height: 0; margin-top: -6px; }
+  :root .top #strip-cards {
+    order: 1; flex: 1 1 0; min-width: 0; min-height: 66px; align-items: center; gap: 6px; padding: 4px 6px;
+    background: var(--surface); border: 2px solid var(--line); border-radius: 14px; box-shadow: inset 0 2px 4px rgb(0 0 0 / .06);
+  }
+  :root[data-theme="scolaire"] .top #strip-cards { background: var(--slate); border: 0; box-shadow: 0 0 0 3px var(--slate-edge); }
+  :root[data-theme="contraste"] .top #strip-cards { background: #000; border: 2px solid #FFF; }
+  :root .top .strip-cards .card.small { width: 58px; height: 58px; }
+  :root .top .strip-cards .card.small > .visual { --vs: 26px; }
+  :root .top .strip-cards .card.small .label { font-size: 11px; }
+  :root .top #btn-play { order: 2; flex: 0 0 64px; width: 64px; height: auto; min-height: 66px; font-size: 26px; border-radius: 14px; }
+  :root .top :is(#btn-back, #btn-clear, #btn-lang, #btn-twin, #toilet, #calm, #lock) {
+    order: 4; flex: 1 1 0; min-width: 0; width: auto; height: 46px; min-height: 46px; position: static;
+    border-radius: 12px; box-shadow: none;
+  }
+  :root[data-theme] .top :is(#btn-back, #btn-clear) { background: var(--surface); color: var(--text); border: 2px solid var(--line); }
+  :root[data-theme] .top :is(#btn-lang, #btn-twin) { background: var(--surface); color: var(--brand); border: 2px solid var(--brand); }
+  :root[data-theme="contraste"] .top :is(#btn-back, #btn-clear, #btn-lang, #btn-twin) { background: #000; color: #FFF; border-color: #FFF; }
+  :root .top #toilet { flex: 1.7 1 0; flex-direction: row; gap: 4px; font-size: 20px; border-width: 3px; padding: 0 4px; }
+  :root .top #toilet span { font-size: 10.5px; line-height: 1.1; margin: 0; text-align: left; }
+  :root .top #calm { order: 5; display: flex; border-width: 3px; font-size: 22px; border-radius: 12px; }
+  :root .top #calm span { display: none; }
+  :root .top #lock { order: 6; font-size: 20px; }
+  /* La barre des mots rapides : plus de marge réservée au 🌈, six cartes sur une ligne. */
+  .talk-rail { padding: 6px 8px; gap: 6px; }
+  .talk-rail .rail-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 4px; overflow: visible; flex: 1 1 100%; }
+  .talk-rail .card.small.quick-card { width: auto; min-width: 0; max-width: 100%; height: 60px; padding: 2px; border-width: 3px; border-radius: 12px; overflow: hidden; }
+  .talk-rail .card.small.quick-card > .visual { --vs: 26px; }
+  .talk-rail .card.small.quick-card .label { font-size: 11px; }
+  .talk-rail .rail-chip { min-height: 40px; line-height: 32px; }
+  /* Temps du verbe + phrase entendue : une ligne fine au lieu de deux gros blocs. */
+  .morph-slot { padding: 2px 8px 0; }
+  .morph-bar { gap: 4px; }
+  .morph-tense-btn { min-height: 36px; padding: 2px 8px; font-size: 12.5px; }
+  .morph-sentence-preview { min-height: 36px; padding: 3px 10px; border-radius: 12px; }
+  .morph-sentence-preview strong { font-size: 14px; }
+  .morph-sentence-preview small { font-size: 11.5px; }
+}
