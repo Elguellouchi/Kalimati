@@ -58,7 +58,7 @@ export function buildIndex(cards, wordsOf) {
 // Découpe le texte et cherche d'abord les groupes de 3, puis 2, puis 1 mot (« je veux », « dessin animé »).
 // Résultat : [{ card, text }] pour un mot trouvé, [{ text }] pour un mot sans image.
 export function matchPictos(text, index, { skipSmallWords = true } = {}) {
-  const shown = String(text || '').replace(/[’']/g, "' ").split(/\s+/).filter(Boolean);
+  const shown = String(text || '').replace(/[’']/g, "' ").replace(/(\p{L})-(\p{L})/gu, '$1 $2').split(/\s+/).filter(Boolean);
   const words = shown.map((w) => normWord(w)).map((w) => w.split(' ')[0] || '');
   const out = [];
   for (let i = 0; i < words.length;) {
@@ -83,7 +83,7 @@ export function matchPictos(text, index, { skipSmallWords = true } = {}) {
 // D'abord les mots utiles pour annoncer une sortie ou un changement, puis le catalogue illustré (300+ mots).
 const EXTRA = [
   ['aller', '🚶', ['partir']], ['médecin', '🧑‍⚕️', ['docteur', 'medecin']], ['dentiste', '🦷'], ['hôpital', '🏥', ['hopital', 'clinique']],
-  ['pharmacie', '💊', ['médicament', 'medicament']], ['magasin', '🛒', ['supermarché', 'supermarche', 'courses']], ['bus', '🚌'], ['train', '🚆'], ['avion', '✈️'],
+  ['pharmacie', '💊', ['médicament', 'medicament']], ['magasin', '🛒', ['supermarché', 'supermarche', 'courses']], ['bus', '🚌'], ['frites', '🍟', ['frite']], ['train', '🚆'], ['avion', '✈️'],
   ['mosquée', '🕌', ['mosquee']], ['piscine', '🏊'], ['plage', '🏖️', ['mer']], ['coiffeur', '💇'], ['anniversaire', '🎂'], ['fête', '🎉', ['fete']],
   ['maintenant', '👉'], ['après', '⏭️', ['apres', 'ensuite', 'puis']], ['d’abord', '1️⃣', ['abord']], ['demain', '🌅'], ['aujourd’hui', '📅', ['aujourd hui']],
   ['matin', '🌞'], ['soir', '🌙'], ['nuit', '🌙'], ['attendre', '⏳', ['attend', 'attends']], ['habiller', '👕', ['habille', 'habiller']],

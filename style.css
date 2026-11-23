@@ -2420,3 +2420,19 @@ body.uppercase .talk-chip { text-transform: uppercase; letter-spacing: .04em; }
 .picto-card.picto-extra { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-style: dashed; }
 .picto-card.picto-extra .picto-emoji { font-size: 30px; line-height: 1; }
 .picto-big-line .picto-card.picto-extra.big .picto-emoji { font-size: clamp(48px, 15vw, 84px); }
+
+/* v10.33 — Pages par lieu et tableau express. */
+.place-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 2px 8px 4px; padding: 4px 8px; border-radius: 12px; background: var(--surface); box-shadow: inset 0 0 0 2px #5E60CE55; }
+.place-head strong { flex: 1 1 auto; font-size: 15px; }
+.grid.place-grid .card { grid-row: auto !important; grid-column: auto !important; }
+.card.place-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-color: #5E60CE; }
+.card.place-tile .place-emoji { font-size: clamp(28px, 9vw, 44px); line-height: 1; }
+.card.place-tile .label { font-size: 12px; text-align: center; line-height: 1.15; }
+.card.place-word { display: flex; align-items: center; justify-content: center; border-style: dashed; background: transparent; }
+.place-editor input[type="text"] { flex: 1 1 160px; font: inherit; font-size: 16px; padding: 6px 8px; border-radius: 10px; border: 2px solid var(--line); background: var(--surface); color: inherit; }
+.place-list { list-style: none; padding: 0; margin: 6px 0 0; display: grid; gap: 4px; }
+.place-list li { justify-content: space-between; }
+@media (max-width: 600px) { .talk > .place-head { flex: 0 0 auto; } }
+.place-head { flex-wrap: nowrap; min-height: 52px; }
+.place-head strong { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.place-head .place-btn { flex: 0 0 auto; min-width: 48px; min-height: 44px; padding: 0 10px; font-size: 20px; }

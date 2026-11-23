@@ -26,6 +26,7 @@ import { bindTap, tapFeedback, resetTapMemory } from './modules/tap-engine.js';
 // v10.23 (pépite 1) : deux langues simultanées sur la même grille, sans déplacer une seule carte.
 import { twinOf, twinSwap, saveTwin, loadTwin, suggestPartner } from './modules/twin-language.js';
 import { buildIndex, matchPictos, extraConcepts } from './modules/text-to-picto.js';
+import { PLACES, PLACE_SETTING_KEY, cleanCustomBoards, newBoardId, boardItems, passingCard } from './modules/place-boards.js';
 import { loadVisuals, renderVisual, hasPhoto, setVisual, clearVisual } from './modules/visuals.js';
 import { uiIcon } from './modules/ui-icons.js';
 import { loadFriendsState, friendCompanionBanner, unlockFriendSticker } from './modules/friends.js';
@@ -52,9 +53,9 @@ const REMINDER_CHECK_MS = 30000;
 const SNOOZE_MS = 10 * 60000;
 // v9.7 : la sauvegarde simple garde aussi le planning, les histoires, le bilan ATEC, les mots proposés et le toucher adapté.
 const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
-  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText'];
+  'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [] };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [] };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
 const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
@@ -585,6 +586,14 @@ function renderTalk() {
     tab.style.setProperty('--cat', category.color);
     return tab;
   }));
+  // v10.33 (pages par lieu) : un onglet de plus, à la fin des dossiers. Il ne change pas les cartes de base.
+  if (!state.parent) {
+    const placeTab = h('button', { type: 'button', class: `tab talk-cat place-tab${state.place ? ' active' : ''}`, 'aria-current': state.place ? 'true' : null,
+      onclick: () => { state.place = state.place ? null : 'pick'; renderView(); } },
+    h('span', { class: 'talk-cat-emoji', 'aria-hidden': 'true' }, '📍'), h('span', { class: 'talk-cat-name' }, 'Lieux'));
+    placeTab.style.setProperty('--cat', '#5E60CE');
+    tabs.append(placeTab);
+  }
   const activeCategory = CATEGORIES.find((c) => c.id === state.cat) || CATEGORIES[0];
   const boardCards = sortedCards(state.cat);
   const boardHead = h('div', { class: 'talk-board-head' },
@@ -592,7 +601,8 @@ function renderTalk() {
     h('h2', { class: 'talk-board-title' }, categoryName(activeCategory, state.lang)),
     h('span', { class: 'talk-board-count' }, `${boardCards.filter(visibleFor).length}`));
   const grid = h('div', { class: `grid${exploring ? ' exploring' : ''}`, style: { '--cols': state.cols, '--cat-board': activeCategory.color } });
-  for (const card of boardCards) {
+  const placeView = !state.parent && state.place ? placeBoardView(grid, tappable) : null;
+  for (const card of placeView ? [] : boardCards) {
     const el = tappable(card);
     el.style.gridRow = String(card.gridRow);
     el.style.gridColumn = String(card.gridCol);
@@ -620,11 +630,12 @@ function renderTalk() {
     searchBox, exploreBtn, exploreNote,
     personalise,
     textToPictoBox(),
+    state.parent ? placeEditorBox() : null,
     state.parent ? btn('🖨️ Imprimer / PDF le tableau CAA', printAacBoard, 'ghost') : null,
     state.parent ? twinBox() : null,
     state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
   const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}${rail ? ' has-rail' : ''}` },
-    friend, starterRow, tabs, boardHead, suggest, grid, adultTools, rail);
+    friend, starterRow, placeView || tabs, boardHead, suggest, grid, adultTools, rail);
   const ms = scanSpeed();
   if (!state.parent && ms > 0) {
     const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');
@@ -850,6 +861,73 @@ let motorPlanNote = '';
 // avec les voix des cartes (fichiers sons : marche aussi quand l'iPhone est en mode silencieux).
 // Rien n'est envoyé ni gardé : la phrase reste seulement à l'écran.
 let pictoDraft = '';
+// v10.33 (pépites « Pages par lieu » et « Tableau express ») : le choix d'un lieu remplit la grille avec
+// les mots de ce lieu. La ligne de mots de base reste en haut ; « ↩ » rend la grille habituelle.
+const placeBtn = (icon, name, onclick) => h('button', { type: 'button', class: 'btn ghost place-btn', 'aria-label': name, title: name, onclick }, icon);
+const allPlaceBoards = () => [...PLACES, ...state.placeBoards];
+function placeBoardView(grid, tappable) {
+  grid.classList.add('place-grid');
+  if (state.place === 'pick') {
+    grid.style.setProperty('--cat-board', '#5E60CE');
+    for (const board of allPlaceBoards()) {
+      grid.append(h('button', { type: 'button', class: 'card place-tile', 'aria-label': board.title,
+        onclick: () => { state.place = board.id; stopSpeaking(); speak(board.title, { lang: 'fr' }); renderView(); } },
+      h('span', { class: 'place-emoji', 'aria-hidden': 'true' }, board.emoji), h('span', { class: 'label' }, board.title)));
+    }
+    return h('div', { class: 'place-head' }, h('strong', {}, '📍 Où allons-nous ?'),
+      placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
+  }
+  const board = allPlaceBoards().find((b) => b.id === state.place);
+  if (!board) { state.place = null; return null; }
+  const items = boardItems(board, state.cards.filter((c) => !c.hidden), (c) => [label(c), c.fr, c.dr, c.ar]);
+  for (const item of items) {
+    if (!item.card) { grid.append(h('span', { class: 'card place-word', role: 'note' }, h('span', { class: 'label' }, item.text))); continue; }
+    grid.append(tappable(item.card.extra ? passingCard(item) : item.card));
+  }
+  return h('div', { class: 'place-head' }, h('strong', {}, `${board.emoji} ${board.title}`),
+    placeBtn('📍', 'Choisir un autre lieu', () => { state.place = 'pick'; renderView(); }),
+    placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; renderView(); }));
+}
+
+// Le parent écrit un tableau express : un nom et des mots (virgules ou retours à la ligne).
+let placeEditorMsg = '';
+function placeEditorBox() {
+  const title = h('input', { type: 'text', maxlength: 40, placeholder: 'Ex. : Chez Mamie', 'aria-label': 'Nom du tableau' });
+  const emoji = h('select', { 'aria-label': 'Dessin du tableau' }, ['📌', '🏠', '👵', '🏥', '🏖️', '✈️', '🎂', '🛁', '🚌', '🍽️'].map((e) => h('option', { value: e }, e)));
+  const words = h('textarea', { rows: 3, class: 'picto-input', placeholder: 'Ex. : Bonjour, Mamie, gâteau, jouer, câlin, au revoir', 'aria-label': 'Mots du tableau' });
+  const preview = h('p', { class: 'note', 'aria-live': 'polite' }, placeEditorMsg);
+  placeEditorMsg = '';
+  const count = () => {
+    const items = boardItems({ text: words.value }, state.cards, (c) => [label(c), c.fr, c.dr, c.ar]);
+    const ok = items.filter((i) => i.card).length;
+    preview.textContent = words.value.trim() ? `${ok} image${ok > 1 ? 's' : ''} trouvée${ok > 1 ? 's' : ''}${items.length > ok ? ` · sans image : ${items.filter((i) => !i.card).map((i) => i.text).join(', ')}` : ''}.` : '';
+  };
+  words.addEventListener('input', count);
+  const save = async (list, msg) => {
+    state.placeBoards = cleanCustomBoards(list);
+    try { await db.setSetting(PLACE_SETTING_KEY, state.placeBoards); } catch (err) { console.error('[Kalimati] tableau express non enregistré', err); }
+    placeEditorMsg = msg;
+    renderView();
+  };
+  const add = () => {
+    if (!title.value.trim() || !words.value.trim()) { preview.textContent = 'Écrivez un nom et au moins un mot.'; return; }
+    save([...state.placeBoards, { id: newBoardId(), title: title.value, emoji: emoji.value, text: words.value }], 'Tableau enregistré ✔ (onglet 📍 Lieux)');
+  };
+  const list = state.placeBoards.map((b) => {
+    let armed = false;
+    const del = btn('🗑️', () => {
+      if (!armed) { armed = true; del.textContent = 'Supprimer ?'; setTimeout(() => { armed = false; del.textContent = '🗑️'; }, 3000); return; }
+      save(state.placeBoards.filter((x) => x.id !== b.id), 'Tableau supprimé');
+    }, 'ghost tiny');
+    del.setAttribute('aria-label', `Supprimer ${b.title}`);
+    return h('li', { class: 'row' }, h('span', {}, `${b.emoji} ${b.title}`), del);
+  });
+  return h('details', { class: 'card-box place-editor', open: preview.textContent ? true : null }, h('summary', {}, '📍 Tableau express (un lieu, une sortie)'),
+    h('p', { class: 'note' }, `Il s’ajoute à l’onglet 📍 Lieux de l’enfant, à côté des ${PLACES.length} lieux prêts (dentiste, médecin, école…). Les cartes de base ne bougent pas.`),
+    h('div', { class: 'row wrap' }, emoji, title), words, preview, btn('Enregistrer le tableau', add, 'primary tiny'),
+    list.length ? h('ul', { class: 'place-list' }, list) : null);
+}
+
 function textToPictoBox() {
   const input = h('textarea', { rows: 2, class: 'picto-input', placeholder: 'Ex. : On va à l’école en voiture', 'aria-label': 'Phrase à montrer en images', value: pictoDraft });
   input.value = pictoDraft;
@@ -1448,6 +1526,7 @@ async function init() {
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
+  state.placeBoards = cleanCustomBoards(await db.getSetting(PLACE_SETTING_KEY).catch(() => null)); // v10.33 : tableaux express
   applyLangDir(); // v10.22 (Lot 2) : langue + sens de lecture (arabe = rtl)
   // v10.24 : écriture de la darija choisie par le parent (lettres arabes par défaut). Elle doit être
   // connue avant le premier écran : sinon les mots s'affichent en arabizi une seconde puis sautent.
