@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-25'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
+const CACHE = 'kalimati-v10-26'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
 const FILES = [
   './', './index.html', './boot-guard.js', './theme-boot.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
@@ -13,9 +13,9 @@ const FILES = [
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js', './modules/core-vocabulary-plan.js',
   './modules/ui-icons.js', './modules/about.js', './modules/rewards-kids.js', './modules/darija-lexicon.js', './modules/friends.js', './modules/morphology.js', './modules/cloud-sync.js', './modules/eye-and-packs.js', './modules/version.js', './modules/network-policy.js', './modules/team-mode.js',
-  './modules/section-i18n.js', './modules/section-i18n-dr.js',
+  './modules/section-i18n.js', './modules/section-i18n-dr.js', './modules/section-i18n-ar.js',
   // v10.15 : ateliers cliniques et leurs libellés darija (générée hors ligne par OpenAI)
-  './modules/clinique.js', './modules/clinic-i18n.js', './modules/clinic-i18n-dr.js',
+  './modules/clinique.js', './modules/clinic-i18n.js', './modules/clinic-i18n-dr.js', './modules/clinic-i18n-ar.js',
   // v10.16 : espace thérapeute et fiches de suivi pseudonymisées (100 % locales)
   './modules/cabinet.js', './modules/followup.js', './modules/followup-schema.js',
   // v10.17 : mise à jour sans rechargement automatique

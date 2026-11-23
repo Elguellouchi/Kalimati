@@ -2,6 +2,9 @@
 // Le français est la source ; la darija est demandée à OpenAI hors ligne par
 // tools/gen-clinic-i18n.mjs et rangée dans clinic-i18n-dr.js. Rien ne part au serveur à l'usage.
 import { CLINIC_DR } from './clinic-i18n-dr.js';
+// v10.26 : l'arabe standard des ateliers (déjà préparé dans le Drive par tools/gen-clinic-i18n.mjs --langue ar).
+import { CLINIC_AR } from './clinic-i18n-ar.js';
+const TABLES = { dr: CLINIC_DR, ar: CLINIC_AR };
 
 export const CLINIC_FR = {
   clinic: 'Ateliers',
@@ -127,7 +130,7 @@ export const CLINIC_FR = {
 };
 
 export function clinicT(key, lang = 'fr', vars) {
-  const table = lang === 'dr' ? CLINIC_DR : CLINIC_FR;
+  const table = TABLES[lang] || CLINIC_FR;
   const raw = table[key] ?? CLINIC_FR[key] ?? key;
   return vars ? raw.replace(/\{(\w+)\}/g, (m, name) => (vars[name] === undefined ? m : String(vars[name]))) : raw;
 }

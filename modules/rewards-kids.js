@@ -6,8 +6,7 @@
 import { h, btn } from './util.js';
 import { speak } from '../speech.js';
 import { playClap } from '../media.js';
-import { tx } from './section-i18n.js';
-import { THEME_DR } from './section-i18n-dr.js';
+import { tx, themeText } from './section-i18n.js';
 
 const KEY = 'kalimati-rewards-v1';
 const GOAL = 5;
@@ -79,7 +78,7 @@ export function starBar(lang = 'fr') {
       if (i === stars - 1 && stars > shown && shown >= 0) { s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop'); }
     });
     shown = stars;
-    count.textContent = tx('starsOfFive', lang, { n: stars, s: stars > 1 && lang !== 'dr' ? 's' : '' });
+    count.textContent = tx('starsOfFive', lang, { n: stars, s: stars > 1 && !['dr', 'ar'].includes(lang) ? 's' : '' });
     garden.querySelector('.garden-num').textContent = String(stickers.length);
   };
   paint();
@@ -110,7 +109,7 @@ export function openStickerPicker() {
   speak(`Bravo ! ${tx('pickSay', lang)}`);
   overlay((close) => {
     const body = h('div', { class: 'picker-body' });
-    const themeLabel = (t) => (lang === 'dr' ? (THEME_DR[t.label] || t.label) : t.label);
+    const themeLabel = (t) => themeText(lang, t.label);
     const themes = () => body.replaceChildren(
       h('div', { class: 'theme-grid' }, THEMES.map((t) => h('button', { type: 'button', class: 'theme-tile', onclick: () => items(t) },
         h('span', { class: 'theme-ico' }, t.icon), h('span', {}, themeLabel(t))))));
@@ -145,6 +144,6 @@ export function openGarden() {
     stickers.length
       ? h('div', { class: 'garden' }, stickers.map((s, i) => h('span', { class: `sticker move-${s.move || 'float'}`, style: { animationDelay: `${(i % 5) * 0.4}s` } }, s.emoji)))
       : h('p', { class: 'note center' }, tx('gardenEmpty', lang)),
-    h('p', { class: 'note center' }, tx('gardenStats', lang, { total, s: total > 1 && lang !== 'dr' ? 's' : '' })),
+    h('p', { class: 'note center' }, tx('gardenStats', lang, { total, s: total > 1 && !['dr', 'ar'].includes(lang) ? 's' : '' })),
   ]);
 }

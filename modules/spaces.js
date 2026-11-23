@@ -29,8 +29,7 @@ import { scheduleView } from './ex-schedule.js';
 import { storiesView } from './stories.js';
 import { orthoScreen } from './ex-ortho.js';
 import { hygieneHubScreen } from './ex-hygiene.js';
-import { tx, sectionLabel, goalTitle } from './section-i18n.js';
-import { ROUTINE_TEXT_DR } from './section-i18n-dr.js';
+import { tx, sectionLabel, goalTitle, routineText } from './section-i18n.js';
 
 // Prochains niveaux ABLLS-R : le même jeu sert en ligne (pictos et photos du catalogue) et hors ligne (dessins).
 export const REGISTRY = { ...A, ...B, ...C, ...DE, ...FGH, ...KP, ...QRT, ...S, ...UZ, ...NEXT_EXERCISES };
@@ -39,7 +38,7 @@ export const missingExercises = () => GOALS.filter((g) => !REGISTRY[g.id]).map((
 
 // Les routines sont ancrées dans la vraie vie de l'enfant (sa famille, sa maison, sa classe).
 export const routines = (lang = 'fr') => {
-  const L = (fr, dr) => (lang === 'dr' ? (ROUTINE_TEXT_DR[fr] || dr) : fr);
+  const L = (fr, dr) => routineText(lang, fr, dr);
   return [
     { title: L('⏳ Temps et transitions', '⏳ Lw9t w t-taghyir'), items: [['A.1', '⏳', L('Mon sablier visuel (Time Timer)', 'S-sablier dyali')], ['A.3', '➡️', L('D’abord / Ensuite', 'Lwel / Men be3d')], ['A.2', '🎁', L('Ce qui me fait plaisir', 'Li kayferre7ni')]] },
     { title: L('🏫 Classe', '🏫 L9ism'), items: [['M.2', '👧', L('Regroupement 5 min', 'Tjam3o 5 dqiq')], ['N.1', '🎒', L('Arrivée en classe', 'Dkhol l l9ism')], ['N.2', '✋', L('Je lève la main', 'Kanrfe3 yddi')], ['N.3', '🖍️', L('Changer d’activité', 'Nbeddel l3ba')]] },
