@@ -18,6 +18,20 @@ const pool = (goalId, filter) => conceptsForLevel(params(goalId).catalogShare, f
 // === [DEBUT MODIF v10.9-lot-A : Pépite 27 — Fournir 4 candidats à choiceBoard pour l’adaptation 2..4] ===
 const cap = (n, max) => Math.max(4, Math.min(max, n));
 // === [FIN MODIF v10.9-lot-A] ===
+// v10.45 : « Compte les voitures » (et non « les voiture »). Pluriel français simple ; dans « pomme de terre », seul le 1er mot change.
+const IRREGULAR_PLURAL = { oeil: 'yeux', œil: 'yeux', bal: 'bals', pneu: 'pneus', bleu: 'bleus', chou: 'choux', genou: 'genoux', bijou: 'bijoux', caillou: 'cailloux', hibou: 'hiboux', jouet: 'jouets' };
+export function frPlural(word = '') {
+  const [first, ...rest] = String(word).split(' ');
+  const low = first.toLowerCase();
+  let pl;
+  if (IRREGULAR_PLURAL[low]) pl = IRREGULAR_PLURAL[low];
+  else if (/[sxz]$/i.test(first)) pl = first;
+  else if (/(eau|au|eu)$/i.test(first)) pl = `${first}x`;
+  else if (/al$/i.test(first)) pl = `${first.slice(0, -2)}aux`;
+  else pl = `${first}s`;
+  if (first !== low && pl === IRREGULAR_PLURAL[low]) pl = pl.charAt(0).toUpperCase() + pl.slice(1);
+  return [pl, ...rest].join(' ');
+}
 const nextBtn = (next) => autoNext(next); // v10.43 : passage automatique
 const retryBtn = (next) => btn('➜ Essai suivant', next, 'primary'); // après une erreur, l'adulte aide puis continue
 // Un mot hors catalogue (paires, etc.) devient un « concept » : ses pictogrammes sont cherchés par son nom.
@@ -296,7 +310,7 @@ function r1() {
       };
       return el;
     });
-    return h('div', { class: 'stack' }, h('p', { class: 'ask' }, `Compte les ${thing.fr}`), h('div', { class: 'count-mat' }, tokens), after);
+    return h('div', { class: 'stack' }, h('p', { class: 'ask' }, `Compte les ${frPlural(thing.fr).toLowerCase()}`), h('div', { class: 'count-mat' }, tokens), after);
   });
 }
 
