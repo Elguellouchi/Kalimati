@@ -1,5 +1,6 @@
 // Kalimati v10.27 (darija en lettres arabes par défaut ; arabe standard sur les écrans enfant ; thèmes cahier d’école, simple, noir et blanc).
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
+import './modules/storage.js';
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
 import * as db from './db.js';
 import { sayCard, sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY, lastAmazighPlay } from './speech.js';
@@ -40,7 +41,7 @@ import { loadEyeTracking } from './modules/eye-and-packs.js';
 import { initCloudSyncFromUrlAndAuto, captureMagicKeyFromUrl } from './modules/cloud-sync.js';
 import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 import { APP_VERSION } from './modules/version.js';
-import { initGlobalErrorLogger, logDiagnostic, recordRejectedTap, setDiagnosticForbiddenNames } from './modules/error-log.js';
+import { initGlobalErrorLogger, LOG_TYPES, logDiagnostic, recordRejectedTap, setDiagnosticForbiddenNames } from './modules/error-log.js';
 import { loadOnlineLookupSetting } from './modules/online-bank.js';
 import { loadNetworkMode } from './modules/network-policy.js';
 import { setTimerShowNumbers, TIMER_SETTING_KEY } from './modules/timer.js';
@@ -322,9 +323,9 @@ function setupParentPanel() {
   const toggle = $('#pb-toggle');
   if (!bar || !toggle) return;
   let open = false;
-  try { open = localStorage.getItem('kalimati-pb-open') === '1'; } catch { open = false; }
+  try { open = globalThis.KalimatiStorage.getItem('kalimati-pb-open') === '1'; } catch { open = false; }
   const apply = () => { bar.classList.toggle('open', open); toggle.setAttribute('aria-expanded', String(open)); };
-  toggle.onclick = () => { open = !open; apply(); try { localStorage.setItem('kalimati-pb-open', open ? '1' : '0'); } catch { /* rien */ } };
+  toggle.onclick = () => { open = !open; apply(); try { globalThis.KalimatiStorage.setItem('kalimati-pb-open', open ? '1' : '0'); } catch { /* rien */ } };
   apply();
 }
 
@@ -419,7 +420,10 @@ async function loadCards() {
   await db.setSetting('v2migrated', true);
   await db.setSetting('v3migrated', true);
   const placed = assignPositions(cards, state.cols);
-  await db.putCards(placed);
+  db.putCards(placed).catch(() => logDiagnostic(LOG_TYPES.JS_RUNTIME, 'cards_save_failed', {
+    module: 'app.js:loadCards',
+    sev: 'error',
+  }));
   return placed;
 }
 

@@ -1,7 +1,7 @@
 // Garde l'application disponible sans internet.
-const CACHE = 'kalimati-v10-45'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
+const CACHE = 'kalimati-v10-46'; // doit correspondre à modules/version.js (vérifié par tools/test-version.mjs)
 const FILES = [
-  './', './index.html', './boot-guard.js', './theme-boot.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
+  './', './index.html', './boot-guard.js', './modules/storage.js', './theme-boot.js', './style.css', './app.js', './db.js', './data.js', './speech.js',
   './media.js', './editor.js', './backup.js', './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png',
   './modules/util.js', './modules/drag.js', './modules/goals.js', './modules/content.js', './modules/aba.js',
@@ -35,7 +35,7 @@ const FILES = [
   './assets/amis/nour.svg', './assets/amis/mchicha.svg', './assets/amis/bouma.svg',
 ];
 
-// v9.1 : pictogrammes Mulberry et émojis OpenMoji (liste dans assets/manifest.json), mis en cache sans bloquer l'installation.
+// v9.1 : pictogrammes Mulberry et émojis OpenMoji (liste dans assets/manifest.json), réutilisés depuis l'ancien cache.
 async function assetFiles() {
   try {
     const response = await fetch('./assets/manifest.json', { cache: 'no-cache' });
@@ -59,24 +59,32 @@ async function voiceFiles() {
   }
 }
 
+async function warmOptionalAssets(cache) {
+  const missing = [];
+  const reuse = async (file) => {
+    const old = await caches.match(file).catch(() => null);
+    if (old) {
+      try {
+        await cache.put(file, old);
+        return;
+      } catch { /* repli réseau après l'installation */ }
+    }
+    missing.push(file);
+  };
+  await Promise.all((await voiceFiles()).map(reuse));
+  await Promise.all((await assetFiles()).map(reuse));
+  await reuse('./assets/fonts/NotoSansTifinagh-Regular.woff2');
+  return missing;
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE);
     // v10.7.2 : fichiers de l'appli redemandés au site (pas la copie du navigateur, qui pouvait être
     // l'ancienne version et mélanger deux versions du code).
     await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
-    // Une voix manquante ne doit pas empêcher l'installation.
-    // v10.1.2 : les voix et images déjà gardées sont recopiées de l'ancienne version
-    // (avant, ~780 fichiers étaient retéléchargés à chaque mise à jour, ce qui saturait le téléphone).
-    const reuse = async (file) => {
-      const old = await caches.match(file).catch(() => null);
-      if (old) return cache.put(file, old).catch(() => {});
-      return cache.add(file).catch(() => {});
-    };
-    await Promise.all((await voiceFiles()).map(reuse));
-    await Promise.all((await assetFiles()).map(reuse));
-    // v10.7 : police tifinagh gardée pour l'amazigh sans internet (ne bloque pas l'installation).
-    await reuse('./assets/fonts/NotoSansTifinagh-Regular.woff2');
+    const missing = await warmOptionalAssets(cache);
+    missing.forEach((file) => cache.add(file).catch(() => {}));
     // v10.17 : pas de skipWaiting. La nouvelle version attend que l'appli soit fermée
     // (ou que le parent touche « Actualiser ») : aucun rechargement pendant l'utilisation.
   })());
@@ -89,11 +97,13 @@ self.addEventListener('message', (event) => {
 
 // v10.7 : les voix amazighes (packs et voix des parents) sont gardées d'une version à l'autre.
 const AMAZIGH_VOICES = 'kalimati-amazigh-voices-';
+// Lot 0, L0-11 : une version ne supprime jamais les caches de l'autre.
+const CACHE_SPACE = CACHE.startsWith('kalimati-essai-') ? /^kalimati-essai-v\d/ : /^kalimati-v\d/;
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && !k.startsWith(AMAZIGH_VOICES)).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && CACHE_SPACE.test(k) && !k.startsWith(AMAZIGH_VOICES)).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

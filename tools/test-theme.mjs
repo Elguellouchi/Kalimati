@@ -17,7 +17,8 @@ check(/'\.\/theme-boot\.js'/.test(read('sw.js')), 'theme-boot.js est gardé hors
 
 const boot = read('theme-boot.js');
 check(!/fetch|XMLHttpRequest|sendBeacon|WebSocket/.test(boot), 'theme-boot.js n’envoie rien sur internet');
-check(/try\s*\{[\s\S]*localStorage[\s\S]*\}\s*catch/.test(boot), 'theme-boot.js résiste à la navigation privée (try/catch)');
+check(/<script src="modules\/storage\.js"><\/script>[\s\S]*<script src="theme-boot\.js"><\/script>/.test(head), 'storage.js est chargé avant theme-boot.js');
+check(/try\s*\{[\s\S]*KalimatiStorage\.getItem\('kalimati-theme'\)[\s\S]*\}\s*catch/.test(boot), 'theme-boot.js lit la clé centralisée et résiste à la navigation privée (try/catch)');
 for (const id of ['scolaire', 'simple', 'contraste']) check(boot.includes(`'${id}'`), `theme-boot.js connaît le thème « ${id} »`);
 
 const about = read('modules/about.js');

@@ -1,4 +1,5 @@
 // v9.1 : choix du style des images (espace adulte) et « À propos » avec les crédits des ressources libres.
+import './storage.js';
 import { h } from './util.js';
 import { VISUAL_STYLES, getVisualStyle, setVisualStyle } from './visuals.js';
 import { ARASAAC_CREDIT } from './arasaac.js';
@@ -91,7 +92,7 @@ export function applyTheme(id) {
   document.documentElement.setAttribute('data-theme', theme);
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', theme === 'contraste' ? '#000000' : '#1F6F5C');
-  try { localStorage.setItem(THEME_KEY, theme); } catch { /* navigation privée : le choix dure jusqu'à la fermeture */ }
+  globalThis.KalimatiStorage.setItem(THEME_KEY, theme);
   return theme;
 }
 

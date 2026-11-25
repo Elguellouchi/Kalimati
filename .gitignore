@@ -1,5 +1,9 @@
 _vendor/
 node_modules/
+test-results/
+playwright-report/
+test.log
+e2e.log
 bonnes-pratiques/
 *.pdf
 *.gdoc

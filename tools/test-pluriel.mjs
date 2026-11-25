@@ -2,7 +2,8 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const src = fs.readFileSync(new URL('../modules/ex-online.js', import.meta.url), 'utf8');
+// Windows : sans cette normalisation, la découpe ci-dessous ne trouve pas « \n}\n » et frPlural est extrait vide.
+const src = fs.readFileSync(new URL('../modules/ex-online.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const start = src.indexOf('const IRREGULAR_PLURAL');
 const end = src.indexOf('\n}\n', src.indexOf('export function frPlural')) + 3;
 const code = src.slice(start, end).replace(/export /g, '');

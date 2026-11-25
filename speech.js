@@ -1,6 +1,7 @@
 // Fait parler une carte : voix enregistrée par le parent d'abord, puis voix du téléphone.
 // Voix lente (0,85), darija lue avec une voix arabe si la graphie arabe existe, phrases mélangeant FR et darija.
 
+import './modules/storage.js';
 import { langInfo, isExtraLang, isAmazighLang, cardSpeechText, hasWord, zhClassifierAt } from './modules/languages.js';
 import { cardAudio } from './data.js';
 import { inflectStrip } from './modules/morphology.js';
@@ -302,10 +303,10 @@ export const speakSequence = (cards, lang, onHighlight) => sayCards(cards.map((c
 let preferredVoices = { fr: '', ar: '' };
 export function setPreferredVoice(lang, name) {
   preferredVoices[lang === 'dr' ? 'ar' : lang] = name || '';
-  try { localStorage.setItem('kalimati_voices', JSON.stringify(preferredVoices)); } catch {}
+  try { globalThis.KalimatiStorage.setItem('kalimati_voices', JSON.stringify(preferredVoices)); } catch {}
 }
 try {
-  const saved = JSON.parse(localStorage.getItem('kalimati_voices') || '{}');
+  const saved = JSON.parse(globalThis.KalimatiStorage.getItem('kalimati_voices') || '{}');
   if (saved && typeof saved === 'object') preferredVoices = { ...preferredVoices, ...saved };
 } catch {}
 
