@@ -1,6 +1,6 @@
 // Aides communes des tests E2E (Lot 0, L0-03). Elles ouvrent la vraie application sur le serveur
 // local tools/serve.mjs et touchent les vraies cartes : aucun bouchon, aucun code d'exemple.
-import { expect } from '@playwright/test';
+import { devices, expect } from '@playwright/test';
 
 // Le nom du troisième profil de playwright.config.js : un Chromium où le cache hors ligne n'existe pas.
 export const SANS_CACHES = 'chromium-sans-caches';
@@ -16,16 +16,33 @@ export const HOME_TILE_TALK = '.home-grid .tile-talk';
 export const visibleCards = (page) => page.locator('main .grid button.card').filter({ visible: true });
 export const stripCards = (page) => page.locator('#strip-cards button.card');
 
+// Réchauffe le moteur WebKit du runner sans charger Kalimati ni partager son stockage.
+export async function warmWebKitRenderer(browser) {
+  const context = await browser.newContext({ ...devices['iPhone 13'] });
+  try {
+    const page = await context.newPage();
+    await page.setContent('<button style="width:120px;height:80px">Prêt</button>');
+    await page.getByRole('button', { name: 'Prêt' }).click();
+  } finally {
+    await context.close();
+  }
+}
+
 export const gridCardIds = (page) => page.$$eval('main .grid button.card', (els) => els.map((el) => el.dataset.cardId));
 
 // Ouvrir l'application puis entrer dans l'espace Parler : renvoie le temps mesuré, en millisecondes.
 export async function openTalkGrid(page) {
   const start = Date.now();
   await page.goto('/');
+  const loaded = Date.now();
   await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  const homeVisible = Date.now();
   await page.locator(HOME_TILE_TALK).click();
+  const clicked = Date.now();
   await expect(visibleCards(page).first()).toBeVisible({ timeout: 3000 });
-  return Date.now() - start;
+  const elapsed = Date.now() - start;
+  console.log(`ouverture : navigation ${loaded - start} ms, accueil ${homeVisible - loaded} ms, toucher ${clicked - homeVisible} ms, grille ${Date.now() - clicked} ms`);
+  return elapsed;
 }
 
 // Toucher trois cartes du tableau et rendre leurs identifiants, dans l'ordre.
