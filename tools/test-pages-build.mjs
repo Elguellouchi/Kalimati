@@ -112,6 +112,26 @@ try {
     assert.equal(await exists(`_site/${excluded}`), false, `${excluded} ne doit pas être publié`);
   }
 
+  result = await runBuild(temp, 'main', 'essai', '_pages-site');
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await read('_pages-site/index.html'), 'main-index');
+  assert.equal(await read('_pages-site/essai/index.html'), 'trial-index');
+  assert.equal(await read('_pages-site/essai/modules/storage.js'), 'trial-storage');
+  assert.equal(await read('_site/index.html'), 'main-index', 'le second artefact ne doit pas remplacer celui de test');
+
+  await write('main/sw.js', 'main-worker\r\nsecond-line\r\n');
+  await write('main/index.html', 'main-index\r\nsecond-line\r\n');
+  await fs.writeFile(path.join(temp, 'main', 'assets', 'neutral.bin'), Buffer.from([0, 13, 10, 255]));
+  result = await runBuild(temp, 'main', 'essai', '_pages-site');
+  assert.equal(result.code, 0, result.stderr);
+  assert.equal(await read('_pages-site/sw.js'), 'main-worker\nsecond-line\n', 'les fichiers texte doivent reproduire les LF publiés par GitHub');
+  assert.equal(await read('_pages-site/index.html'), 'main-index\nsecond-line\n');
+  assert.deepEqual(await fs.readFile(path.join(temp, '_pages-site', 'assets', 'neutral.bin')), Buffer.from([0, 13, 10, 255]), 'un fichier binaire ne doit pas être modifié');
+  await write('main/sw.js', 'main-worker');
+  await write('main/index.html', 'main-index');
+  result = await runBuild(temp);
+  assert.equal(result.code, 0, result.stderr);
+
   await write('_site/stale.txt', 'stale');
   result = await runBuild(temp);
   assert.equal(result.code, 0, result.stderr);

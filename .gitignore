@@ -15,5 +15,7 @@ transcripts_autisme_chaines/
 Transcript Vidéos/
 .mimocode/
 _site/
+_pages-site/
+.pages-build/
 .pages-main/
 .pages-essai/

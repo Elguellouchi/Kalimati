@@ -134,8 +134,9 @@ Règles :
 - `modules/app-update.js` enregistre `./sw.js` avec `scope: './'` explicite.
 - La portée du worker d’essai est donc `/Kalimati/essai/`.
 - Le worker principal conserve la portée `/Kalimati/`.
-- Dans `sw.js`, le worker principal ignore toutes les requêtes sous `/essai/`, y compris après installation préalable de la version principale `v10.45`.
-- Le worker le plus spécifique contrôle une page d’essai et prend la main sans modifier le cache principal.
+- Dans `sw.js`, le worker principal `v10.47` ignore toutes les requêtes sous `/essai/`.
+- Le worker le plus spécifique contrôle une page d’essai et prend la main sans modifier le cache principal lorsque le worker principal possède déjà cette garde.
+- **Limite G0 :** un worker principal `v10.45` déjà actif ne peut pas apprendre rétroactivement la nouvelle garde. S’il n’a pas ouvert le site principal avant l’essai, il peut encore ajouter des ressources `/essai/` à son cache. Le worker d’essai prend ensuite la main, mais le cache principal a déjà été modifié. Le critère « aucun ajout au cache principal avec v10.45 préinstallé » reste donc non satisfait et bloque la publication.
 - L’installation attend toujours la recopie des voix et images depuis l’ancien cache ; seuls les téléchargements réseau peuvent suivre.
 - Aucun `skipWaiting()` automatique ni rechargement spontané n’est ajouté.
 - L’actualisation manuelle existante reste inchangée.
@@ -196,13 +197,15 @@ Le texte du Mode équipe précise que, dans l’essai, les fonctions cloud reste
 
 ## 10. Publication GitHub Pages
 
-### 10.1 Artefact combiné
+### 10.1 Artefacts combinés
 
-Un script Node sans dépendance construit `_site` :
+Un script Node sans dépendance construit deux artefacts distincts :
 
-- racine de `_site` : fichiers runtime de `main` ;
-- `_site/essai/` : fichiers runtime de `essai` ;
-- `.nojekyll` est ajouté à la racine.
+- `_site` : branche courante à la racine et dans `essai/`, pour les E2E ;
+- `_pages-site` : `main` à la racine et `essai` dans `essai/`, pour la comparaison et la publication ;
+- `.nojekyll` est ajouté à la racine de chaque artefact.
+
+Les sources et la sortie doivent être des dossiers séparés. Les fichiers texte publiés sont normalisés en LF pour reproduire les octets servis par GitHub Pages ; les fichiers binaires sont conservés tels quels.
 
 Liste blanche de fichiers runtime :
 
@@ -222,9 +225,10 @@ Sont exclus : `.git`, `.github`, `docs`, `tools`, `scripts`, `supabase`, `node_m
 - récupère les deux branches dans des dossiers séparés ;
 - installe les dépendances de développement de `essai` avec `npm ci` ;
 - lance `npm test` sur `essai` ;
-- construit l’artefact combiné ;
-- lance les E2E contre l’artefact combiné, avec la racine principale réelle et `/essai/` réel ;
-- publie avec `upload-pages-artifact` puis `deploy-pages` ;
+- construit `_site` pour les E2E et `_pages-site` pour la publication ;
+- compare `sw.js` et `index.html` de `_pages-site` au site actuel et exécute le gestionnaire `fetch` du worker principal publié pour bloquer G0 s’il intercepte `/essai/` ;
+- lance les E2E contre `_site`, avec la racine et `/essai/` ;
+- téléverse uniquement `_pages-site`, puis publie avec `deploy-pages` ;
 - n’exige aucun secret GitHub applicatif.
 
 Le workflow de tests existant continue de valider chaque push et chaque PR sur Node 22.
@@ -296,7 +300,7 @@ Avant toute publication, comparer octet par octet les fichiers `sw.js` et `index
 
 ### 12.2 Tests E2E
 
-Sur l’artefact combiné :
+Sur l’artefact de test `_site` :
 
 1. Les parcours principaux existants passent sur WebKit et Chromium.
 2. Le scénario sans `window.caches` passe toujours.
@@ -307,7 +311,7 @@ Sur l’artefact combiné :
 7. Aucune requête vers Supabase n’est observée pendant l’ouverture, le Mode équipe, l’URL `#key=` et les actions cloud tentées.
 8. En Chromium, le service worker d’essai a la portée `/essai/` et un cache `kalimati-essai-v10-47`.
 9. Les caches principal et essai coexistent sans suppression croisée.
-10. Un navigateur neuf installe d’abord le service worker principal `v10.45`, puis ouvre `/essai/` : le cache principal reste inchangé, le worker d’essai prend la main et le worker principal ignore les requêtes sous `/essai/`.
+10. Un navigateur neuf installe d’abord le service worker principal `v10.45`, puis ouvre `/essai/` : le test reproduit la limite G0, constate les ajouts au cache principal historique, puis vérifie que le worker d’essai prend la main. Le résultat attendu n’est pas « aucun ajout » : ce critère reste bloqué.
 11. `/essai` redirige vers `/essai/`.
 12. Hors ligne : l’essai s’ouvre et conserve ses données sur Chromium. WebKit reste exclu de ce scénario, comme pour le Lot 0.
 
@@ -332,6 +336,7 @@ Les mesures E2E utilisent uniquement des marqueurs neutres. Aucun vrai prénom d
 - Si un fichier runtime obligatoire manque, la construction Pages échoue et aucun nouvel artefact n’est publié.
 - Si un déploiement échoue, le dernier déploiement Pages valide reste servi.
 - Les données navigateur ne sont jamais supprimées pour corriger un déploiement.
+- **Première publication :** la racine actuelle de `main` correspond au site public, mais ne possède pas la garde G0. Une racine corrigée diffère donc du site actuel. Le workflow qui exige à la fois l’égalité octet par octet et la garde G0 ne peut pas effectuer cette première mise à jour corrigée tout seul. Une opération d’alignement séparément autorisée, ou une décision explicite d’Aziz, est nécessaire avant la publication.
 - Le test iPhone réel reste à effectuer après mise en essai ; il ne peut pas être remplacé par WebKit.
 
 ## 14. Rollback
@@ -345,21 +350,21 @@ Les mesures E2E utilisent uniquement des marqueurs neutres. Aucun vrai prénom d
 
 - [ ] `https://elguellouchi.github.io/Kalimati/` reste disponible après publication.
 - [ ] `https://elguellouchi.github.io/Kalimati/essai/` s’ouvre en `v10.47`.
-- [ ] Les bases IndexedDB d’essai sont préfixées `essai-`.
-- [ ] Les clés localStorage et la clé session Super-Admin d’essai sont isolées.
-- [ ] Les caches applicatifs et vocaux d’essai sont préfixés et ne suppriment rien en principal.
-- [ ] Le service worker d’essai est limité à `/essai/`.
+- [x] Les bases IndexedDB d’essai sont préfixées `essai-`.
+- [x] Les clés localStorage et la clé session Super-Admin d’essai sont isolées.
+- [x] Les caches applicatifs et vocaux d’essai sont préfixés et ne suppriment rien en principal.
+- [x] Le service worker d’essai est limité à `/essai/`.
 - [ ] Avec un worker principal `v10.45` préinstallé, `/essai/` n’ajoute rien au cache principal et le worker d’essai prend la main.
-- [ ] Le worker principal ignore les requêtes sous `/essai/`.
-- [ ] Le bandeau « Version d’essai » n’apparaît qu’en mode parent d’essai.
-- [ ] Supabase et la cohorte sont coupées et grisées, même avec Mode équipe.
-- [ ] Aucune requête Supabase n’est observée en essai.
-- [ ] L’export local du rapport clinique reste disponible sans réseau.
-- [ ] L’artefact Pages contient la racine et l’essai, sans outil ni fichier privé.
-- [ ] Les `sw.js` et `index.html` de la racine de l’artefact sont identiques octet par octet au site actuel, avec empreintes consignées.
-- [ ] `docs/PUBLIER.md` impose le lancement manuel immédiat du workflow après la bascule Pages vers GitHub Actions.
-- [ ] `npm test` et `npm run test:e2e` sont verts avec leurs vraies sorties consignées.
-- [ ] Aucun push vers `main`, aucune réécriture d’historique et aucune suppression de données famille.
+- [x] Le worker principal ignore les requêtes sous `/essai/`.
+- [x] Le bandeau « Version d’essai » n’apparaît qu’en mode parent d’essai.
+- [x] Supabase et la cohorte sont coupées et grisées, même avec Mode équipe.
+- [x] Aucune requête Supabase n’est observée en essai.
+- [x] L’export local du rapport clinique reste disponible sans réseau.
+- [x] L’artefact Pages contient la racine et l’essai, sans outil ni fichier privé.
+- [x] Les `sw.js` et `index.html` de la racine de l’artefact sont identiques octet par octet au site actuel, avec empreintes consignées.
+- [x] `docs/PUBLIER.md` impose le lancement manuel immédiat du workflow après la bascule Pages vers GitHub Actions.
+- [x] `npm test` et `npm run test:e2e` sont verts avec leurs vraies sorties consignées.
+- [x] Aucun push vers `main`, aucune réécriture d’historique et aucune suppression de données famille.
 
 ## 16. Hors périmètre
 

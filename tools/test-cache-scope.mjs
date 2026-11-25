@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
+import { mainWorkerIgnoresTrial } from './check-pages-root.mjs';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
@@ -247,5 +248,12 @@ assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/enfants/essai/car
 assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/essai-copie/`), true, 'le worker principal conserve les chemins similaires');
 assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/`), true, 'le worker principal intercepte toujours la racine');
 assert.equal(intercepts('/Kalimati/essai/sw.js', `${origin}/Kalimati/essai/`), true, 'le worker d’essai intercepte son propre chemin');
+
+assert.equal(mainWorkerIgnoresTrial(sw), true, 'le contrôle de publication exécute le vrai worker principal et vérifie son comportement fetch');
+const guardText = "if (!TRIAL && /(^|\\/)essai(?:\\/|$)/.test(url.pathname)) return;";
+assert.equal(mainWorkerIgnoresTrial(`const TRIAL = false;\n// ${guardText}\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));`), false,
+  'un commentaire contenant la garde ne doit pas satisfaire le contrôle');
+assert.equal(mainWorkerIgnoresTrial(`const TRIAL = true;\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));`), false,
+  'un worker forcé en mode essai ne doit pas satisfaire le contrôle principal');
 
 console.log('test-cache-scope : OK');

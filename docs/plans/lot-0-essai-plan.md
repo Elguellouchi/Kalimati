@@ -815,7 +815,7 @@ git commit -m "Grise les commandes cloud d’essai sans bloquer l’export local
 **Interfaces :**
 
 - Consomme : deux arbres source, `main` et `essai`, fournis par des dossiers locaux ou des worktrees GitHub.
-- Produit : `_site/index.html` depuis `main`, `_site/essai/index.html` depuis `essai`, `_site/.nojekyll`.
+- Produit : `_site/index.html` et `_site/essai/index.html` depuis le code courant, `_site/.nojekyll` ; `_pages-site/index.html` depuis `main`, `_pages-site/essai/index.html` depuis `essai`, `_pages-site/.nojekyll`.
 - Produit : `ROOT` du serveur sélectionné par `SERVE_ROOT`, avec résolution spéciale `/essai/` uniquement pour le dépôt local.
 
 - [ ] **Étape 1 : écrire le test rouge**
@@ -830,9 +830,12 @@ assert.equal(read('_site/essai/app.js'), 'trial-app');
 assert.equal(exists('_site/.nojekyll'), true);
 assert.equal(exists('_site/docs'), false);
 assert.equal(exists('_site/essai/Agent.md'), false);
+assert.equal(read('_pages-site/index.html'), 'main-index');
+assert.equal(read('_pages-site/essai/index.html'), 'trial-index');
+assert.equal(read('_pages-site/sw.js'), 'main-worker\nsecond-line\n');
 ```
 
-Ajouter les cas d’échec : `index.html` principal absent, `sw.js` d’essai absent, sortie située dans un dossier source.
+Ajouter les cas d’échec : `index.html` principal absent, `sw.js` d’essai absent, sortie située dans un dossier source. Vérifier aussi que `_pages-site` reste séparé de `_site`, que les fichiers texte sont normalisés en LF comme sur GitHub et que les binaires restent intacts.
 
 Ajouter au même script un test HTTP du serveur :
 
@@ -866,20 +869,20 @@ const FILES = ['index.html', 'boot-guard.js', 'theme-boot.js', 'style.css', 'app
 const DIRS = ['assets', 'icons', 'locales', 'modules', 'voix'];
 ```
 
-Pour chaque source, exiger `index.html`, `app.js`, `sw.js`. Copier seulement les éléments de la liste blanche présents. Écrire `.nojekyll` à la racine. La sortie doit être `_site` dans le dossier courant ; refuser une source égale à `_site` ou une autre sortie imbriquée.
+Pour chaque source, exiger `index.html`, `app.js`, `sw.js`. Copier seulement les éléments de la liste blanche présents. Écrire `.nojekyll` à la racine. La sortie doit se terminer par `_site` ou `_pages-site` ; refuser une source égale à la sortie ou une sortie imbriquée dans une source. Normaliser les fichiers texte en LF pour reproduire les octets du checkout GitHub, sans toucher aux binaires.
 
 ```js
 import { access, cp, mkdir, rm, writeFile } from 'node:fs/promises';
-import { resolve, sep } from 'node:path';
+import { basename, resolve, sep } from 'node:path';
 
 const option = (name) => process.argv[process.argv.indexOf(`--${name}`) + 1];
 const main = resolve(option('main'));
 const essai = resolve(option('essai'));
 const out = resolve(process.cwd(), option('out'));
-if (out !== resolve(process.cwd(), '_site')) throw new Error('la sortie doit être _site dans le dossier courant');
+if (!['_site', '_pages-site'].includes(basename(out))) throw new Error('la sortie doit se terminer par _site ou _pages-site');
 const exists = async (path) => access(path).then(() => true).catch(() => false);
 for (const source of [main, essai]) {
-  if (out === source || (out.startsWith(source + sep) && out !== resolve(source, '_site'))) throw new Error('la sortie ne peut pas être dans une source, sauf _site');
+  if (out === source || out.startsWith(source + sep)) throw new Error('la sortie et les sources doivent être des dossiers séparés');
   for (const required of ['index.html', 'app.js', 'sw.js']) {
     if (!(await exists(resolve(source, required)))) throw new Error(`${required} absent de ${source}`);
   }
@@ -905,6 +908,8 @@ Ajouter à `.gitignore` :
 
 ```gitignore
 _site/
+_pages-site/
+.pages-build/
 .pages-main/
 .pages-essai/
 ```
@@ -1055,24 +1060,25 @@ git commit -m "Vérifie l’isolation de l’essai dans les navigateurs"
 
 - Créer : `.github/workflows/pages.yml`
 - Créer : `tools/check-pages-root.mjs`
+- Modifier : `tools/test-cache-scope.mjs`
 - Modifier : `docs/PUBLIER.md`
 - Créer : `docs/comptes-rendus/lot-0-essai.md`
 
 **Interfaces :**
 
 - Produit : workflow manuel `pages.yml`, concurrent groupe unique.
-- Produit : contrôle local `node tools/check-pages-root.mjs --site _site --live https://elguellouchi.github.io/Kalimati/`.
+- Produit : contrôle local `node tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard`.
 - Produit : rapport avec SHA-256, sortie réelle de `npm test` et `npm run test:e2e`.
 
 - [ ] **Étape 1 : écrire le contrôle rouge**
 
-Créer `tools/check-pages-root.mjs` qui télécharge uniquement les deux URL publiques déjà autorisées, lit `_site/sw.js` et `_site/index.html`, calcule SHA-256 et octets, puis compare les tampons avec `Buffer.equals`.
+Créer `tools/check-pages-root.mjs` qui télécharge uniquement les deux URL publiques déjà autorisées, lit `_pages-site/sw.js` et `_pages-site/index.html`, calcule SHA-256 et octets, compare les tampons avec `Buffer.equals`, puis exécute le vrai gestionnaire `fetch` du worker avec `--require-main-guard`. Ajouter dans `tools/test-cache-scope.mjs` une régression contre une garde seulement commentée et contre un worker forcé en mode essai.
 
 ```bash
-node tools/check-pages-root.mjs --site _site --live https://elguellouchi.github.io/Kalimati/
+node tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
 ```
 
-Comportement attendu : code 1 si un fichier diffère, avec les deux empreintes et tailles, sans secret ni contenu de fichier.
+Comportement attendu : code 1 si un fichier diffère, avec les deux empreintes et tailles, sans secret ni contenu de fichier ; code 1 si le worker intercepte un chemin `/essai/` ou laisse passer la racine et `/essai-copie/`.
 
 ```js
 import { createHash } from 'node:crypto';
@@ -1101,11 +1107,11 @@ Après la tâche 7, construire un artefact avec `origin/main` en racine et la br
 
 ```bash
 git worktree add ../kalimati-main-check origin/main
-node tools/build-pages.mjs --main ../kalimati-main-check --essai . --out _site
-node tools/check-pages-root.mjs --site _site --live https://elguellouchi.github.io/Kalimati/
+node tools/build-pages.mjs --main ../kalimati-main-check --essai . --out ../kalimati-pages-check/_pages-site
+node tools/check-pages-root.mjs --site ../kalimati-pages-check/_pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
 ```
 
-Attendu : code 1 sur `sw.js`, car `origin/main` contient `v10.45` sans garde. C’est la preuve de G0, pas une erreur à contourner.
+Attendu : `sw.js` et `index.html` sont identiques octet par octet au site public après normalisation LF, puis code 1 uniquement sur G0, car le worker public `v10.45` intercepte réellement `/essai/`. C’est la preuve de G0, pas une erreur à contourner.
 
 - [ ] **Étape 3 : implémenter le workflow et la procédure**
 
@@ -1115,10 +1121,10 @@ Créer `.github/workflows/pages.yml` avec :
 - `concurrency: group: pages-kalimati`, `cancel-in-progress: false` ;
 - checkout de `main` dans `.pages-main` et de `essai` dans `.pages-essai` ;
 - `npm ci` et `npm test` dans `.pages-essai` ;
-- construction de `_site` avec le script sans dépendance ;
-- contrôle `check-pages-root.mjs` contre le site public ;
+- construction de `_site` (code courant aux deux emplacements) et `_pages-site` (`main` + `essai/`) avec le script sans dépendance ;
+- contrôle `check-pages-root.mjs --require-main-guard` contre `_pages-site` et le site public ;
 - E2E contre `_site` avec `SERVE_ROOT` et `npm run test:e2e -- --trace off` ;
-- `actions/configure-pages`, `actions/upload-pages-artifact@v3` avec `path: _site`, puis `actions/deploy-pages@v4` ;
+- `actions/configure-pages`, `actions/upload-pages-artifact@v3` avec `path: .pages-build/_pages-site`, puis `actions/deploy-pages@v4` ;
 - permissions minimales `contents: read`, `pages: write`, `id-token: write` ;
 - environnement GitHub `github-pages` pour la protection de déploiement.
 
@@ -1136,15 +1142,15 @@ Mettre à jour `docs/PUBLIER.md` :
 - [ ] **Étape 4 : vérifier le workflow et la documentation**
 
 ```bash
-node tools/check-pages-root.mjs --site _site --live https://elguellouchi.github.io/Kalimati/
+node tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
 ```
 
-Attendu : le script fonctionne et bloque tant que G0 est ouvert. Relire le YAML et laisser la CI valider sa syntaxe ; ne pas installer de dépendance nouvelle pour cette vérification.
+Attendu : le script fonctionne et bloque tant que G0 est ouvert. La régression doit refuser un commentaire contenant la garde et un worker avec `TRIAL = true`. Relire le YAML et laisser la CI valider sa syntaxe ; ne pas installer de dépendance nouvelle pour cette vérification.
 
 - [ ] **Étape 5 : committer**
 
 ```bash
-git add .github/workflows/pages.yml tools/check-pages-root.mjs docs/PUBLIER.md
+git add .github/workflows/pages.yml tools/check-pages-root.mjs tools/test-cache-scope.mjs docs/PUBLIER.md
 git commit -m "Ajoute la publication Pages combinée et sa porte de contrôle"
 ```
 
@@ -1159,7 +1165,7 @@ git commit -m "Ajoute la publication Pages combinée et sa porte de contrôle"
 
 ```bash
 npm test > test.log 2>&1
-npm run test:e2e > e2e.log 2>&1
+CI=1 PORT=4187 SERVE_ROOT=../kalimati-pages-check/_site npm run test:e2e -- --trace off > e2e.log 2>&1
 ```
 
 Les deux commandes doivent réussir. Conserver les vraies sorties, y compris les avertissements Node, sans les remplacer par un résumé inventé.
@@ -1167,8 +1173,9 @@ Les deux commandes doivent réussir. Conserver les vraies sorties, y compris les
 - [ ] **Étape 2 : construire et comparer l’artefact**
 
 ```bash
-node tools/build-pages.mjs --main ../kalimati-main-check --essai . --out _site
-node tools/check-pages-root.mjs --site _site --live https://elguellouchi.github.io/Kalimati/
+node tools/build-pages.mjs --main . --essai . --out ../kalimati-pages-check/_site
+node tools/build-pages.mjs --main ../kalimati-main-check --essai . --out ../kalimati-pages-check/_pages-site
+node tools/check-pages-root.mjs --site ../kalimati-pages-check/_pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
 ```
 
 Consigner les tailles, SHA-256 et résultat pour `sw.js` et `index.html`. Si G0 reste ouvert, écrire clairement que la publication est bloquée.
@@ -1183,7 +1190,7 @@ Sur Chromium et WebKit :
 - hors ligne Chromium ;
 - noms de bases, clés et caches séparés ;
 - portée du worker d’essai ;
-- absence de `docs/`, `tools/`, `Agent.md` et transcriptions dans `_site`.
+- absence de `docs/`, `tools/`, `Agent.md` et transcriptions dans `_site` et `_pages-site`.
 
 Le vrai iPhone reste à tester après mise en essai ; WebKit ne le remplace pas.
 
@@ -1214,8 +1221,8 @@ Vérifier qu’aucun fichier privé, secret, identifiant Supabase ajouté ou vra
 - [ ] **Étape 6 : committer puis pousser la branche**
 
 ```bash
-git add docs/comptes-rendus/lot-0-essai.md docs/plans/lot-0-essai-plan.md docs/plans/lot-0-essai-spec.md
-git commit -m "Consigne les preuves et la porte de publication de l’essai"
+git add .gitignore .github/workflows/pages.yml docs/PUBLIER.md docs/comptes-rendus/lot-0-essai.md docs/plans/lot-0-essai-plan.md docs/plans/lot-0-essai-spec.md tools/build-pages.mjs tools/check-pages-root.mjs tools/e2e/support.mjs tools/e2e/trial-isolation.spec.mjs tools/e2e/trial-offline.spec.mjs tools/test-cache-scope.mjs tools/test-pages-build.mjs
+git commit -m "Lot 0 — verrouille la publication combinée et le contrôle G0 (exigences L0-05, L0-06, L0-12)"
 git push -u origin lot-0-essai-isole
 ```
 

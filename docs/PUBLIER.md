@@ -4,7 +4,7 @@
 
 La version d’essai n’est pas encore publiée. L’adresse `https://elguellouchi.github.io/Kalimati/essai/` ne doit donc pas être utilisée pour tester.
 
-Le Lot 0 prépare les tests et les règles de publication. La publication de `/essai/` (L0-05), son bandeau (L0-06) et la coupure Supabase de l’essai (L0-12) restent à faire ensemble.
+L0-05, L0-06 et L0-12 sont implémentés et vérifiés dans la branche de travail, mais ils ne sont pas publiés. Le contrôle de publication confirme que `sw.js` et `index.html` de la racine publiable sont identiques octet par octet au site public ; il bloque uniquement sur G0, car le worker principal public n’a pas encore la garde `/essai/`. Le compte rendu du lot contient les mesures exactes.
 
 Ne copiez pas manuellement des fichiers dans le site pour créer une version d’essai.
 
@@ -19,7 +19,17 @@ Ne copiez pas manuellement des fichiers dans le site pour créer une version d�
 
 ## Quand la version d’essai sera prête
 
-### 1. Autoriser la publication automatique
+### 1. Résoudre G0 avant toute publication
+
+Un navigateur qui possède encore le service worker principal v10.45 peut ajouter des fichiers `/essai/` au cache `kalimati-v10-45`. Ce worker ancien ne peut pas apprendre après coup la nouvelle garde. Le test E2E conserve ce worker historique au commit `c3060ab` et reproduit la contamination.
+
+Déployer un worker principal protégé est nécessaire pour les nouvelles installations, mais ne met pas à jour un navigateur resté sur v10.45 qui n’ouvre pas le site principal. Pour un tel navigateur, il faut ouvrir le site principal et attendre la prise de main du nouveau worker avant d’ouvrir `/essai/`. L’exigence « ouverture directe de `/essai/` sans aucun ajout au cache » ne peut donc pas être garantie pour un ancien worker déjà actif sous le même domaine.
+
+Le workflow refuse aussi toute publication si les fichiers `sw.js` et `index.html` de la racine de l’artefact ne sont pas identiques octet par octet à ceux du site public, ou si le worker principal de l’artefact intercepte encore `/essai/`. Ce dernier contrôle exécute le vrai gestionnaire `fetch` du worker publié ; la présence du texte de la garde dans un commentaire ne suffit pas.
+
+Ne pas contourner ce contrôle. Le workflow actuel ne peut pas effectuer la première mise à jour du worker corrigé : l’artefact `main` est identique au site public mais son worker intercepte encore `/essai/`, tandis qu’un worker corrigé différerait du site public. Aziz doit donc autoriser une opération distincte pour aligner la racine publique, puis refaire la comparaison. Ce chemin n’est pas encore autorisé et doit être décidé avant de changer le réglage Pages.
+
+### 2. Autoriser la publication automatique
 
 Dans les réglages GitHub du dépôt :
 
@@ -29,17 +39,25 @@ Dans les réglages GitHub du dépôt :
 
 Ce réglage doit être fait par Aziz. Il peut provoquer une courte interruption du site.
 
-### 2. Publier l’essai
+### 3. Lancer le workflow immédiatement
 
-Après la réalisation de L0-05 :
+Juste après le passage de Pages sur **GitHub Actions** :
 
-- fusionner le travail validé dans la branche `essai` ;
-- laisser le workflow publier ;
-- ouvrir `https://elguellouchi.github.io/Kalimati/essai/`.
+- ouvrir **Actions** ;
+- sélectionner **Pages — Kalimati principal et essai** ;
+- cliquer **Run workflow** ;
+- lancer l’exécution sur la branche contenant le workflow validé ;
+- attendre le résultat sans modifier `main`.
 
-Vérifier que la page affiche « Version d’essai » en mode parent.
+Si **Run workflow** n’est pas proposé, le workflow doit encore être présent sur la branche par défaut. Ne pas contourner cette règle : demander l’autorisation nécessaire pour le rendre disponible avant le lancement manuel.
 
-### 3. Tester pendant 48 heures
+Le workflow construit deux artefacts séparés. L’artefact de test place le code courant à la racine et dans `essai/` pour exécuter tous les E2E. L’artefact publiable place `main` à la racine et `essai` dans `essai/` ; c’est lui qui est comparé au site public, vérifié pour G0 puis déployé. Ne jamais publier uniquement `essai/` : cela supprimerait le site principal.
+
+### 4. Vérifier l’essai publié
+
+Après une exécution réussie, ouvrir `https://elguellouchi.github.io/Kalimati/essai/` et vérifier que la page affiche « Version d’essai » en mode parent.
+
+### 5. Tester pendant 48 heures
 
 Faire les parcours habituels sur les appareils de la famille :
 
@@ -50,12 +68,12 @@ Faire les parcours habituels sur les appareils de la famille :
 
 Noter tout problème. Ne pas publier sur `main` tant qu’un problème reste ouvert.
 
-### 4. Publier le site principal
+### 6. Publier le site principal
 
-Après 48 heures sans problème :
+Après 48 heures sans problème, et seulement avec une autorisation explicite :
 
 - fusionner `essai` dans `main` ;
-- laisser la publication automatique terminer ;
+- exécuter le workflow et vérifier qu’il termine ;
 - ouvrir `https://elguellouchi.github.io/Kalimati/` ;
 - vérifier que la nouvelle version s’ouvre.
 
@@ -65,7 +83,12 @@ Ne pas utiliser `git push --force`.
 
 ```bash
 npm test
-npm run test:e2e
+node tools/build-pages.mjs --main . --essai . --out ../kalimati-pages-check/_site
+node tools/build-pages.mjs --main ../kalimati-main-check --essai . --out ../kalimati-pages-check/_pages-site
+node tools/check-pages-root.mjs --site ../kalimati-pages-check/_pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
+CI=1 PORT=4187 SERVE_ROOT=../kalimati-pages-check/_site npm run test:e2e -- --trace off
 ```
 
-Les deux commandes doivent réussir. Le compte rendu du lot doit contenir leur vraie sortie.
+Les commandes de test et de construction doivent réussir. `_site` est l’artefact de test du code courant ; `_pages-site` est l’artefact publiable `main` + `essai/`. Le contrôle de publication reste bloqué tant que G0 ou une différence octet par octet subsiste. Le worktree `../kalimati-main-check` doit être intact et les dossiers de sortie séparés des sources. `SERVE_ROOT` est obligatoire pour tester l’artefact combiné : sans lui, le serveur local sert les fichiers du dépôt, pas l’association réelle des deux espaces.
+
+Le compte rendu du lot doit contenir la vraie sortie des tests, les tailles et empreintes SHA-256 de `sw.js` et `index.html`, ainsi que l’état de G0.
