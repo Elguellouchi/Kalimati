@@ -9,11 +9,16 @@ import './storage.js';
 export const MAIN_ID = 'main';
 const ACTIVE_KEY = 'kalimati-active-child';
 const LIST_KEY = 'kalimati-children';
-const PREFIX = 'kalimati-child-';
 
 const store = () => globalThis.KalimatiStorage;
+const trial = () => Boolean(globalThis.KalimatiStorage && KalimatiStorage.isTrial());
+const CHILD_PREFIX = () => trial() ? 'essai-kalimati-child-' : 'kalimati-child-';
+const VOICE_PREFIX = () => trial() ? 'kalimati-essai-amazigh-voices-' : 'kalimati-amazigh-voices-';
 
-export const dbNameFor = (id) => (!id || id === MAIN_ID ? 'kalimati' : `${PREFIX}${id}`);
+export const dbNameFor = (id) =>
+  (!id || id === MAIN_ID
+    ? (trial() ? 'essai-kalimati' : 'kalimati')
+    : `${CHILD_PREFIX()}${id}`);
 export const isValidChildId = (id) => id === MAIN_ID || /^c[a-z0-9]{4,16}$/.test(String(id || ''));
 
 export function cleanChildren(value) {
@@ -71,7 +76,7 @@ export function removeChild(id) {
   saveChildren(listChildren().filter((c) => c.id !== id));
   // v10.42 (Lot 4.3) : ses voix enregistrées (armoires « …:<enfant> ») partent avec lui.
   try {
-    if (globalThis.caches) caches.keys().then((names) => names.filter((n) => n.endsWith(`:${id}`)).forEach((n) => caches.delete(n))).catch(() => {});
+    if (globalThis.caches) caches.keys().then((names) => names.filter((n) => n.startsWith(VOICE_PREFIX()) && n.endsWith(`:${id}`)).forEach((n) => caches.delete(n))).catch(() => {});
   } catch { /* pas d'armoire à voix */ }
   return new Promise((resolve) => {
     try {
@@ -85,11 +90,12 @@ export function removeChild(id) {
 export async function recoverChildren() {
   try {
     if (!globalThis.indexedDB || typeof indexedDB.databases !== 'function') return listChildren();
-    const names = (await indexedDB.databases()).map((d) => d.name).filter((n) => n && n.startsWith(PREFIX));
+    const prefix = CHILD_PREFIX();
+    const names = (await indexedDB.databases()).map((d) => d.name).filter((n) => n && n.startsWith(prefix));
     const list = listChildren();
     let changed = false;
     names.forEach((n, i) => {
-      const id = n.slice(PREFIX.length);
+      const id = n.slice(prefix.length);
       if (isValidChildId(id) && !list.some((c) => c.id === id)) { list.push({ id, name: `Enfant ${list.length + 1 + i}`, emoji: '🙂' }); changed = true; }
     });
     if (changed) saveChildren(list);
