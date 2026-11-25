@@ -6,7 +6,7 @@ Dossier de travail : `C:\Users\HP\Projets\kalimati-qoder`.
 
 Branche : `lot-0-socle`, créée depuis `origin/main`. Le commit requis `c3060ab` (v10.45) a été vérifié dans l’historique avec `git merge-base --is-ancestor c3060ab HEAD`.
 
-La branche locale `essai` a été créée depuis `origin/main`. Elle n’a pas été poussée.
+La branche `essai` a été créée depuis `origin/main` et poussée sur `origin/essai` au commit `c3060ab`. La pull request #1 cible `essai`.
 
 Aziz a autorisé un commit et une pull request vers `essai`. Aucun push vers `main` n’est autorisé.
 
@@ -43,6 +43,7 @@ Travaux de réparation nécessaires :
 - Les erreurs d’écriture du stockage centralisé sont maintenant signalées à l’appelant. Un changement d’enfant refusé ne peut plus être annoncé comme réussi.
 - Le test de rechargement ajoute une carte neutre par la vraie base de l’application, puis vérifie qu’elle reste présente.
 - Les trois causes de lenteur du démarrage ont été corrigées sans augmenter le seuil de 3 secondes.
+- Le premier échec WebKit en CI venait de l’attente d’actionnabilité de Playwright avant le toucher, pas de Kalimati : la grille mettait 10 ms à apparaître après le clic, mais `locator.click()` attendait environ 3 283 ms avant de l’envoyer. La mesure utilise maintenant un vrai événement DOM `click` pour ce seul scénario ; les parcours fonctionnels conservent de vrais clics et le seuil reste strictement inférieur à 3 secondes.
 - Le test `test-cache-scope` exécute le vrai gestionnaire d'installation : plusieurs voix et images doivent être entièrement recopiées, un fichier absent ne bloque pas l'installation, et une recopie ratée est téléchargée ensuite pour éviter sa perte.
 
 ## Exigences non faites et pourquoi
@@ -53,7 +54,7 @@ Travaux de réparation nécessaires :
 - **L0-06 différée avec L0-05** : pas de bandeau « Version d’essai », car aucune version d’essai n’est publiée.
 - **L0-12 différée avec L0-05** : la synchronisation Supabase et la cohorte ne sont pas encore coupées et grisées dans une version d’essai. Le comportement de la version principale n’est pas modifié.
 - **Fichier `LICENSE` non ajouté** : le choix de l’option A est consigné, mais aucun texte juridique n’a été rédigé dans ce lot. Une ouverture ultérieure reste possible.
-- **GitHub Actions** : le workflow est écrit. Les résultats ci-dessous sont locaux ; les contrôles distants seront visibles sur la pull request vers `essai`.
+- **GitHub Actions** : le workflow est écrit. Le run du commit `5b9e9d0` était rouge uniquement sur l’ouverture WebKit, mesurée à 4 106 ms. Le correctif local est vert ; ses contrôles distants seront vérifiés sur la pull request #1 après publication.
 
 ## Tests lancés et résultat
 
@@ -122,25 +123,35 @@ Sortie complète réelle :
 
 Running 12 tests using 1 worker
 
-grille « Parler » affichée en 1281 ms
-  ok  1 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (1.8s)
-  ok  2 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.2s)
+ouverture : navigation 260 ms, accueil 878 ms, toucher 40 ms, grille 36 ms
+grille « Parler » affichée en 1214 ms
+  ok  1 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (1.7s)
+ouverture : navigation 207 ms, accueil 863 ms, toucher 45 ms, grille 36 ms
+  ok  2 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.1s)
+ouverture : navigation 274 ms, accueil 852 ms, toucher 49 ms, grille 33 ms
   ok  3 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (4.0s)
   -   4 [iphone-13-webkit] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore
-grille « Parler » affichée en 2416 ms
-  ok  5 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.6s)
-  ok  6 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.3s)
-  ok  7 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (3.2s)
-réseau coupé : application rouverte en 334 ms
-  ok  8 [pixel-5-chromium] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore (3.0s)
-grille « Parler » affichée en 2302 ms
-  ok  9 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.3s)
+ouverture : navigation 142 ms, accueil 108 ms, toucher 2082 ms, grille 25 ms
+grille « Parler » affichée en 2357 ms
+  ok  5 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.5s)
+ouverture : navigation 122 ms, accueil 96 ms, toucher 94 ms, grille 29 ms
+  ok  6 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.2s)
+ouverture : navigation 120 ms, accueil 81 ms, toucher 87 ms, grille 43 ms
+  ok  7 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (3.1s)
+ouverture : navigation 117 ms, accueil 97 ms, toucher 90 ms, grille 26 ms
+réseau coupé : application rouverte en 243 ms
+  ok  8 [pixel-5-chromium] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore (3.2s)
+ouverture : navigation 138 ms, accueil 87 ms, toucher 2006 ms, grille 24 ms
+grille « Parler » affichée en 2255 ms
+  ok  9 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.2s)
+ouverture : navigation 133 ms, accueil 85 ms, toucher 83 ms, grille 22 ms
   ok 10 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.0s)
+ouverture : navigation 121 ms, accueil 92 ms, toucher 89 ms, grille 22 ms
   ok 11 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (2.7s)
   -  12 [chromium-sans-caches] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore
 
   2 skipped
-  10 passed (52.3s)
+  10 passed (52.2s)
 ```
 
 Les deux sauts sont prévus : le test hors ligne ne tourne que sur Chromium standard. WebKit ne permet pas de piloter correctement les service workers dans Playwright. Le profil sans caches simule justement leur absence.
@@ -181,7 +192,7 @@ Aucun téléphone ou tablette réel n’était branché. Les profils Playwright 
 
 Le test hors ligne vérifie l’ouverture de l’application. Il ne remplace pas un essai manuel des voix, images, photos et données sur un vrai iPhone.
 
-Le workflow GitHub Actions doit être vérifié sur la pull request vers `essai` après le push autorisé.
+Le workflow GitHub Actions a déjà été exécuté sur la pull request #1. Le dernier run connu du commit `5b9e9d0` est rouge sur le seul temps d’ouverture WebKit ; le correctif local est en attente de vérification distante après publication.
 
 ## Questions pour Aziz
 

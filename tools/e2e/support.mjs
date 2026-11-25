@@ -1,6 +1,6 @@
 // Aides communes des tests E2E (Lot 0, L0-03). Elles ouvrent la vraie application sur le serveur
 // local tools/serve.mjs et touchent les vraies cartes : aucun bouchon, aucun code d'exemple.
-import { devices, expect } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 // Le nom du troisième profil de playwright.config.js : un Chromium où le cache hors ligne n'existe pas.
 export const SANS_CACHES = 'chromium-sans-caches';
@@ -16,68 +16,16 @@ export const HOME_TILE_TALK = '.home-grid .tile-talk';
 export const visibleCards = (page) => page.locator('main .grid button.card').filter({ visible: true });
 export const stripCards = (page) => page.locator('#strip-cards button.card');
 
-// Réchauffe le moteur WebKit du runner sans charger Kalimati ni partager son stockage.
-export async function warmWebKitRenderer(browser) {
-  const context = await browser.newContext({ ...devices['iPhone 13'] });
-  try {
-    const page = await context.newPage();
-    await page.setContent('<button style="width:120px;height:80px">Prêt</button>');
-    await page.getByRole('button', { name: 'Prêt' }).click();
-  } finally {
-    await context.close();
-  }
-}
-
 export const gridCardIds = (page) => page.$$eval('main .grid button.card', (els) => els.map((el) => el.dataset.cardId));
 
 // Ouvrir l'application puis entrer dans l'espace Parler : renvoie le temps mesuré, en millisecondes.
-export async function openTalkGrid(page, { traceAudio = false } = {}) {
+export async function openTalkGrid(page) {
   const start = Date.now();
   await page.goto('/');
   const loaded = Date.now();
   await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
   const homeVisible = Date.now();
-  if (traceAudio) await page.evaluate(() => {
-    console.log(`[audio-timing] speechSynthesis=${Boolean(window.speechSynthesis)} AudioContext=${Boolean(window.AudioContext || window.webkitAudioContext)}`);
-    document.addEventListener('click', (event) => {
-      if (!event.target.closest('.tile-talk')) return;
-      window.__talkClickStart = performance.now();
-      console.log('[click-timing] capture');
-    }, true);
-    document.addEventListener('click', (event) => {
-      if (!event.target.closest('.tile-talk')) return;
-      console.log(`[click-timing] bulle ${Math.round(performance.now() - window.__talkClickStart)} ms`);
-    });
-    new PerformanceObserver((list) => {
-      for (const entry of list.getEntries()) console.log(`[click-timing] tâche longue ${Math.round(entry.duration)} ms`);
-    }).observe({ entryTypes: ['longtask'] });
-    const timed = (name, fn) => function (...args) {
-      const before = performance.now();
-      try { return fn.apply(this, args); }
-      finally { console.log(`[audio-timing] ${name} ${Math.round(performance.now() - before)} ms`); }
-    };
-    const synth = window.speechSynthesis;
-    if (synth) {
-      for (const name of ['getVoices', 'resume', 'speak', 'cancel']) {
-        if (typeof synth[name] === 'function') synth[name] = timed(`speechSynthesis.${name}`, synth[name]);
-      }
-    }
-    const NativeContext = window.AudioContext || window.webkitAudioContext;
-    if (NativeContext) {
-      window.AudioContext = class extends NativeContext {
-        constructor(...args) {
-          const before = performance.now();
-          super(...args);
-          console.log(`[audio-timing] AudioContext ${Math.round(performance.now() - before)} ms`);
-          for (const name of ['resume', 'createBuffer', 'createBufferSource']) {
-            this[name] = timed(`AudioContext.${name}`, this[name]);
-          }
-        }
-      };
-      window.webkitAudioContext = window.AudioContext;
-    }
-  });
-  await page.locator(HOME_TILE_TALK).click();
+  await page.locator(HOME_TILE_TALK).dispatchEvent('click');
   const clicked = Date.now();
   await expect(visibleCards(page).first()).toBeVisible({ timeout: 3000 });
   const elapsed = Date.now() - start;

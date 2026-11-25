@@ -4,22 +4,16 @@
 import { test, expect } from '@playwright/test';
 import {
   SANS_CACHES, disableOfflineCache, HOME_TILE_TALK,
-  openTalkGrid, visibleCards, stripCards, gridCardIds, tapThreeCards, warmWebKitRenderer,
+  openTalkGrid, visibleCards, stripCards, gridCardIds, tapThreeCards,
 } from './support.mjs';
 
 // Le profil « chromium-sans-caches » joue les mêmes scénarios que les autres, sans cache ni service worker.
-test.beforeEach(async ({ browser, page }, testInfo) => {
+test.beforeEach(async ({ page }, testInfo) => {
   if (testInfo.project.name === SANS_CACHES) await page.addInitScript(disableOfflineCache);
-  if (testInfo.project.name === 'iphone-13-webkit' && testInfo.title.startsWith('a —')) {
-    await warmWebKitRenderer(browser);
-  }
 });
 
 test('a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s', async ({ page }) => {
-  page.on('console', (message) => {
-    if (/^\[(audio|click)-timing\]/.test(message.text())) console.log(message.text());
-  });
-  const ms = await openTalkGrid(page, { traceAudio: true });
+  const ms = await openTalkGrid(page);
   console.log(`grille « Parler » affichée en ${ms} ms`);
   expect(ms).toBeLessThan(3000);
 });
