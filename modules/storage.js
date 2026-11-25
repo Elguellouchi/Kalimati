@@ -14,6 +14,7 @@
 
   global.KalimatiStorage = Object.freeze({
     storageKey,
+    isTrial() { return essai; },
     getItem(nom) {
       try { const s = store(); return s ? s.getItem(storageKey(nom)) : null; } catch { return null; }
     },
