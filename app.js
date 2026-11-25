@@ -546,7 +546,7 @@ async function init() {
   checkReminder();
   setInterval(checkReminder, REMINDER_CHECK_MS);
   // v10.1 : lien #key=KALI-SYNC-… (clé gardée dans le téléphone) + synchro auto si le parent l'a activée. Ne bloque jamais l'ouverture.
-  initCloudSyncFromUrlAndAuto().catch(() => {});
+  if (!KalimatiStorage.isTrial()) initCloudSyncFromUrlAndAuto().catch(() => {});
   // v10.7.1 : en amazigh, le pack de voix d'essai de la variété choisie arrive tout seul, après l'ouverture
   // (une fois par ouverture ; seulement des fichiers du site Kalimati, rien ne part du téléphone).
   const amazighPackSoon = () => { if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang); };

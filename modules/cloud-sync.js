@@ -12,9 +12,20 @@ import { h, btn, dayKey, percent, isNewer } from './util.js';
 import { profile, clinic } from './aba.js';
 import { blobToDataUrl, dataUrlToBlob } from '../media.js';
 import { isTeamMode, requireTeamMode } from './network-policy.js';
+import { logDiagnostic } from './error-log.js';
+import './storage.js';
 
 export const DEFAULT_SUPABASE_URL = 'https://ytemnsbigymgvogarzzp.supabase.co';
 export const DEFAULT_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_8jLXfni_FP6x_NAqGKiRMQ_E3aOkKSV';
+
+const TRIAL_CLOUD_MESSAGE = 'Version d’essai : synchronisation et cohorte désactivées. Les données restent sur cet appareil.';
+const isTrial = () => KalimatiStorage.isTrial();
+const cloudAllowed = () => isTeamMode() && !isTrial();
+
+function cloudRefusal() {
+  logDiagnostic('cloud_blocked_trial', TRIAL_CLOUD_MESSAGE);
+  return new Error(TRIAL_CLOUD_MESSAGE);
+}
 
 const SYNC_SETTINGS_KEY = 'cloudSyncConfig';
 const LAST_SYNC_KEY = 'cloudSyncLastState';
@@ -145,6 +156,7 @@ function buildSupabaseHeaders(apiKey, extra = {}) {
 // v10.3.1 : chaque appel Supabase s'arrête au bout de 10 s (avant, un réseau lent pouvait bloquer sans fin).
 const SUPABASE_TIMEOUT_MS = 10000;
 async function fetchWithTimeout(url, options) {
+  if (isTrial()) throw cloudRefusal();
   const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), SUPABASE_TIMEOUT_MS);
   try {
@@ -158,6 +170,7 @@ async function fetchWithTimeout(url, options) {
 }
 
 async function supabaseFetch(url, apiKey, options = {}) {
+  if (isTrial()) throw cloudRefusal();
   const headers1 = buildSupabaseHeaders(apiKey, options.headers || {});
   const res1 = await fetchWithTimeout(url, { ...options, headers: headers1 });
   if (res1.status === 401 && !headers1.Authorization) {
@@ -198,13 +211,24 @@ let pendingMagicKey = null;
 export function captureMagicKeyFromUrl() {
   if (typeof window === 'undefined') return null;
   const hash = window.location.hash || '';
+  if (isTrial()) {
+    pendingMagicKey = null;
+    const cleanHash = hash.slice(1).split('&').filter((part) => !/^key(?:=|$)/i.test(part)).join('&');
+    const nextHash = cleanHash ? `#${cleanHash}` : '';
+    if (nextHash !== hash) {
+      try {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search + nextHash);
+      } catch { /* très ancien navigateur */ }
+    }
+    return null;
+  }
   const match = hash.match(/[#&]key=(KALI-[A-Z0-9-]{8,40})/i);
   if (!match || !match[1]) return pendingMagicKey;
-  pendingMagicKey = match[1].toUpperCase();
   const cleanHash = hash.replace(/([#&])key=KALI-[A-Z0-9-]{8,40}/i, '').replace(/^#&/, '#');
   try {
     window.history.replaceState(null, '', window.location.pathname + window.location.search + (cleanHash === '#' ? '' : cleanHash));
   } catch { /* très ancien navigateur */ }
+  pendingMagicKey = match[1].toUpperCase();
   return pendingMagicKey;
 }
 
@@ -224,6 +248,11 @@ function showMagicKeyWarning() {
 
 export async function initCloudSyncFromUrlAndAuto() {
   if (typeof window === 'undefined') return;
+  if (isTrial()) {
+    captureMagicKeyFromUrl();
+    logDiagnostic('cloud_init_blocked_trial', TRIAL_CLOUD_MESSAGE);
+    return null;
+  }
   const importedKey = captureMagicKeyFromUrl();
   if (importedKey) {
     pendingMagicKey = null;
@@ -490,6 +519,9 @@ export async function mergeRemoteSyncPayload(remote) {
 }
 
 export async function getCloudSyncConfig() {
+  if (isTrial()) {
+    return { supabaseUrl: '', supabaseAnonKey: '', familyKey: '', autoSyncWifi: false, includeMedia: false };
+  }
   const saved = await db.getSetting(SYNC_SETTINGS_KEY);
   const supa = await db.getSetting('supabaseConfig');
   let familyKey = await db.getSetting('familyAesKey');
@@ -507,6 +539,7 @@ export async function getCloudSyncConfig() {
 }
 
 export async function saveCloudSyncConfig(nextCfg, { enforceKey = false } = {}) {
+  if (isTrial()) throw cloudRefusal();
   const current = await getCloudSyncConfig();
   const requestedKey = String(nextCfg.familyKey ?? '').trim();
   if (enforceKey && requestedKey && requestedKey !== current.familyKey.trim()) {
@@ -523,6 +556,7 @@ export async function saveCloudSyncConfig(nextCfg, { enforceKey = false } = {}) 
 }
 
 export async function syncNowWithTeam({ includeMedia = false } = {}) {
+  if (isTrial()) throw cloudRefusal();
   requireTeamMode('la synchronisation avec l’équipe');
   const cfg = await getCloudSyncConfig();
   if (!cfg.supabaseUrl || !cfg.supabaseAnonKey) {
@@ -667,6 +701,7 @@ function toAgeBracket(rawAge) {
 
 // v10.5 (S12) : effacer du serveur. Seul un téléphone qui a la clé familiale peut le faire.
 async function rpcDelete(fnName, params) {
+  if (isTrial()) throw cloudRefusal();
   requireTeamMode('la suppression de données sur le serveur');
   const cfg = await getCloudSyncConfig();
   const baseUrl = cfg.supabaseUrl.replace(/\/$/, '');
@@ -681,6 +716,7 @@ async function cohortToken(familyKey) {
 }
 
 export async function withdrawClinicalCohortData() {
+  if (isTrial()) throw cloudRefusal();
   const cfg = await getCloudSyncConfig();
   await db.setSetting(COHORT_OPTIN_KEY, false);
   const token = await cohortToken(cfg.familyKey);
@@ -691,6 +727,7 @@ export async function withdrawClinicalCohortData() {
 }
 
 export async function deleteEncryptedRelayBundle() {
+  if (isTrial()) throw cloudRefusal();
   const cfg = await getCloudSyncConfig();
   const key = String(cfg.familyKey || '').trim();
   const removed = await rpcDelete('kalimati_relay_delete', {
