@@ -9,8 +9,14 @@ import { SELF_CARD_ID } from '../data.js';
 import { setChildGender } from './morphology.js';
 
 import { APP_VERSION } from './version.js';
+import './storage.js';
 export { APP_VERSION };
-export const BASE_APP_URL = 'https://elguellouchi.github.io/Kalimati/';
+const isTrial = () => KalimatiStorage.isTrial();
+const storageKey = (key) => KalimatiStorage.storageKey(key);
+export const BASE_APP_URL = isTrial()
+  ? 'https://elguellouchi.github.io/Kalimati/essai/'
+  : 'https://elguellouchi.github.io/Kalimati/';
+const SESSION_KEY = storageKey('kalimati_super_admin_unlocked');
 // v10.11 : aucune empreinte de clé n'est publiée dans le code. La clé maître est choisie
 // sur le téléphone au premier accès ; seule son empreinte SHA-256 y est gardée (réglage « superAdminKeyHash »).
 const MIN_MASTER_KEY_LENGTH = 10;
@@ -848,7 +854,7 @@ export function superAdminScreen(nav) {
   let lastCreatedInvite = null;
 
   const checkUnlocked = async () => {
-    const unlocked = sessionStorage.getItem('kalimati_super_admin_unlocked') === '1';
+    const unlocked = sessionStorage.getItem(SESSION_KEY) === '1';
     const hasKey = Boolean(await db.getSetting('superAdminKeyHash'));
     if (unlocked && hasKey) {
       await renderConsole();
@@ -878,7 +884,7 @@ export function superAdminScreen(nav) {
     const unlock = async () => {
       const typed = await sha256Hex(keyInput.value);
       if (typed === savedHash) {
-        sessionStorage.setItem('kalimati_super_admin_unlocked', '1');
+        sessionStorage.setItem(SESSION_KEY, '1');
         renderConsole();
       } else {
         err.textContent = 'Clé maître administrateur incorrecte.';
@@ -912,7 +918,7 @@ export function superAdminScreen(nav) {
       if (value !== second.value.trim()) { err.textContent = 'Les deux clés ne sont pas identiques.'; second.focus(); return; }
       await db.setSetting('superAdminKeyHash', await sha256Hex(value));
       first.value = ''; second.value = '';
-      sessionStorage.setItem('kalimati_super_admin_unlocked', '1');
+      sessionStorage.setItem(SESSION_KEY, '1');
       await renderConsole();
     };
     container.replaceChildren(
@@ -1043,7 +1049,7 @@ export function superAdminScreen(nav) {
         h('h2', {}, '🛡️ Console Super-Admin · Bêta 100 Familles'),
         h('div', { class: 'row wrap' },
           btn('📥 Exporter CSV des invitations', exportInvitesCsv, 'ghost tiny'),
-          btn('🔒 Verrouiller Console', () => { sessionStorage.removeItem('kalimati_super_admin_unlocked'); renderLogin(); }, 'ghost tiny'))),
+          btn('🔒 Verrouiller Console', () => { sessionStorage.removeItem(SESSION_KEY); renderLogin(); }, 'ghost tiny'))),
 
       // Compteurs temps réel
       h('section', { class: 'card-box kpi-block' },

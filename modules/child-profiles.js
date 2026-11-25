@@ -5,6 +5,7 @@
 // La liste (prénom + petit dessin) reste dans ce téléphone ; aucun prénom n'est écrit dans le code.
 
 import './storage.js';
+import { voiceCachePrefix } from './voice-cache.js';
 
 export const MAIN_ID = 'main';
 const ACTIVE_KEY = 'kalimati-active-child';
@@ -13,7 +14,7 @@ const LIST_KEY = 'kalimati-children';
 const store = () => globalThis.KalimatiStorage;
 const trial = () => Boolean(globalThis.KalimatiStorage && KalimatiStorage.isTrial());
 const CHILD_PREFIX = () => trial() ? 'essai-kalimati-child-' : 'kalimati-child-';
-const VOICE_PREFIX = () => trial() ? 'kalimati-essai-amazigh-voices-' : 'kalimati-amazigh-voices-';
+const VOICE_PREFIX = () => voiceCachePrefix();
 
 export const dbNameFor = (id) =>
   (!id || id === MAIN_ID
