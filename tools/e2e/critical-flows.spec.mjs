@@ -16,7 +16,10 @@ test.beforeEach(async ({ browser, page }, testInfo) => {
 });
 
 test('a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s', async ({ page }) => {
-  const ms = await openTalkGrid(page);
+  page.on('console', (message) => {
+    if (/^\[(audio|click)-timing\]/.test(message.text())) console.log(message.text());
+  });
+  const ms = await openTalkGrid(page, { traceAudio: true });
   console.log(`grille « Parler » affichée en ${ms} ms`);
   expect(ms).toBeLessThan(3000);
 });

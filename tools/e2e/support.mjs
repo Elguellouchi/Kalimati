@@ -31,12 +31,52 @@ export async function warmWebKitRenderer(browser) {
 export const gridCardIds = (page) => page.$$eval('main .grid button.card', (els) => els.map((el) => el.dataset.cardId));
 
 // Ouvrir l'application puis entrer dans l'espace Parler : renvoie le temps mesuré, en millisecondes.
-export async function openTalkGrid(page) {
+export async function openTalkGrid(page, { traceAudio = false } = {}) {
   const start = Date.now();
   await page.goto('/');
   const loaded = Date.now();
   await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
   const homeVisible = Date.now();
+  if (traceAudio) await page.evaluate(() => {
+    console.log(`[audio-timing] speechSynthesis=${Boolean(window.speechSynthesis)} AudioContext=${Boolean(window.AudioContext || window.webkitAudioContext)}`);
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.tile-talk')) return;
+      window.__talkClickStart = performance.now();
+      console.log('[click-timing] capture');
+    }, true);
+    document.addEventListener('click', (event) => {
+      if (!event.target.closest('.tile-talk')) return;
+      console.log(`[click-timing] bulle ${Math.round(performance.now() - window.__talkClickStart)} ms`);
+    });
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) console.log(`[click-timing] tâche longue ${Math.round(entry.duration)} ms`);
+    }).observe({ entryTypes: ['longtask'] });
+    const timed = (name, fn) => function (...args) {
+      const before = performance.now();
+      try { return fn.apply(this, args); }
+      finally { console.log(`[audio-timing] ${name} ${Math.round(performance.now() - before)} ms`); }
+    };
+    const synth = window.speechSynthesis;
+    if (synth) {
+      for (const name of ['getVoices', 'resume', 'speak', 'cancel']) {
+        if (typeof synth[name] === 'function') synth[name] = timed(`speechSynthesis.${name}`, synth[name]);
+      }
+    }
+    const NativeContext = window.AudioContext || window.webkitAudioContext;
+    if (NativeContext) {
+      window.AudioContext = class extends NativeContext {
+        constructor(...args) {
+          const before = performance.now();
+          super(...args);
+          console.log(`[audio-timing] AudioContext ${Math.round(performance.now() - before)} ms`);
+          for (const name of ['resume', 'createBuffer', 'createBufferSource']) {
+            this[name] = timed(`AudioContext.${name}`, this[name]);
+          }
+        }
+      };
+      window.webkitAudioContext = window.AudioContext;
+    }
+  });
   await page.locator(HOME_TILE_TALK).click();
   const clicked = Date.now();
   await expect(visibleCards(page).first()).toBeVisible({ timeout: 3000 });
