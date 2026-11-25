@@ -54,7 +54,7 @@ Travaux de réparation nécessaires :
 - **L0-06 différée avec L0-05** : pas de bandeau « Version d’essai », car aucune version d’essai n’est publiée.
 - **L0-12 différée avec L0-05** : la synchronisation Supabase et la cohorte ne sont pas encore coupées et grisées dans une version d’essai. Le comportement de la version principale n’est pas modifié.
 - **Fichier `LICENSE` non ajouté** : le choix de l’option A est consigné, mais aucun texte juridique n’a été rédigé dans ce lot. Une ouverture ultérieure reste possible.
-- **GitHub Actions** : le workflow est écrit. Le run du commit `5b9e9d0` était rouge uniquement sur l’ouverture WebKit, mesurée à 4 106 ms. Le correctif local est vert ; ses contrôles distants seront vérifiés sur la pull request #1 après publication.
+- **GitHub Actions** : le workflow est écrit. Après diagnostic de l’attente d’actionnabilité de Playwright, le correctif `23588b0` est vert sur les quatre jobs `tests` et `e2e` des runs push `45604034926` et pull request `45604043472`. Sur la pull request #1, l’ouverture WebKit est mesurée à 601 ms et les tests navigateur terminent avec `10 passed (14.8s)` et deux sauts prévus.
 
 ## Tests lancés et résultat
 
@@ -123,35 +123,35 @@ Sortie complète réelle :
 
 Running 12 tests using 1 worker
 
-ouverture : navigation 260 ms, accueil 878 ms, toucher 40 ms, grille 36 ms
-grille « Parler » affichée en 1214 ms
-  ok  1 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (1.7s)
-ouverture : navigation 207 ms, accueil 863 ms, toucher 45 ms, grille 36 ms
+ouverture : navigation 273 ms, accueil 869 ms, toucher 47 ms, grille 156 ms
+grille « Parler » affichée en 1345 ms
+  ok  1 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (2.0s)
+ouverture : navigation 268 ms, accueil 856 ms, toucher 55 ms, grille 34 ms
   ok  2 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.1s)
-ouverture : navigation 274 ms, accueil 852 ms, toucher 49 ms, grille 33 ms
-  ok  3 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (4.0s)
+ouverture : navigation 288 ms, accueil 863 ms, toucher 46 ms, grille 69 ms
+  ok  3 [iphone-13-webkit] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (4.1s)
   -   4 [iphone-13-webkit] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore
-ouverture : navigation 142 ms, accueil 108 ms, toucher 2082 ms, grille 25 ms
-grille « Parler » affichée en 2357 ms
-  ok  5 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.5s)
-ouverture : navigation 122 ms, accueil 96 ms, toucher 94 ms, grille 29 ms
-  ok  6 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.2s)
-ouverture : navigation 120 ms, accueil 81 ms, toucher 87 ms, grille 43 ms
+ouverture : navigation 130 ms, accueil 99 ms, toucher 2064 ms, grille 23 ms
+grille « Parler » affichée en 2316 ms
+  ok  5 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.4s)
+ouverture : navigation 116 ms, accueil 92 ms, toucher 93 ms, grille 34 ms
+  ok  6 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.3s)
+ouverture : navigation 128 ms, accueil 83 ms, toucher 99 ms, grille 42 ms
   ok  7 [pixel-5-chromium] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (3.1s)
-ouverture : navigation 117 ms, accueil 97 ms, toucher 90 ms, grille 26 ms
-réseau coupé : application rouverte en 243 ms
-  ok  8 [pixel-5-chromium] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore (3.2s)
-ouverture : navigation 138 ms, accueil 87 ms, toucher 2006 ms, grille 24 ms
-grille « Parler » affichée en 2255 ms
+ouverture : navigation 125 ms, accueil 83 ms, toucher 87 ms, grille 40 ms
+réseau coupé : application rouverte en 399 ms
+  ok  8 [pixel-5-chromium] › tools\e2e/offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore (3.2s)
+ouverture : navigation 131 ms, accueil 95 ms, toucher 2067 ms, grille 22 ms
+grille « Parler » affichée en 2315 ms
   ok  9 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:15:1 › a — ouverture à froid : la grille « Parler » s’affiche en moins de 3 s (8.2s)
-ouverture : navigation 133 ms, accueil 85 ms, toucher 83 ms, grille 22 ms
+ouverture : navigation 138 ms, accueil 84 ms, toucher 84 ms, grille 21 ms
   ok 10 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:21:1 › b — trois cartes touchées : la phrase contient les trois cartes (3.0s)
-ouverture : navigation 121 ms, accueil 92 ms, toucher 89 ms, grille 22 ms
+ouverture : navigation 134 ms, accueil 86 ms, toucher 87 ms, grille 23 ms
   ok 11 [chromium-sans-caches] › tools\e2e\critical-flows.spec.mjs:29:1 › c — rechargement : les cartes de l’enfant sont toujours là (2.7s)
   -  12 [chromium-sans-caches] › tools\e2e\offline.spec.mjs:13:1 › e — réseau coupé : l’application s’ouvre encore
 
   2 skipped
-  10 passed (52.2s)
+  10 passed (52.3s)
 ```
 
 Les deux sauts sont prévus : le test hors ligne ne tourne que sur Chromium standard. WebKit ne permet pas de piloter correctement les service workers dans Playwright. Le profil sans caches simule justement leur absence.
@@ -192,7 +192,13 @@ Aucun téléphone ou tablette réel n’était branché. Les profils Playwright 
 
 Le test hors ligne vérifie l’ouverture de l’application. Il ne remplace pas un essai manuel des voix, images, photos et données sur un vrai iPhone.
 
-Le workflow GitHub Actions a déjà été exécuté sur la pull request #1. Le dernier run connu du commit `5b9e9d0` est rouge sur le seul temps d’ouverture WebKit ; le correctif local est en attente de vérification distante après publication.
+Contrôles distants définitifs du correctif `23588b0`, vérifiés sur la pull request #1 :
+
+- Run push `45604034926` : job `tests` `139170096305` réussi, job `e2e` `139170095735` réussi.
+- Run pull request `45604043472` : job `tests` `139170127779` réussi, job `e2e` `139170127374` réussi.
+- Sur le run pull request, la sortie réelle donne `grille « Parler » affichée en 601 ms` pour WebKit, puis `2 skipped` et `10 passed (14.8s)`. Les deux sauts sont les tests hors ligne WebKit et Chromium sans caches, prévus par la configuration.
+
+Le commit `5b9e9d0`, utilisé pour le diagnostic, reste rouge sur l’ancienne mesure WebKit ; il ne doit pas être confondu avec le correctif final `23588b0`.
 
 ## Questions pour Aziz
 
