@@ -34,9 +34,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'node tools/serve.mjs',
+    command: 'node tools/serve.mjs --artifact',
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 30_000,
     stdout: 'ignore',
     stderr: 'pipe',

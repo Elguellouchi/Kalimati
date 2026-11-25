@@ -58,9 +58,9 @@ jobs:
           node ../.pages-essai/tools/build-pages.mjs --main ../.pages-essai --essai ../.pages-essai --out _site
           node ../.pages-essai/tools/build-pages.mjs --main ../.pages-main --essai ../.pages-essai --out _pages-site
 
-      - name: Comparer la racine publiable et bloquer G0
+      - name: Comparer la racine publiable au site actuel
         working-directory: .pages-build
-        run: node ../.pages-essai/tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/ --require-main-guard
+        run: node ../.pages-essai/tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/
 
       - name: Installer les navigateurs de test
         working-directory: .pages-essai

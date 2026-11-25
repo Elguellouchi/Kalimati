@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { test, expect } from '@playwright/test';
 import {
   SANS_CACHES, disableOfflineCache, HOME_TILE_TALK,
@@ -362,6 +363,65 @@ test('service workers — le worker principal réel ignore /essai/ et les deux c
     const present = await Promise.all(names.map((name) => caches.has(name)));
     return present.every(Boolean);
   }, [MAIN_CACHE, TRIAL_CACHE])).toBe(true);
+});
+
+test('G0 navigateur — le worker principal v10.47 ignore /essai/ sans worker d’essai', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'pixel-5-chromium',
+    'service workers : Chromium seulement (décision D-2)');
+  test.setTimeout(90_000);
+  await page.addInitScript(() => {
+    const register = navigator.serviceWorker.register.bind(navigator.serviceWorker);
+    navigator.serviceWorker.register = (url, options) => {
+      if (new URL(url, location.href).pathname === '/essai/sw.js') {
+        return Promise.reject(new TypeError('worker d’essai bloqué par le scénario G0'));
+      }
+      return register(url, options);
+    };
+  });
+  const source = readFileSync(new URL('../../sw.js', import.meta.url), 'utf8');
+  const withoutInstall = source.replace(/self\.addEventListener\('install', \(event\) => \{[\s\S]*?\n\}\);/, `self.addEventListener('install', (event) => {
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE);
+    await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
+  })());
+});`);
+  if (withoutInstall === source) throw new Error('Le gestionnaire install du worker courant n’a pas été isolé.');
+  const cleanup = await installMainWorkerFixture(page, withoutInstall);
+  try {
+    await openTalkGrid(page);
+    await waitCachedApp(page);
+    const before = await stableCacheEntries(page, MAIN_CACHE);
+    expect(before.length).toBeGreaterThan(0);
+
+    await openTrialTalkGrid(page);
+    expect(await trialController(page)).toMatch(/\.main-worker-fixture-\d+\.js$/);
+    expect(await page.evaluate(async () =>
+      (await navigator.serviceWorker.getRegistration('/essai/'))?.scope || '')).not.toMatch(/\/essai\/$/);
+    expect(await trialCacheName(page)).toBeNull();
+
+    const statuses = await page.evaluate(async () => {
+      const paths = [
+        '/essai/?g0=sonde',
+        '/essai/index.html?g0=sonde',
+        '/essai/app.js?g0=sonde',
+      ];
+      const observed = [];
+      for (let repetition = 0; repetition < 2; repetition += 1) {
+        for (const path of paths) {
+          const response = await fetch(path, { cache: 'no-store' });
+          observed.push(response.status);
+          await response.arrayBuffer();
+        }
+      }
+      return observed;
+    });
+    expect(statuses).toEqual(Array(6).fill(200));
+    await expect.poll(() => cacheEntries(page, MAIN_CACHE)).toEqual(before);
+    expect((await cacheEntries(page, MAIN_CACHE)).some((url) => new URL(url).pathname.startsWith('/essai/'))).toBe(false);
+    console.log(`G0 Chromium : ${before.length} entrées principales inchangées, aucun worker ni cache d’essai.`);
+  } finally {
+    cleanup();
+  }
 });
 
 test('G0 — un worker principal v10.45 déjà actif met encore /essai/ dans son cache', async ({ page }, testInfo) => {

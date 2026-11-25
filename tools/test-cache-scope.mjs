@@ -215,11 +215,19 @@ const trial = await activateWorker('/Kalimati/essai/sw.js', trialKeys);
 assert.deepEqual(trial.deleted, ['kalimati-essai-v10-46'], 'la version d’essai ne supprime que son ancien cache');
 
 function fetchWorker(pathname) {
-  const listeners = new Map();
+  const listeners = [];
   const context = {
     self: {
       location: { origin: 'http://127.0.0.1:4173', pathname },
-      addEventListener: (name, handler) => listeners.set(name, handler),
+      onfetch: null,
+      addEventListener(name, handler) {
+        if (name === 'fetch' && typeof handler === 'function') listeners.push(handler);
+      },
+      removeEventListener(name, handler) {
+        if (name !== 'fetch') return;
+        const index = listeners.indexOf(handler);
+        if (index >= 0) listeners.splice(index, 1);
+      },
     },
     URL,
     Request: class {
@@ -227,33 +235,124 @@ function fetchWorker(pathname) {
     },
   };
   vm.runInNewContext(sw, context, { filename: 'sw.js' });
-  return listeners.get('fetch');
+  if (context.self.onfetch !== null) throw new Error('onfetch n’est pas pris en charge par ce test');
+  return async (event) => {
+    let intercepted = false;
+    const pending = [];
+    const observed = {
+      ...event,
+      respondWith(value) {
+        intercepted = true;
+        pending.push(Promise.resolve(value));
+        event.respondWith?.(value);
+      },
+      waitUntil(value) {
+        pending.push(Promise.resolve(value));
+        event.waitUntil?.(value);
+      },
+    };
+    for (const listener of [...listeners]) pending.push(Promise.resolve(listener(observed)));
+    await Promise.allSettled(pending);
+    return intercepted;
+  };
 }
 
-function intercepts(pathname, requestUrl) {
-  let intercepted = false;
-  fetchWorker(pathname)({
+async function intercepts(pathname, requestUrl) {
+  return fetchWorker(pathname)({
     request: new Request(requestUrl),
-    respondWith(promise) {
-      intercepted = true;
-      Promise.resolve(promise).catch(() => {});
-    },
+    respondWith() {},
+    waitUntil() {},
   });
-  return intercepted;
 }
 
 const origin = 'http://127.0.0.1:4173';
-assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/essai/`), false, 'le worker principal ignore /essai/');
-assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/enfants/essai/cartes`), false, 'le worker principal ignore tout segment /essai/');
-assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/essai-copie/`), true, 'le worker principal conserve les chemins similaires');
-assert.equal(intercepts('/Kalimati/sw.js', `${origin}/Kalimati/`), true, 'le worker principal intercepte toujours la racine');
-assert.equal(intercepts('/Kalimati/essai/sw.js', `${origin}/Kalimati/essai/`), true, 'le worker d’essai intercepte son propre chemin');
+assert.equal(await intercepts('/Kalimati/sw.js', `${origin}/Kalimati/essai/`), false, 'le worker principal ignore /essai/');
+assert.equal(await intercepts('/Kalimati/sw.js', `${origin}/Kalimati/enfants/essai/cartes`), false, 'le worker principal ignore tout segment /essai/');
+assert.equal(await intercepts('/Kalimati/sw.js', `${origin}/Kalimati/essai-copie/`), true, 'le worker principal conserve les chemins similaires');
+assert.equal(await intercepts('/Kalimati/sw.js', `${origin}/Kalimati/`), true, 'le worker principal intercepte toujours la racine');
+assert.equal(await intercepts('/Kalimati/essai/sw.js', `${origin}/Kalimati/essai/`), true, 'le worker d’essai intercepte son propre chemin');
 
-assert.equal(mainWorkerIgnoresTrial(sw), true, 'le contrôle de publication exécute le vrai worker principal et vérifie son comportement fetch');
-const guardText = "if (!TRIAL && /(^|\\/)essai(?:\\/|$)/.test(url.pathname)) return;";
-assert.equal(mainWorkerIgnoresTrial(`const TRIAL = false;\n// ${guardText}\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));`), false,
-  'un commentaire contenant la garde ne doit pas satisfaire le contrôle');
-assert.equal(mainWorkerIgnoresTrial(`const TRIAL = true;\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));`), false,
-  'un worker forcé en mode essai ne doit pas satisfaire le contrôle principal');
+assert.equal(await mainWorkerIgnoresTrial(sw), true,
+  'le contrôle de publication exécute le vrai worker principal et vérifie son comportement fetch');
+
+const guardedListener = `self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (!/(^|\\/)essai(?:\\/|$)/.test(url.pathname)) event.respondWith(fetch(event.request));
+});`;
+const gateRegressions = [
+  {
+    name: 'commentaire seul',
+    source: `const TRIAL = false;\n// if (!TRIAL && /(^|\\/)essai(?:\\/|$)/.test(url.pathname)) return;\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));`,
+  },
+  {
+    name: 'premier écouteur fetch non gardé',
+    source: `const TRIAL = false;\nself.addEventListener('fetch', (event) => event.respondWith(fetch(event.request)));\n${guardedListener}`,
+  },
+  {
+    name: 'gestionnaire onfetch non gardé',
+    source: `const TRIAL = false;\n${guardedListener}\nself.onfetch = (event) => event.respondWith(fetch(event.request));`,
+  },
+  {
+    name: 'transport différé dans waitUntil',
+    source: `const TRIAL = false;\nself.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (/(^|\\/)essai(?:\\/|$)/.test(url.pathname)) {
+    event.waitUntil(Promise.resolve().then(() => fetch(event.request)));
+    return;
+  }
+  event.respondWith(fetch(event.request));
+});`,
+  },
+  {
+    name: 'branche gardée seulement hors navigateur',
+    source: `const TRIAL = false;\nself.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (typeof navigator === 'undefined' && typeof clients === 'undefined' && /(^|\\/)essai(?:\\/|$)/.test(url.pathname)) return;
+  event.respondWith(fetch(event.request));
+});`,
+  },
+  {
+    name: 'chemin essai non listé',
+    source: `const TRIAL = false;
+const ignored = new Set(['/Kalimati/essai/', '/Kalimati/essai', '/Kalimati/essai/app.js', '/Kalimati/enfants/essai/cartes']);
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (ignored.has(url.pathname)) return;
+  event.respondWith(fetch(event.request));
+});`,
+  },
+  {
+    name: 'interception des navigations essai',
+    source: `const TRIAL = false;\nself.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (/(^|\\/)essai(?:\\/|$)/.test(url.pathname) && event.request.mode !== 'navigate') return;
+  event.respondWith(fetch(event.request));
+});`,
+  },
+  {
+    name: 'interception à la deuxième requête',
+    source: `const TRIAL = false;
+const seen = new Set();
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+  if (/(^|\\/)essai(?:\\/|$)/.test(url.pathname) && !seen.has(url.pathname)) {
+    seen.add(url.pathname);
+    return;
+  }
+  event.respondWith(fetch(event.request));
+});`,
+  },
+  {
+    name: 'TRIAL forcé à true',
+    source: `const TRIAL = true;\n${guardedListener}`,
+  },
+];
+const acceptedRegressions = [];
+for (const regression of gateRegressions) {
+  const accepted = await mainWorkerIgnoresTrial(regression.source);
+  console.log(`${accepted ? 'ACCEPTÉ À TORT' : 'REFUSÉ'} G0 — ${regression.name}`);
+  if (accepted) acceptedRegressions.push(regression.name);
+}
+assert.deepEqual(acceptedRegressions, [], `le contrôle G0 accepte encore : ${acceptedRegressions.join(', ')}`);
 
 console.log('test-cache-scope : OK');

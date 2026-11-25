@@ -44,10 +44,11 @@ export async function trialCacheName(page) {
 }
 
 export async function installMainWorkerFixture(page, source) {
+  const localRoot = fileURLToPath(new URL('../../', import.meta.url));
   const root = process.env.SERVE_ROOT
     ? path.resolve(process.env.SERVE_ROOT)
-    : fileURLToPath(new URL('../../', import.meta.url));
-  const filename = `.main-worker-fixture-${process.pid}.js`;
+    : path.resolve(localRoot, '..', `${path.basename(localRoot)}-e2e`, '_site');
+  const filename = `g0.main-worker-fixture-${process.pid}.js`;
   const fixturePath = path.join(root, filename);
   const fixtureUrl = `/${filename}`;
   const cleanup = () => rmSync(fixturePath, { force: true });

@@ -4,9 +4,23 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const LOCAL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (process.argv.includes('--artifact') && !process.env.SERVE_ROOT) {
+  const buildRoot = path.resolve(LOCAL_ROOT, '..', `${path.basename(LOCAL_ROOT)}-e2e`);
+  fs.mkdirSync(buildRoot, { recursive: true });
+  const build = spawnSync(process.execPath, [
+    path.join(LOCAL_ROOT, 'tools', 'build-pages.mjs'),
+    '--main', LOCAL_ROOT,
+    '--essai', LOCAL_ROOT,
+    '--out', '_site',
+  ], { cwd: buildRoot, stdio: 'inherit' });
+  if (build.error) throw build.error;
+  if (build.status !== 0) process.exit(build.status ?? 1);
+  process.env.SERVE_ROOT = path.join(buildRoot, '_site');
+}
 const ARTIFACT_ROOT = process.env.SERVE_ROOT;
 const ROOT = ARTIFACT_ROOT ? path.resolve(ARTIFACT_ROOT) : LOCAL_ROOT;
 const REAL_ROOT = fs.realpathSync(ROOT);

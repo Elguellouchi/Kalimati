@@ -134,9 +134,10 @@ Règles :
 - `modules/app-update.js` enregistre `./sw.js` avec `scope: './'` explicite.
 - La portée du worker d’essai est donc `/Kalimati/essai/`.
 - Le worker principal conserve la portée `/Kalimati/`.
-- Dans `sw.js`, le worker principal `v10.47` ignore toutes les requêtes sous `/essai/`.
+- Dans `sw.js`, le worker principal `v10.47` ignore toutes les requêtes dont le chemin contient le segment exact `essai`, y compris navigation, requêtes répétées, requêtes avec paramètres et plages d’octets.
 - Le worker le plus spécifique contrôle une page d’essai et prend la main sans modifier le cache principal lorsque le worker principal possède déjà cette garde.
-- **Limite G0 :** un worker principal `v10.45` déjà actif ne peut pas apprendre rétroactivement la nouvelle garde. S’il n’a pas ouvert le site principal avant l’essai, il peut encore ajouter des ressources `/essai/` à son cache. Le worker d’essai prend ensuite la main, mais le cache principal a déjà été modifié. Le critère « aucun ajout au cache principal avec v10.45 préinstallé » reste donc non satisfait et bloque la publication.
+- Une preuve Chromium bloque l’enregistrement du worker d’essai, ouvre `/essai/` et répète des requêtes sous ce chemin : le worker principal gardé reste contrôleur, les 929 entrées de son cache restent inchangées et aucun cache d’essai n’apparaît.
+- **Limite G0 :** un worker principal `v10.45` déjà actif ne peut pas apprendre rétroactivement la nouvelle garde. S’il n’a pas ouvert le site principal avant l’essai, il peut encore ajouter des ressources `/essai/` à son cache. Le worker d’essai prend ensuite la main, mais le cache principal a déjà été modifié. Aziz accepte ce risque pour la première publication. La garde G0 sera exigée à partir de la prochaine version de `main`.
 - L’installation attend toujours la recopie des voix et images depuis l’ancien cache ; seuls les téléchargements réseau peuvent suivre.
 - Aucun `skipWaiting()` automatique ni rechargement spontané n’est ajouté.
 - L’actualisation manuelle existante reste inchangée.
@@ -226,7 +227,7 @@ Sont exclus : `.git`, `.github`, `docs`, `tools`, `scripts`, `supabase`, `node_m
 - installe les dépendances de développement de `essai` avec `npm ci` ;
 - lance `npm test` sur `essai` ;
 - construit `_site` pour les E2E et `_pages-site` pour la publication ;
-- compare `sw.js` et `index.html` de `_pages-site` au site actuel et exécute le gestionnaire `fetch` du worker principal publié pour bloquer G0 s’il intercepte `/essai/` ;
+- compare `sw.js` et `index.html` de `_pages-site` au site actuel ; pour la première publication, Aziz accepte le risque G0 du worker `v10.45` déjà actif, donc seule l’égalité octet par octet bloque ; le contrôle comportemental G0 reste disponible avec `--require-main-guard` et sera exigé à partir de la prochaine version de `main` ;
 - lance les E2E contre `_site`, avec la racine et `/essai/` ;
 - téléverse uniquement `_pages-site`, puis publie avec `deploy-pages` ;
 - n’exige aucun secret GitHub applicatif.
@@ -311,7 +312,7 @@ Sur l’artefact de test `_site` :
 7. Aucune requête vers Supabase n’est observée pendant l’ouverture, le Mode équipe, l’URL `#key=` et les actions cloud tentées.
 8. En Chromium, le service worker d’essai a la portée `/essai/` et un cache `kalimati-essai-v10-47`.
 9. Les caches principal et essai coexistent sans suppression croisée.
-10. Un navigateur neuf installe d’abord le service worker principal `v10.45`, puis ouvre `/essai/` : le test reproduit la limite G0, constate les ajouts au cache principal historique, puis vérifie que le worker d’essai prend la main. Le résultat attendu n’est pas « aucun ajout » : ce critère reste bloqué.
+10. Un navigateur neuf installe d’abord le service worker principal `v10.45`, puis ouvre `/essai/` : le test reproduit la limite G0, constate les ajouts au cache principal historique, puis vérifie que le worker d’essai prend la main. Aziz accepte ce risque pour la première publication ; la garde G0 sera exigée à partir de la prochaine version de `main`.
 11. `/essai` redirige vers `/essai/`.
 12. Hors ligne : l’essai s’ouvre et conserve ses données sur Chromium. WebKit reste exclu de ce scénario, comme pour le Lot 0.
 
@@ -336,7 +337,7 @@ Les mesures E2E utilisent uniquement des marqueurs neutres. Aucun vrai prénom d
 - Si un fichier runtime obligatoire manque, la construction Pages échoue et aucun nouvel artefact n’est publié.
 - Si un déploiement échoue, le dernier déploiement Pages valide reste servi.
 - Les données navigateur ne sont jamais supprimées pour corriger un déploiement.
-- **Première publication :** la racine actuelle de `main` correspond au site public, mais ne possède pas la garde G0. Une racine corrigée diffère donc du site actuel. Le workflow qui exige à la fois l’égalité octet par octet et la garde G0 ne peut pas effectuer cette première mise à jour corrigée tout seul. Une opération d’alignement séparément autorisée, ou une décision explicite d’Aziz, est nécessaire avant la publication.
+- **Première publication :** la racine actuelle de `main` correspond au site public, mais ne possède pas la garde G0. Aziz accepte ce risque : le workflow exige seulement l’égalité octet par octet pendant cette première publication. La garde G0 sera exigée à partir de la prochaine version de `main`.
 - Le test iPhone réel reste à effectuer après mise en essai ; il ne peut pas être remplacé par WebKit.
 
 ## 14. Rollback
@@ -354,7 +355,7 @@ Les mesures E2E utilisent uniquement des marqueurs neutres. Aucun vrai prénom d
 - [x] Les clés localStorage et la clé session Super-Admin d’essai sont isolées.
 - [x] Les caches applicatifs et vocaux d’essai sont préfixés et ne suppriment rien en principal.
 - [x] Le service worker d’essai est limité à `/essai/`.
-- [ ] Avec un worker principal `v10.45` préinstallé, `/essai/` n’ajoute rien au cache principal et le worker d’essai prend la main.
+- [ ] Avec un worker principal `v10.45` préinstallé, le test documente les ajouts au cache principal historique et vérifie que le worker d’essai prend la main ; risque accepté pour la première publication, garde G0 exigée à partir de la prochaine version de `main`.
 - [x] Le worker principal ignore les requêtes sous `/essai/`.
 - [x] Le bandeau « Version d’essai » n’apparaît qu’en mode parent d’essai.
 - [x] Supabase et la cohorte sont coupées et grisées, même avec Mode équipe.

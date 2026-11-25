@@ -52,3 +52,10 @@ Le cahier des charges complet est dans `docs/cahier-des-charges-v11.md`. En cas 
 
 ## 6. Si une consigne est floue ou contradictoire
 Ne pas deviner. Appliquer la « décision par défaut » (section 14 du cahier). Sinon, choisir l'option la plus protectrice pour l'enfant et ses données, puis l'écrire dans « Questions pour Aziz ».
+
+## 7. Si tu bloques (règle d'arrêt)
+1. Si le même blocage revient 2 fois, ou si une même difficulté dure plus d'une heure : **STOP**.
+2. Ne lance pas de nouvelle revue, de nouvelle correction ni de nouvel essai.
+3. Écris le compte rendu avec : le problème exact, la vraie sortie de l'erreur, et 2 ou 3 choix possibles avec leur risque.
+4. Attends la réponse d'Aziz avant de continuer.
+5. Si une exigence du cahier semble impossible à tenir, dis-le tout de suite, au lieu de chercher pendant des heures.
