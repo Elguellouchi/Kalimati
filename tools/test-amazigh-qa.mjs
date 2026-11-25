@@ -154,7 +154,7 @@ async function main() {
 
   await check('Service worker : nouvelle version, modules amazighs, police, caches des voix gardés', () => {
     const sw = read('sw.js');
-    const version = /const CACHE = 'kalimati-v(\d+)-(\d+)(?:-\d+)?';/.exec(sw);
+    const version = /const CACHE_VERSION = 'v(\d+)-(\d+)(?:-\d+)?';/.exec(sw);
     assert.ok(version && (Number(version[1]) > 10 || (Number(version[1]) === 10 && Number(version[2]) >= 7)), 'CACHE doit être v10-7 ou plus');
     assert.match(sw, /kalimati-amazigh-voices-/);
     assert.match(sw, /\.\/modules\/amazigh-lexicon\.js/);

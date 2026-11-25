@@ -22,6 +22,7 @@ lacks('app.js', /pending && !reloaded[\s\S]{0,120}location\.reload\(\)/, 'app.js
 has('app.js', /startAppUpdateWatch\(\)/, 'app.js doit démarrer la surveillance de mise à jour');
 has('modules/app-update.js', /export function startAppUpdateWatch/, 'app-update.js doit exporter startAppUpdateWatch');
 has('modules/app-update.js', /export function updateBox/, 'app-update.js doit exporter updateBox');
+has('modules/app-update.js', /register\(['"]\.\/sw\.js['"]\s*,\s*\{\s*updateViaCache:\s*['"]none['"]\s*,\s*scope:\s*['"]\.\/['"]\s*,?\s*\}/, 'portée explicite du service worker');
 has('modules/dashboard.js', /updateBox\(\)/, 'Progrès doit proposer le bloc de mise à jour');
 has('modules/app-update.js', /Mise à jour de l’application/, 'le titre du bloc de mise à jour doit exister');
 

@@ -427,9 +427,12 @@ git commit -m "Isole les caches vocaux et la session administrateur d’essai"
 - Modifier : `sw.js`
 - Modifier : `index.html`
 - Modifier : `package.json`
+- Modifier : `package-lock.json`
 - Tester : `tools/test-version.mjs`
 - Tester : `tools/test-cache-scope.mjs`
 - Tester : `tools/test-update.mjs`
+- Tester : `tools/test-amazigh-qa.mjs`
+- Auditer : `tools/audit-global.mjs`
 
 **Interfaces :**
 
@@ -454,7 +457,7 @@ assert.match(sw, /!TRIAL && .*essai/);
 Adapter l’assertion existante sur `const CACHE` au nouveau calcul path-dépendant. Dans `tools/test-update.mjs` :
 
 ```js
-has('modules/app-update.js', /register\(['"]\.\/sw\.js['"]\s*,\s*\{\s*updateViaCache:\s*['"]none['"]\s*,\s*scope:\s*['"]\.\/['"]\s*\}/, 'portée explicite du service worker');
+has('modules/app-update.js', /register\(['"]\.\/sw\.js['"]\s*,\s*\{\s*updateViaCache:\s*['"]none['"]\s*,\s*scope:\s*['"]\.\/['"]\s*,?\s*\}/, 'portée explicite du service worker');
 ```
 
 Dans `tools/test-cache-scope.mjs`, fournir `self.location.pathname` aux contextes VM et remplacer la réécriture de `CACHE` par deux exécutions. Les listes de test contiennent le cache courant v10-47 et l’ancien v10-46 :
@@ -559,7 +562,7 @@ Dans `sw.js`, remplacer la constante statique par :
 ```js
 const CACHE_VERSION = 'v10-47';
 const TRIAL = /(^|\/)essai(?:\/|$)/.test(self.location.pathname);
-const CACHE = TRIAL ? `kalimati-essai-v${CACHE_VERSION}` : `kalimati-v${CACHE_VERSION}`;
+const CACHE = TRIAL ? `kalimati-essai-${CACHE_VERSION}` : `kalimati-${CACHE_VERSION}`;
 const AMAZIGH_VOICES = TRIAL ? 'kalimati-essai-amazigh-voices-' : 'kalimati-amazigh-voices-';
 const CACHE_SPACE = TRIAL ? /^kalimati-essai-v\d/ : /^kalimati-v\d/;
 ```

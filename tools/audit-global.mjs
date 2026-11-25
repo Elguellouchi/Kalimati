@@ -26,15 +26,20 @@ const fail = (message) => { errors.push(message); console.log(`❌ ${message}`);
 const warn = (message) => { warnings.push(message); console.log(`⚠️  ${message}`); };
 
 // ---------- 1. Version unique -------------------------------------------------------
-const { APP_VERSION, CACHE_VERSION } = await import(pathToFileURL(path.join(ROOT, 'modules/version.js')).href);
+const { APP_VERSION, CACHE_VERSION, TRIAL_CACHE_VERSION } = await import(pathToFileURL(path.join(ROOT, 'modules/version.js')).href);
 const expectedCache = `kalimati-${APP_VERSION.replace(/\./g, '-')}`;
+const expectedTrialCache = `kalimati-essai-${APP_VERSION.replace(/\./g, '-')}`;
+const expectedWorkerVersion = `v${APP_VERSION.slice(1).replace(/\./g, '-')}`;
+const swSource = read('sw.js');
 const pkg = JSON.parse(read('package.json'));
 const meta = /<meta name="kalimati-version" content="([^"]+)">/.exec(read('index.html'));
 if (CACHE_VERSION !== expectedCache) fail(`CACHE_VERSION ${CACHE_VERSION} ≠ ${expectedCache}`);
-else if (!read('sw.js').includes(`const CACHE = '${CACHE_VERSION}'`)) fail('sw.js n’utilise pas le CACHE de modules/version.js');
+else if (TRIAL_CACHE_VERSION !== expectedTrialCache) fail(`TRIAL_CACHE_VERSION ${TRIAL_CACHE_VERSION} ≠ ${expectedTrialCache}`);
+else if (!swSource.includes(`const CACHE_VERSION = '${expectedWorkerVersion}'`)
+  || !swSource.includes('const CACHE = TRIAL ? `kalimati-essai-${CACHE_VERSION}` : `kalimati-${CACHE_VERSION}`;')) fail('sw.js n’utilise pas les CACHE de modules/version.js');
 else if (!meta || meta[1] !== APP_VERSION) fail('meta kalimati-version désalignée de index.html');
 else if (!pkg.version.startsWith(APP_VERSION.replace(/^v/, ''))) fail(`package.json ${pkg.version} ≠ ${APP_VERSION}`);
-else pass(`Version unique ${APP_VERSION} (cache ${CACHE_VERSION}, index.html, package.json)`);
+else pass(`Version unique ${APP_VERSION} (cache ${CACHE_VERSION}, cache d’essai ${TRIAL_CACHE_VERSION}, index.html, package.json)`);
 
 // ---------- 2. Syntaxe de tous les fichiers JavaScript ------------------------------
 const jsFiles = [...walk('.').filter((f) => f.endsWith('.js') || f.endsWith('.mjs'))];
