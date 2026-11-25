@@ -4,12 +4,14 @@
 // donc les données déjà présentes ne bougent pas. Les autres : « kalimati-child-<id> ».
 // La liste (prénom + petit dessin) reste dans ce téléphone ; aucun prénom n'est écrit dans le code.
 
+import './storage.js';
+
 export const MAIN_ID = 'main';
 const ACTIVE_KEY = 'kalimati-active-child';
 const LIST_KEY = 'kalimati-children';
 const PREFIX = 'kalimati-child-';
 
-const store = () => { try { return globalThis.localStorage || null; } catch { return null; } };
+const store = () => globalThis.KalimatiStorage;
 
 export const dbNameFor = (id) => (!id || id === MAIN_ID ? 'kalimati' : `${PREFIX}${id}`);
 export const isValidChildId = (id) => id === MAIN_ID || /^c[a-z0-9]{4,16}$/.test(String(id || ''));
@@ -48,7 +50,7 @@ export const activeDbName = () => dbNameFor(activeChildId());
 export function setActiveChild(id) {
   const s = store();
   if (!isValidChildId(id)) return false;
-  try { if (s) s.setItem(ACTIVE_KEY, id); return true; } catch { return false; }
+  try { return Boolean(s && s.setItem(ACTIVE_KEY, id)); } catch { return false; }
 }
 
 export function addChild(name, emoji = '🙂', now = Date.now()) {

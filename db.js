@@ -24,8 +24,6 @@ function upgrade(db, transaction, oldVersion) {
       const recordings = db.createObjectStore('recordings', { keyPath: 'id' });
       recordings.createIndex('key', 'key');
     }
-    const goals = transaction.objectStore('pei_goals');
-    GOALS.forEach((goal) => goals.put({ ...goal, status: 'todo', updatedAt: null }));
   }
   if (oldVersion < 3 && !db.objectStoreNames.contains('visual_overrides')) {
     db.createObjectStore('visual_overrides', { keyPath: 'key' });
@@ -169,9 +167,20 @@ export function putCards(cards) {
 export const getSetting = (key) => run('settings', 'readonly', (s) => s.get(key));
 export const setSetting = (key, value) => run('settings', 'readwrite', (s) => s.put(value, key));
 
-// Objectifs du PEI
-export const getGoals = () => run('pei_goals', 'readonly', (s) => s.getAll());
-export const putGoal = (goal) => run('pei_goals', 'readwrite', (s) => s.put(goal));
+// Objectifs du PEI : amorcés à la première utilisation, sans ralentir l'ouverture des cartes.
+let goalsReady = null;
+function ensureGoals() {
+  if (!goalsReady) {
+    goalsReady = run('pei_goals', 'readonly', (s) => s.getAll()).then((goals) => {
+      if (goals.length) return;
+      return run('pei_goals', 'readwrite', (s) => { GOALS.forEach((goal) => s.put({ ...goal, status: 'todo', updatedAt: null })); return null; });
+    }).catch((err) => { goalsReady = null; throw err; });
+  }
+  return goalsReady;
+}
+
+export const getGoals = async () => { await ensureGoals(); return run('pei_goals', 'readonly', (s) => s.getAll()); };
+export const putGoal = async (goal) => { await ensureGoals(); return run('pei_goals', 'readwrite', (s) => s.put(goal)); };
 
 // Essais ABA
 export const addTrial = (trial) => run('trials', 'readwrite', (s) => s.put(trial));

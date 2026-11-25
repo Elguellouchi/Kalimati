@@ -95,10 +95,10 @@ assert.notEqual(dbNameFor('abc'), dbNameFor('xyz'));
 assert.match(read('db.js'), /const DB_NAME = activeDbName\(\)/);
 ok('une base par enfant : cartes, photos (visualKey), scènes, vidéos et journaux ne se croisent pas');
 // Rien de personnel hors de la base de l'enfant : liste fermée des autres stockages.
-const LOCAL_KEYS_OK = [/'kalimati-pb-open'/, /'kalimati_voices'/, /THEME_KEY/, /setItem\(KEY,/];
+const LOCAL_KEYS_OK = [/KalimatiStorage\.setItem\('kalimati-pb-open'/, /KalimatiStorage\.setItem\('kalimati_voices'/, /KalimatiStorage\.setItem\(THEME_KEY/, /KalimatiStorage\.setItem\(KEY,/];
 for (const f of files) {
   for (const line of read(f).split('\n')) {
-    if (!/localStorage\.setItem\(/.test(line)) continue;
+    if (!/KalimatiStorage\.setItem\(/.test(line)) continue;
     assert.ok(LOCAL_KEYS_OK.some((re) => re.test(line)), `${f} : nouveau stockage local à vérifier → ${line.trim().slice(0, 120)}`);
   }
 }

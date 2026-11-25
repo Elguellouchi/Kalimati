@@ -3,6 +3,7 @@
 // - Toutes les 5 étoiles : l'enfant choisit un autocollant animé (animaux, étoiles, dinosaures, trains).
 // - Le Jardin de récompenses garde tous ses autocollants, avec Nour, Mchicha et Bouma.
 // Tout reste dans le téléphone (stockage local). Aucune erreur n'enlève d'étoile.
+import './storage.js';
 import { h, btn } from './util.js';
 import { speak } from '../speech.js';
 import { playClap } from '../media.js';
@@ -32,7 +33,7 @@ const MOVES = ['float', 'sway', 'breathe'];
 let memory = { stars: 0, stickers: [], total: 0, wardrobe: cleanWardrobe(null) };
 function load() {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = globalThis.KalimatiStorage.getItem(KEY);
     if (raw) {
       const data = JSON.parse(raw);
       memory = { stars: Math.max(0, Math.min(GOAL, data.stars | 0)), stickers: Array.isArray(data.stickers) ? data.stickers : [], total: data.total | 0, wardrobe: cleanWardrobe(data.wardrobe) };
@@ -41,7 +42,7 @@ function load() {
   return memory;
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(memory)); } catch { /* stockage indisponible */ }
+  try { globalThis.KalimatiStorage.setItem(KEY, JSON.stringify(memory)); } catch { /* stockage indisponible */ }
   window.dispatchEvent(new CustomEvent(EVENT, { detail: { ...memory } }));
 }
 load();

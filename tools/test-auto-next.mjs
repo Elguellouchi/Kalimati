@@ -5,7 +5,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
-const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+// Windows : sans cette normalisation, la découpe de widgets.js plus bas ne trouve pas « \n}\n » et autoNext est extrait vide.
+const read = (rel) => fs.readFileSync(path.join(ROOT, rel), 'utf8').replace(/\r\n/g, '\n');
 const ok = (m) => console.log(`✓ ${m}`);
 const games = fs.readdirSync(path.join(ROOT, 'modules')).filter((f) => /^(ex-.*|clinique)\.js$/.test(f));
 

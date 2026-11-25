@@ -4,7 +4,7 @@
 (function () {
   var theme = 'scolaire';
   try {
-    var saved = window.localStorage.getItem('kalimati-theme');
+    var saved = window.KalimatiStorage.getItem('kalimati-theme');
     if (saved === 'simple' || saved === 'contraste' || saved === 'scolaire') theme = saved;
   } catch (e) { /* navigation privée : thème par défaut */ }
   document.documentElement.setAttribute('data-theme', theme);
