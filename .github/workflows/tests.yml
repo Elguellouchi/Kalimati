@@ -29,6 +29,20 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps webkit chromium
+      - name: Préchauffage du premier rendu WebKit du runner
+        run: |
+          node --input-type=module <<'JS'
+          import { webkit, devices } from '@playwright/test';
+          const browser = await webkit.launch();
+          try {
+            const context = await browser.newContext({ ...devices['iPhone 13'] });
+            const page = await context.newPage();
+            await page.setContent('<button style="width:120px;height:80px">Prêt</button>');
+            await page.getByRole('button', { name: 'Prêt' }).click();
+          } finally {
+            await browser.close();
+          }
+          JS
       - run: npm run test:e2e -- --trace off
       - if: failure()
         uses: actions/upload-artifact@v4
