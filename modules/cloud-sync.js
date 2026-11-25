@@ -838,11 +838,13 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
     const team = isTeamMode();
 
     const statusMsg = h('p', { class: 'note sync-status', role: 'status', 'aria-live': 'polite' },
-      team
-        ? (lastSync?.lastSyncAt
-          ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
-          : '🔒 Serveur relai Supabase Kalimati pré-configuré et chiffrement AES-256 actif. Touchez simplement « Synchroniser maintenant » !')
-        : '🔒 Mode Socle Clinique strict : la synchronisation est désactivée. Ouvrez « Réseau » ci-dessus et activez le « Mode équipe » pour synchroniser.');
+      isTrial()
+        ? TRIAL_CLOUD_MESSAGE
+        : team
+          ? (lastSync?.lastSyncAt
+            ? `✅ Dernière synchro chiffrée : ${new Date(lastSync.lastSyncAt).toLocaleString('fr-FR')} par ${lastSync.authorRole || 'Parent'} (Salon #${lastSync.roomHash})`
+            : '🔒 Serveur relai Supabase Kalimati pré-configuré et chiffrement AES-256 actif. Touchez simplement « Synchroniser maintenant » !')
+          : '🔒 Mode Socle Clinique strict : la synchronisation est désactivée. Ouvrez « Réseau » ci-dessus et activez le « Mode équipe » pour synchroniser.');
 
     const keyInput = h('input', {
       value: cfg.familyKey,
@@ -851,16 +853,20 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
       spellcheck: 'false',
       style: { fontFamily: 'monospace', fontWeight: '700' },
     });
+    keyInput.disabled = isTrial();
     const urlInput = h('input', {
       value: cfg.supabaseUrl,
       placeholder: DEFAULT_SUPABASE_URL,
     });
+    urlInput.disabled = isTrial();
     const anonInput = h('input', {
       type: 'password',
       value: cfg.supabaseAnonKey,
       placeholder: 'Clé publique Supabase (sb_publishable_...)',
     });
+    anonInput.disabled = isTrial();
     const mediaChk = h('input', { type: 'checkbox', disabled: !team });
+    mediaChk.disabled = !cloudAllowed();
     const autoWifiChk = h('input', {
       type: 'checkbox',
       checked: cfg.autoSyncWifi ? 'checked' : null,
@@ -869,10 +875,13 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
         await saveCloudSyncConfig({ autoSyncWifi: e.target.checked });
       },
     });
+    autoWifiChk.disabled = !cloudAllowed();
 
     const doSync = async () => {
-      if (!isTeamMode()) {
-        statusMsg.textContent = '🔒 Mode Socle Clinique strict : activez d’abord le « Mode équipe » dans la section Réseau.';
+      if (!cloudAllowed()) {
+        statusMsg.textContent = isTrial()
+          ? TRIAL_CLOUD_MESSAGE
+          : '🔒 Mode Socle Clinique strict : activez d’abord le « Mode équipe » dans la section Réseau.';
         return;
       }
       try {
@@ -931,6 +940,8 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
         await db.setSetting(COHORT_OPTIN_KEY, e.target.checked);
       },
     });
+    cohortChk.checked = cloudAllowed() && cohortOptIn ? true : false;
+    cohortChk.disabled = !cloudAllowed();
 
     const atecReminderBanner = metrics.atecDue90Days
       ? h('p', { class: 'note', style: { color: '#783006', fontWeight: '700' } },
@@ -939,33 +950,53 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
           : `⏰ Protocole clinique J+90 (${metrics.daysSinceLastAtec} jours depuis le dernier bilan) : il est temps de remplir le nouveau bilan ATEC trimestriel !`)
       : null;
 
-    const legacyKeyWarning = cfg.familyKey.trim().length < SYNC_KEY_MIN_LENGTH
+    const legacyKeyWarning = !isTrial() && cfg.familyKey.trim().length < SYNC_KEY_MIN_LENGTH
       ? h('p', { class: 'note', style: { color: '#783006', fontWeight: '700' } },
         `⚠️ Cette clé familiale est ancienne et courte (${cfg.familyKey.trim().length}/${SYNC_KEY_MIN_LENGTH} caractères). Remplacez-la par une clé KALI-SYNC complète ci-dessous, puis envoyez la nouvelle clé à chaque téléphone de l’équipe.`)
       : null;
 
     const syncBtn = btn('🔄 Synchroniser maintenant avec l’équipe', doSync, 'primary');
-    syncBtn.disabled = !team;
+    syncBtn.disabled = !cloudAllowed();
     const withdrawBtn = confirmBtn('🗑 Retirer mes scores de l’étude', async () => {
       const ok = await withdrawClinicalCohortData();
       cohortChk.checked = false;
       statusMsg.textContent = ok ? '✅ Scores retirés du serveur. La participation est arrêtée.' : '✅ Participation arrêtée. Rien à effacer sur le serveur.';
     });
-    withdrawBtn.disabled = !team;
+    withdrawBtn.disabled = !cloudAllowed();
     const deleteRelayBtn = confirmBtn('🗑 Effacer notre paquet chiffré du serveur', async () => {
       const ok = await deleteEncryptedRelayBundle();
       statusMsg.textContent = ok ? '✅ Paquet chiffré effacé du serveur. Les données du téléphone restent.' : 'Rien à effacer sur le serveur.';
     });
-    deleteRelayBtn.disabled = !team;
+    deleteRelayBtn.disabled = !cloudAllowed();
+    const copyMagicBtn = btn('🔗 Copier le lien magique #key=', copyMagicHashLink, 'ghost tiny');
+    copyMagicBtn.disabled = isTrial();
+    const copyKeyBtn = btn('📋 Copier la clé seule', copyKeyOnly, 'ghost tiny');
+    copyKeyBtn.disabled = isTrial();
+    const whatsappBtn = btn('💬 Consigne WhatsApp (sans clé)', shareTeamInstructionsWhatsApp, 'ghost tiny');
+    whatsappBtn.disabled = isTrial();
+    const saveCloudBtn = btn('Enregistrer la configuration Cloud', async () => {
+      try {
+        await saveCloudSyncConfig({
+          familyKey: keyInput.value.trim(),
+          supabaseUrl: urlInput.value.trim() || DEFAULT_SUPABASE_URL,
+          supabaseAnonKey: anonInput.value.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY,
+          autoSyncWifi: autoWifiChk.checked,
+        }, { enforceKey: true });
+        statusMsg.textContent = 'Configuration Cloud enregistrée ✅';
+      } catch (err) {
+        statusMsg.textContent = `⚠️ ${err.message || err}`;
+      }
+    }, 'ghost tiny');
+    saveCloudBtn.disabled = isTrial();
 
     body.replaceChildren(
       statusMsg,
       legacyKeyWarning,
       h('div', { class: 'row wrap' },
         syncBtn,
-        btn('🔗 Copier le lien magique #key=', copyMagicHashLink, 'ghost tiny'),
-        btn('📋 Copier la clé seule', copyKeyOnly, 'ghost tiny'),
-        btn('💬 Consigne WhatsApp (sans clé)', shareTeamInstructionsWhatsApp, 'ghost tiny')),
+        copyMagicBtn,
+        copyKeyBtn,
+        whatsappBtn),
       h('p', { class: 'note', style: { color: '#5A3A00', fontWeight: '700' } },
         '⚠️ Le lien magique contient la clé secrète de la famille. Envoyez-le seulement en privé, à une personne de confiance. Jamais dans un groupe ni sur un réseau social.'),
       h('label', { class: 'check' }, autoWifiChk, ' Synchroniser automatiquement en arrière-plan à l’ouverture quand le Wi-Fi est actif'),
@@ -977,20 +1008,7 @@ export function cloudSyncAndCohortBox({ onMerged } = {}) {
           h('p', { class: 'note' }, `Clé créée par Kalimati : 24 caractères (KALI-SYNC-XXXX-XXXX-XXXX). Kalimati refuse maintenant les clés de moins de ${SYNC_KEY_MIN_LENGTH} caractères.`),
           h('label', { class: 'field' }, '🌐 URL du projet Supabase (pré-configurée)', urlInput),
           h('label', { class: 'field' }, '🛡️ Clé publique Supabase (publishable key pré-configurée)', anonInput),
-          h('div', { class: 'row' },
-            btn('Enregistrer la configuration Cloud', async () => {
-              try {
-                await saveCloudSyncConfig({
-                  familyKey: keyInput.value.trim(),
-                  supabaseUrl: urlInput.value.trim() || DEFAULT_SUPABASE_URL,
-                  supabaseAnonKey: anonInput.value.trim() || DEFAULT_SUPABASE_PUBLISHABLE_KEY,
-                  autoSyncWifi: autoWifiChk.checked,
-                }, { enforceKey: true });
-                statusMsg.textContent = 'Configuration Cloud enregistrée ✅';
-              } catch (err) {
-                statusMsg.textContent = `⚠️ ${err.message || err}`;
-              }
-            }, 'ghost tiny')))),
+          h('div', { class: 'row' }, saveCloudBtn))),
       h('div', { class: 'card-box', style: { background: 'var(--soft, #E3F4EF)' } },
         h('h3', {}, `📊 Suivi Clinique Longitudinal Pseudonymisé T0 → T+90 → T+180 (${metrics.cohortId})`),
         atecReminderBanner,

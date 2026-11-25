@@ -92,4 +92,17 @@ assert.ok(!JSON.stringify(diagnostics).includes(magicMarker), 'La clé magique n
 assert.match(appSource, /if \(!KalimatiStorage\.isTrial\(\)\) initCloudSyncFromUrlAndAuto\(\)\.catch\(\(\) => \{\}\);/,
   'Le démarrage automatique doit être neutralisé en essai');
 
+assert.match(cloudSource, /const cloudAllowed = \(\) => isTeamMode\(\) && !isTrial\(\)/,
+  'Les commandes cloud doivent exiger le Mode équipe et interdire l’essai');
+for (const control of ['syncBtn', 'withdrawBtn', 'deleteRelayBtn', 'mediaChk', 'autoWifiChk', 'cohortChk']) {
+  assert.match(cloudSource, new RegExp(`${control}\\.disabled = !cloudAllowed`), `${control} est désactivé en essai`);
+}
+for (const control of ['copyMagicBtn', 'copyKeyBtn', 'whatsappBtn', 'saveCloudBtn', 'keyInput', 'urlInput', 'anonInput']) {
+  assert.match(cloudSource, new RegExp(`${control}\\.disabled = isTrial\\(\\)`), `${control} est désactivé seulement en essai`);
+}
+assert.match(cloudSource, /Version d’essai : synchronisation et cohorte désactivées\. Les données restent sur cet appareil\./,
+  'Le bloc Synchronisation doit afficher le message fixe d’essai');
+const exportButton = /btn\('📥 Exporter le rapport clinique pseudonymisé \(JSON\)'[\s\S]{0,180}/.exec(cloudSource);
+assert.ok(exportButton && !exportButton[0].includes('disabled'), 'l’export local reste actif');
+
 console.log('✅ Version d’essai : Supabase et la cohorte sont refusés avant lecture, écriture et transport.');
