@@ -1,4 +1,5 @@
 // Kalimati v10.27 (darija en lettres arabes par défaut ; arabe standard sur les écrans enfant ; thèmes cahier d’école, simple, noir et blanc).
+import { markStartupStart, recordFirstRender } from './modules/startup-timing.js'; // Lot 1, L1-04 : chronomètre de démarrage, le plus tôt possible
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import './modules/storage.js';
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
@@ -56,6 +57,9 @@ import { createTalkTools } from './modules/talk-tools.js';
 import { createStripController } from './modules/strip-controller.js';
 import { createViews } from './modules/views.js';
 import { createBackupUi } from './modules/backup-ui.js';
+
+// Lot 1, L1-04 : départ du chronomètre au tout début du script (les imports ES sont déjà chargés ici).
+markStartupStart();
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -212,7 +216,7 @@ function renderView() {
   if (state.space === 'home') { view.replaceChildren(homeScreen()); return; }
   if (state.space === 'clinique') { view.replaceChildren(clinicHome({ lang: state.lang, cards: state.cards, parent: state.parent })); return; }
   if (state.space === 'cabinet') { view.replaceChildren(cabinetScreen({ parent: state.parent })); return; }
-  if (state.space === 'talk') { view.replaceChildren(renderTalk()); return; }
+  if (state.space === 'talk') { view.replaceChildren(renderTalk()); recordFirstRender(); return; }
   if (state.space === 'session') { nav.openSession(); return; }
   if (state.space === 'routines') { nav.openRoutines(); return; }
   if (state.space === 'emotions') { nav.openEmotions(); return; }

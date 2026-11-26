@@ -4,7 +4,7 @@
 import * as db from '../db.js';
 import { CATEGORIES, GRAMMAR, visualKeyOf } from '../data.js';
 import { openEditor } from '../editor.js';
-import { lastAmazighPlay, speak, stopSpeaking, unlockAudio } from '../speech.js';
+import { lastAmazighPlay, speak, stopSpeaking, unlockAudio, defaultVoiceUrl } from '../speech.js';
 import { scanSpeed, touchSettingsBox } from './aac-plus.js';
 import { firstName } from './aba.js';
 import { tipOfDay } from './caregiver-tips.js';
@@ -19,6 +19,7 @@ import { btn, h } from './util.js';
 import { APP_VERSION } from './version.js';
 import { clearVisual, setVisual } from './visuals.js';
 import { amazighAutoStep, amazighVoiceStatus, autoInstallAmazighVoicePack, retryAmazighVoicePack } from './voice-packs.js';
+import { preloadVisibleVoices } from './voice-preload.js';
 
 export function createViews(app) {
   const $ = (...args) => app.$(...args);
@@ -282,6 +283,9 @@ export function createViews(app) {
       state.parent ? touchSettingsBox() : null, state.parent ? motorPlanBox() : null, state.parent ? legend() : null);
     const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}${rail ? ' has-rail' : ''}` },
       friend, starterRow, placeView || tabs, boardHead, suggest, grid, adultTools, rail);
+    // Lot 1, L1-06 : les voix des cartes visibles partent en pré-chargement, jamais pendant le rendu.
+    const visibleCards = [...starterCards, ...quickCards, ...(placeView ? [] : boardCards.filter(visibleFor))];
+    preloadVisibleVoices(visibleCards, state.lang, { getDefaultUrl: defaultVoiceUrl });
     const ms = scanSpeed();
     if (!state.parent && ms > 0) {
       const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');
