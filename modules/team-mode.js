@@ -47,5 +47,5 @@ export function networkModeBox() {
       status,
       h('label', { class: 'check' }, teamChk, ' J’active le « Mode équipe » (facultatif, réversible à tout moment)'),
       h('p', { class: 'note' },
-        'Le Mode équipe autorise seulement l’accès aux fonctions réseau ci-dessous, chacune restant éteinte par défaut. En revenant au mode strict, la synchro automatique, la cohorte, les images en ligne et la voix Google sont éteintes. Une copie déjà envoyée au serveur doit être supprimée avant de quitter le Mode équipe (boutons dans « Synchronisation »).')));
+        'Le Mode équipe autorise seulement l’accès aux fonctions réseau ci-dessous, chacune restant éteinte par défaut. En revenant au mode strict, la synchro automatique, la cohorte, les images en ligne et la voix Google sont éteintes. Les fonctions cloud restent indisponibles dans la version d’essai. Une copie déjà envoyée au serveur doit être supprimée avant de quitter le Mode équipe (boutons dans « Synchronisation »).')));
 }

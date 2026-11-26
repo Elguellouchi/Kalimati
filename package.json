@@ -1,12 +1,13 @@
 {
   "name": "kalimati",
-  "version": "10.46",
+  "version": "10.47",
   "private": true,
   "type": "module",
   "description": "Application de communication alternative et de suivi éducatif, utilisable hors ligne.",
   "scripts": {
-    "test": "node tools/test-version.mjs && node tools/test-locales.mjs && node tools/test-i18n.mjs && node tools/test-clinic-i18n.mjs && node tools/test-clinique.mjs && node tools/test-cabinet.mjs && node tools/test-update.mjs && node tools/test-card-migration.mjs && node tools/test-error-log.mjs && node tools/test-sync-merge.mjs && node tools/test-backup-crypto.mjs && node tools/test-lot-a.mjs && node tools/test-amazigh-qa.mjs && node tools/test-clinical-mode.mjs && node tools/test-privacy-network.mjs && node tools/test-pepites.mjs && node tools/test-theme.mjs && node tools/test-i18n-ar.mjs && node tools/test-i18n-world.mjs && node tools/test-picto.mjs && node tools/test-places.mjs && node tools/test-scenes.mjs && node tools/test-keyring-tips.mjs && node tools/test-children.mjs && node tools/test-talk-modes.mjs && node tools/test-ortho-path.mjs && node tools/test-pepites-finales.mjs && node tools/test-lot2-langues.mjs && node tools/test-lot3-dictionnaires.mjs && node tools/test-lot4-qualite.mjs && node tools/test-auto-next.mjs && node tools/test-pluriel.mjs && node tools/test-storage.mjs && node tools/test-cache-scope.mjs",
+    "test": "node tools/test-version.mjs && node tools/test-locales.mjs && node tools/test-i18n.mjs && node tools/test-clinic-i18n.mjs && node tools/test-clinique.mjs && node tools/test-cabinet.mjs && node tools/test-update.mjs && node tools/test-card-migration.mjs && node tools/test-error-log.mjs && node tools/test-sync-merge.mjs && node tools/test-trial-cloud.mjs && node tools/test-backup-crypto.mjs && node tools/test-lot-a.mjs && node tools/test-amazigh-qa.mjs && node tools/test-clinical-mode.mjs && node tools/test-privacy-network.mjs && node tools/test-pepites.mjs && node tools/test-theme.mjs && node tools/test-i18n-ar.mjs && node tools/test-i18n-world.mjs && node tools/test-picto.mjs && node tools/test-places.mjs && node tools/test-scenes.mjs && node tools/test-keyring-tips.mjs && node tools/test-children.mjs && node tools/test-children-trial.mjs && node tools/test-voice-cache.mjs && node tools/test-talk-modes.mjs && node tools/test-ortho-path.mjs && node tools/test-pepites-finales.mjs && node tools/test-lot2-langues.mjs && node tools/test-lot3-dictionnaires.mjs && node tools/test-lot4-qualite.mjs && node tools/test-auto-next.mjs && node tools/test-pluriel.mjs && node tools/test-storage.mjs && node tools/test-cache-scope.mjs && node tools/test-pages-build.mjs",
     "build:locales": "node tools/build-locales.mjs",
+    "build:pages": "node tools/build-pages.mjs",
     "test:e2e": "playwright test",
     "serve:test": "node tools/serve.mjs"
   },

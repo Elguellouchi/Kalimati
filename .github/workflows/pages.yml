@@ -1,0 +1,86 @@
+name: Pages — Kalimati principal et essai
+
+on:
+  push:
+    branches: [main, essai]
+  workflow_dispatch:
+
+concurrency:
+  group: pages-kalimati
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  pages:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Lire la branche principale
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: .pages-main
+          fetch-depth: 0
+
+      - name: Lire la branche essai
+        uses: actions/checkout@v4
+        with:
+          ref: essai
+          path: .pages-essai
+          fetch-depth: 0
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: .pages-essai/package-lock.json
+
+      - name: Installer les dépendances de test
+        working-directory: .pages-essai
+        run: npm ci
+
+      - name: Lancer les tests unitaires
+        working-directory: .pages-essai
+        run: npm test
+
+      - name: Construire les artefacts de test et de publication
+        working-directory: .pages-essai
+        run: |
+          mkdir -p ../.pages-build
+          cd ../.pages-build
+          node ../.pages-essai/tools/build-pages.mjs --main ../.pages-essai --essai ../.pages-essai --out _site
+          node ../.pages-essai/tools/build-pages.mjs --main ../.pages-main --essai ../.pages-essai --out _pages-site
+
+      - name: Comparer la racine publiable au site actuel
+        working-directory: .pages-build
+        run: node ../.pages-essai/tools/check-pages-root.mjs --site _pages-site --live https://elguellouchi.github.io/Kalimati/
+
+      - name: Installer les navigateurs de test
+        working-directory: .pages-essai
+        run: npx playwright install --with-deps webkit chromium
+
+      - name: Tester l’artefact combiné
+        working-directory: .pages-essai
+        env:
+          SERVE_ROOT: ${{ github.workspace }}/.pages-build/_site
+        run: npm run test:e2e -- --trace off
+
+      - name: Configurer GitHub Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Téléverser l’artefact combiné publiable
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .pages-build/_pages-site
+
+      - name: Déployer le site principal et l’essai
+        id: deployment
+        uses: actions/deploy-pages@v4

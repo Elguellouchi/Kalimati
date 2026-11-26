@@ -19,6 +19,9 @@ const boot = read('theme-boot.js');
 check(!/fetch|XMLHttpRequest|sendBeacon|WebSocket/.test(boot), 'theme-boot.js n’envoie rien sur internet');
 check(/<script src="modules\/storage\.js"><\/script>[\s\S]*<script src="theme-boot\.js"><\/script>/.test(head), 'storage.js est chargé avant theme-boot.js');
 check(/try\s*\{[\s\S]*KalimatiStorage\.getItem\('kalimati-theme'\)[\s\S]*\}\s*catch/.test(boot), 'theme-boot.js lit la clé centralisée et résiste à la navigation privée (try/catch)');
+check(/KalimatiStorage\.isTrial\(\)[\s\S]*classList\.add\('trial'\)/.test(boot), 'theme-boot.js marque la version d’essai avant le premier affichage');
+check(/<span id="trial-badge" class="trial-badge">Version d’essai<\/span>/.test(html), 'le badge fixe « Version d’essai » est présent dans la barre parent');
+check(/html\.trial body\.parent \.trial-badge\s*\{\s*display:\s*inline-flex/.test(read('style.css')), 'le badge d’essai n’est visible qu’en mode parent');
 for (const id of ['scolaire', 'simple', 'contraste']) check(boot.includes(`'${id}'`), `theme-boot.js connaît le thème « ${id} »`);
 
 const about = read('modules/about.js');

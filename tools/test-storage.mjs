@@ -37,13 +37,17 @@ const names = [
 ];
 const mainStore = memoryStore();
 const main = loadStorage('/Kalimati/', mainStore);
+assert.equal(main.isTrial(), false, 'la racine principale n’est pas la version d’essai');
 for (const name of names) assert.equal(main.storageKey(name), name, `la version principale garde la clé ${name}`);
 
 const trialStore = memoryStore();
 const trial = loadStorage('/Kalimati/essai/', trialStore);
+assert.equal(trial.isTrial(), true, 'le segment exact essai active la version d’essai');
 for (const name of names) assert.equal(trial.storageKey(name), `essai-${name}`, `la version d'essai isole la clé ${name}`);
 assert.equal(trial.storageKey('essai-deja-prefixe'), 'essai-deja-prefixe', 'le préfixe d’essai n’est pas ajouté deux fois');
-assert.equal(loadStorage('/Kalimati/essai-copie/', memoryStore()).storageKey(names[0]), names[0], 'un dossier simplement nommé « essai-copie » n’est pas la version d’essai');
+assert.equal(loadStorage('/Kalimati/essai-copie/', memoryStore()).isTrial(), false, 'un dossier simplement nommé « essai-copie » n’est pas la version d’essai');
+assert.equal(loadStorage('/essai', memoryStore()).isTrial(), true, 'le segment essai est reconnu sans barre finale');
+assert.equal(loadStorage('/Kalimati/enfants/essai/cartes', memoryStore()).isTrial(), true, 'tout segment exact essai active la version d’essai');
 
 trial.setItem('kalimati-theme', 'contraste');
 assert.equal(trialStore.values.get('essai-kalimati-theme'), 'contraste', 'setItem écrit dans la clé d’essai');

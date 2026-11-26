@@ -15,8 +15,9 @@ import * as db from '../db.js';
 import { isAmazighLang, langInfo } from './languages.js';
 import { logDiagnostic, LOG_TYPES } from './error-log.js';
 import { perChildKey } from './child-profiles.js';
+import { voiceCachePrefix } from './voice-cache.js';
 
-export const VOICE_CACHE_PREFIX = 'kalimati-amazigh-voices-';
+export const VOICE_CACHE_PREFIX = voiceCachePrefix();
 const PACK_STATE_KEY = 'amazighVoicePacks';
 const PACK_DECLINED_KEY = 'amazighVoicePacksDeclined'; // v10.7.1 : packs supprimés par le parent (pas de retour automatique)
 export const DOUAR_FORMAT = 'kalimati-voicepack-v1';

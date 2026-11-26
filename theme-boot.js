@@ -8,4 +8,5 @@
     if (saved === 'simple' || saved === 'contraste' || saved === 'scolaire') theme = saved;
   } catch (e) { /* navigation privée : thème par défaut */ }
   document.documentElement.setAttribute('data-theme', theme);
+  if (window.KalimatiStorage && window.KalimatiStorage.isTrial()) document.documentElement.classList.add('trial');
 })();

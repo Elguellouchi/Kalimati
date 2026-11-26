@@ -15,7 +15,10 @@ export function startAppUpdateWatch() {
     applying = false;
     location.reload();
   });
-  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).then((reg) => {
+  navigator.serviceWorker.register('./sw.js', {
+    updateViaCache: 'none',
+    scope: './',
+  }).then((reg) => {
     registration = reg;
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') reg.update().catch(() => {});

@@ -56,6 +56,10 @@ async function main() {
     'La voix Google ne peut s’allumer qu’en Mode équipe');
   assert.match(speech, /!cloudSpeechAllowed \|\| !isTeamMode\(\)/, 'recognizeSpeech doit vérifier le Mode équipe');
 
+  const teamMode = read('modules/team-mode.js');
+  assert.match(teamMode, /fonctions cloud[\s\S]{0,160}indisponibles[\s\S]{0,80}essai/i,
+    'Le Mode équipe doit expliquer que les fonctions cloud restent indisponibles en essai');
+
   assert.match(read('modules/online-bank.js'), /!lookupAllowed \|\| !isTeamMode\(\) \|\| !isOnline\(\)/,
     'Les images automatiques ARASAAC/Wikipédia doivent exiger le Mode équipe');
   assert.match(read('modules/arasaac.js'), /requireTeamMode\('la recherche de pictogrammes ARASAAC'\)/,

@@ -4,9 +4,26 @@
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const LOCAL_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+if (process.argv.includes('--artifact') && !process.env.SERVE_ROOT) {
+  const buildRoot = path.resolve(LOCAL_ROOT, '..', `${path.basename(LOCAL_ROOT)}-e2e`);
+  fs.mkdirSync(buildRoot, { recursive: true });
+  const build = spawnSync(process.execPath, [
+    path.join(LOCAL_ROOT, 'tools', 'build-pages.mjs'),
+    '--main', LOCAL_ROOT,
+    '--essai', LOCAL_ROOT,
+    '--out', '_site',
+  ], { cwd: buildRoot, stdio: 'inherit' });
+  if (build.error) throw build.error;
+  if (build.status !== 0) process.exit(build.status ?? 1);
+  process.env.SERVE_ROOT = path.join(buildRoot, '_site');
+}
+const ARTIFACT_ROOT = process.env.SERVE_ROOT;
+const ROOT = ARTIFACT_ROOT ? path.resolve(ARTIFACT_ROOT) : LOCAL_ROOT;
+const REAL_ROOT = fs.realpathSync(ROOT);
 const PORT = Number(process.env.PORT || 4173);
 const HOST = process.env.HOST || '127.0.0.1';
 
@@ -49,8 +66,22 @@ const server = http.createServer((req, res) => {
     res.end();
     return;
   }
-  const file = resolve(req.url || '/');
-  if (!file || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
+  let requestPath = req.url || '/';
+  if (requestPath.split('?')[0] === '/essai') {
+    const query = requestPath.includes('?') ? requestPath.slice(requestPath.indexOf('?')) : '';
+    res.writeHead(302, { ...HEADERS, Location: `/essai/${query}` });
+    res.end();
+    return;
+  }
+  if (!ARTIFACT_ROOT && requestPath.startsWith('/essai/')) requestPath = requestPath.slice('/essai'.length);
+  const file = resolve(requestPath);
+  let realFile = null;
+  if (file) {
+    try { realFile = fs.realpathSync(file); } catch {}
+  }
+  const rel = realFile ? path.relative(REAL_ROOT, realFile) : '..';
+  const contained = rel !== '..' && !rel.startsWith(`..${path.sep}`) && !path.isAbsolute(rel);
+  if (!realFile || !contained || !fs.statSync(realFile).isFile()) {
     res.writeHead(404, { ...HEADERS, 'Content-Type': 'text/html; charset=utf-8' });
     res.end('<!doctype html><meta charset="utf-8"><title>404</title><p>Introuvable.</p>');
     return;
