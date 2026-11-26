@@ -141,7 +141,7 @@ assert.ok(spark.last.x > spark.dots[0].x);
 assert.equal(sparklinePaths([null, null]).dots.length, 0);
 
 // --- 4. Invariants statiques : local, verrouillé, branché --------------------------
-has('db.js', /DB_VERSION = 10/, 'db.js doit passer en version 10');
+has('db.js', /DB_VERSION = 11/, 'db.js doit passer en version 11');
 has('db.js', /createObjectStore\('followups'/, 'le store followups doit exister');
 has('db.js', /export const getAllFollowups/, 'les accès au cabinet doivent exister');
 has('modules/cabinet.js', /export function cabinetScreen/, 'cabinet.js doit exporter cabinetScreen');

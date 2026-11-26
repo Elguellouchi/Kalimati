@@ -24,5 +24,13 @@ ok(!P.setActiveChild('../hack') && P.activeChildId() === 'main', 'identifiant in
 mem.set('kalimati-active-child', 'cinconnu1');
 ok(P.activeChildId() === 'main', 'enfant inconnu dans le réglage : retour au premier enfant');
 ok(P.cleanChildren([{ id: 'cabcde', name: 'x'.repeat(50) }, { id: 'bad id' }, null]).length === 2, 'liste nettoyée (premier enfant toujours présent)');
+
+// Lot 2 (L2-01) : une base v10 remplie passe en v11 en gardant la place actuelle de chaque carte.
+const DB = await import('../db.js');
+const migrated = DB.upgradeCardToV11({ id: 'c-base-test', cat: 'base', gridRow: 3, gridCol: 2, positions: undefined }, 4);
+ok(migrated && migrated.positions['4'].row === 3 && migrated.positions['4'].col === 2, 'migration v11 : chaque carte reçoit sa place pour la taille de grille actuelle');
+ok(DB.upgradeCardToV11(migrated, 4) === null, 'migration v11 : une place déjà écrite n’est jamais retouchée');
+const sansPlace = DB.upgradeCardToV11({ id: 'c-base-vide', cat: 'base', gridRow: null, gridCol: null }, 4);
+ok(sansPlace && !sansPlace.positions && sansPlace.gridRow === null && sansPlace.wordId === 'c-base-vide', 'migration v11 : une carte sans place reste à placer — wordId oui, place jamais inventée');
 if (fail) { console.error(`${fail} échec(s)`); process.exit(1); }
 console.log('test-children : OK');

@@ -51,8 +51,6 @@ export function applyProgressiveStage(cards, targetStage = 3) {
     if (!planned) return card;
     return {
       ...card,
-      gridRow: card.gridRow || planned.gridRow,
-      gridCol: card.gridCol || planned.gridCol,
       hidden: targetStage >= 3 ? false : planned.stage > targetStage,
     };
   });

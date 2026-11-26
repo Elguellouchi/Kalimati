@@ -149,6 +149,20 @@ function isDataUrl(value, kinds = 'image|audio|video') {
 const cleanText = (value, max) => String(value ?? '').slice(0, max);
 const cleanPos = (value) => (Number.isInteger(value) && value >= 1 && value <= 100 ? value : null);
 const cleanKey = (value) => (typeof value === 'string' && /^[\w:.-]{1,80}$/.test(value) ? value : null);
+// Lot 2 : places par taille de grille (2, 3, 4, 5 colonnes). Une sauvegarde v10 sans `positions`
+// reste lisible : la migration v11 la complétera au chargement.
+function cleanPositions(value) {
+  const out = {};
+  if (!value || typeof value !== 'object') return out;
+  for (const size of [2, 3, 4, 5]) {
+    const place = value[String(size)];
+    if (!place || typeof place !== 'object') continue;
+    const row = cleanPos(place.row);
+    const col = cleanPos(place.col);
+    if (row && col && col <= size) out[String(size)] = { row, col };
+  }
+  return out;
+}
 
 function cleanTrial(raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.goalId !== 'string' || !Number.isFinite(raw.ts)) return null;
@@ -201,10 +215,11 @@ export async function readBackup(file, passphrase = '') {
   const cards = [];
   for (const raw of parsed.cards.filter(isValidCard)) {
     const card = {
-      id: raw.id, cat: raw.cat, fr: raw.fr.slice(0, 40), sub: cleanText(raw.sub, 30), dr: cleanText(raw.dr, 40), ar: cleanText(raw.ar, 40),
+      id: raw.id, wordId: typeof raw.wordId === 'string' && raw.wordId ? raw.wordId.slice(0, 120) : raw.id,
+      cat: raw.cat, fr: raw.fr.slice(0, 40), sub: cleanText(raw.sub, 30), dr: cleanText(raw.dr, 40), ar: cleanText(raw.ar, 40),
       emoji: cleanText(raw.emoji, 8), order: Number(raw.order) || 0,
       gram: GRAMS.includes(raw.gram) ? raw.gram : 'noun', hidden: raw.hidden === true,
-      gridRow: cleanPos(raw.gridRow), gridCol: cleanPos(raw.gridCol),
+      gridRow: cleanPos(raw.gridRow), gridCol: cleanPos(raw.gridCol), positions: cleanPositions(raw.positions),
       visualKey: cleanKey(raw.visualKey), sayFr: cleanText(raw.sayFr, 60), sayAr: cleanText(raw.sayAr, 60),
     };
     for (const field of BLOB_FIELDS) card[field] = isDataUrl(raw[field]) ? await dataUrlToBlob(raw[field]) : null;

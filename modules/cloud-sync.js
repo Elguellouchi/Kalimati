@@ -12,6 +12,7 @@ import { h, btn, dayKey, percent, isNewer } from './util.js';
 import { profile, clinic } from './aba.js';
 import { blobToDataUrl, dataUrlToBlob } from '../media.js';
 import { isTeamMode, requireTeamMode } from './network-policy.js';
+import { mergeCardLayout } from './grid-layout.js';
 import { logDiagnostic } from './error-log.js';
 import './storage.js';
 
@@ -435,7 +436,9 @@ export async function mergeRemoteSyncPayload(remote) {
     if (!lc || lc.fr !== hydrated.fr || lc.dr !== hydrated.dr || lc.ar !== hydrated.ar || lc.hidden !== hydrated.hidden) {
       newOrUpdatedCards += 1;
     }
-    const next = { ...(lc || {}), ...hydrated };
+    // Lot 2 (L2-13) : les places par taille et wordId voyagent par taille : le paquet distant ne
+    // remplace que les tailles qu'il transporte, le téléphone garde ses places pour les autres tailles.
+    const next = mergeCardLayout(lc || {}, hydrated);
     if (!Number(next.updatedAt)) next.updatedAt = Number(rc.updatedAt) || Date.now();
     localCardMap.set(rc.id, next);
   }

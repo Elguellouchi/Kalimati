@@ -39,6 +39,7 @@ export function createViews(app) {
   const renderSuggestions = (...args) => app.renderSuggestions(...args);
   const renderView = (...args) => app.renderView(...args);
   const sayMenu = (...args) => app.sayMenu(...args);
+  const saveLayoutFingerprint = (...args) => app.saveLayoutFingerprint(...args);
   const sceneEditorBox = (...args) => app.sceneEditorBox(...args);
   const state = app.state;
   const talkModeBox = (...args) => app.talkModeBox(...args);
@@ -336,6 +337,7 @@ export function createViews(app) {
     await db.putCards(stamped);
     const ids = new Set(stamped.map((c) => c.id));
     state.cards = [...state.cards.filter((c) => !ids.has(c.id)), ...stamped];
+    await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : action adulte → nouvelle empreinte
   }
 
   async function editCard(card) {
@@ -347,12 +349,13 @@ export function createViews(app) {
       defaultCat: state.cat,
       amazighLang: isAmazighLang(state.lang) ? state.lang : null, // v10.7 : ligne « voix amazighe » dans l'éditeur
       lang: state.lang, // v10.21 (Lot 1) : l'éditeur propose la voix dans la langue active, sans repasser par le français
+      cols: state.cols, // Lot 2 (L2-07) : confirmation 2 touchers seulement pour un vrai déplacement de la taille active
       onSave: async (saved, { slot, catChanged }) => {
         let cards = state.cards.filter((c) => c.id !== saved.id);
         let placed = saved;
         if (!saved.gridRow || catChanged) placed = { ...saved, ...nextFreeSlot(cards, saved.cat, state.cols) };
         cards = [...cards, placed];
-        if (slot && slot.col <= state.cols) cards = moveCard(cards, placed.id, slot.row, slot.col);
+        if (slot && slot.col <= state.cols) cards = moveCard(cards, placed.id, slot.row, slot.col, state.cols);
         const changed = cards.filter((c) => c !== state.cards.find((old) => old.id === c.id));
         await saveCards(changed);
         // La photo de la carte vaut partout : repas en famille, studio des émotions, exercices.
@@ -367,6 +370,7 @@ export function createViews(app) {
         if (cached) { URL.revokeObjectURL(cached.url); photoUrls.delete(id); }
         state.cards = state.cards.filter((c) => c.id !== id);
         state.strip = state.strip.filter((item) => item.card.id !== id);
+        await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : action adulte → nouvelle empreinte
         renderAll();
       },
     });

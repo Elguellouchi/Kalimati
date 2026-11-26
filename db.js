@@ -3,10 +3,12 @@
 // Les montées de version gardent toutes les cartes et tous les essais existants.
 import { GOALS } from './modules/goals.js';
 import { activeDbName } from './modules/child-profiles.js';
+import { GRID_SIZES } from './modules/grid-layout.js';
 
 // v10.36 : un enfant = une base. Le premier enfant garde « kalimati » (données d'origine intactes).
 const DB_NAME = activeDbName();
-const DB_VERSION = 10;
+// v11 (Lot 2) : chaque carte garde une place par taille de grille (2, 3, 4, 5 colonnes).
+const DB_VERSION = 11;
 
 let dbPromise = null;
 
@@ -68,6 +70,44 @@ function upgrade(db, transaction, oldVersion) {
     const followups = db.createObjectStore('followups', { keyPath: 'code' });
     followups.createIndex('updatedDay', 'updatedDay');
   }
+  // v11 : plan moteur inviolable. Chaque carte reçoit sa place pour la taille de grille actuelle ;
+  // les autres tailles seront calculées une seule fois à leur première utilisation (modules/grid-layout.js).
+  // (transaction absente uniquement dans le faux IndexedDB de test-storage-persist.mjs : rien à migrer.)
+  if (oldVersion < 11 && transaction) upgradeToV11(transaction);
+}
+
+// Place d'une carte pour la taille `cols` au moment de la migration v10 → v11 : la place actuelle
+// (gridRow / gridCol) devient sa place dans cette taille. null = rien à changer.
+export function upgradeCardToV11(card, cols) {
+  if (!card || !card.id) return null;
+  const key = String(cols);
+  const positions = card.positions && typeof card.positions === 'object' ? { ...card.positions } : {};
+  const wordId = typeof card.wordId === 'string' && card.wordId ? card.wordId : card.id;
+  if (positions[key] && wordId === card.wordId) return null;
+  const row = Number(card.gridRow);
+  const col = Number(card.gridCol);
+  const writePlace = !positions[key] && Number.isInteger(row) && Number.isInteger(col) && row >= 1 && col >= 1 && col <= cols;
+  const next = { ...card, wordId };
+  if (writePlace) next.positions = { ...positions, [key]: { row, col } };
+  return next;
+}
+
+// Migration v11 lue dans la base : réglage « cols » puis toutes les cartes, dans la même transaction
+// de montée de version (rien n'est perdu, gridRow / gridCol ne sont jamais réécrits).
+export function upgradeToV11(transaction) {
+  const settings = transaction.objectStore('settings');
+  const cards = transaction.objectStore('cards');
+  const colsRequest = settings.get('cols');
+  colsRequest.onsuccess = () => {
+    const cols = GRID_SIZES.includes(Number(colsRequest.result)) ? Number(colsRequest.result) : 4;
+    const all = cards.getAll();
+    all.onsuccess = () => {
+      for (const card of all.result) {
+        const next = upgradeCardToV11(card, cols);
+        if (next) cards.put(next);
+      }
+    };
+  };
 }
 
 // v10.5.3 : sur iPhone, Safari laisse parfois la base « endormie » après un rechargement :
