@@ -15,6 +15,7 @@ import { LANGS, isAmazighLang, langInfo, spokenUi } from './languages.js';
 import { loadLevels } from './levels.js';
 import { loadMorphologyState } from './morphology.js';
 import { backupAgeDays, backupReminderElement } from './backup-reminder.js';
+import { fallbackBannerElement } from './db-fallback.js';
 import { setActiveLang } from './section-i18n.js';
 import { TIMER_SETTING_KEY, setTimerShowNumbers } from './timer.js';
 import { h } from './util.js';
@@ -48,6 +49,17 @@ export function createBackupUi(app) {
     if (reminder) exportBtn.before(reminder);
   }
 
+  // L1-07 : en mode secours, un message discret dit au parent que les cartes reviendront
+  // au prochain démarrage. Jamais en mode enfant, jamais d'alerte rouge.
+  function refreshFallbackBanner() {
+    document.getElementById('fallback-banner')?.remove();
+    if (!state.parent) return;
+    const banner = fallbackBannerElement({ parent: true });
+    const bar = document.getElementById('parent-bar');
+    if (!banner || !bar) return;
+    bar.after(banner);
+  }
+
   // renderAll() prévient les modules du changement de mode parent (verrouillage/déverrouillage).
   let lastParentMode = null;
   document.addEventListener('kalimati-parent', (event) => {
@@ -56,6 +68,7 @@ export function createBackupUi(app) {
     lastParentMode = parent;
     if (parent) refreshBackupReminder().catch(() => {});
     else document.getElementById('backup-reminder')?.remove();
+    refreshFallbackBanner();
   });
   async function collectSettings() {
     const entries = await Promise.all(EXPORTED_SETTINGS.map(async (key) => [key, await db.getSetting(key)]));
@@ -314,6 +327,7 @@ export function createBackupUi(app) {
     };
     // Au chargement du panneau adulte : vérifie la date de la dernière sauvegarde.
     refreshBackupReminder().catch(() => {});
+    refreshFallbackBanner();
   }
 
   // ---------- v10.3.2 : restauration par fusion (rien n'est effacé, le plus récent du téléphone est gardé) ----------

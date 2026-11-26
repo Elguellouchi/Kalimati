@@ -284,8 +284,10 @@ export function createViews(app) {
     const view = h('div', { class: `talk${state.modeling ? ' modeling' : ''}${noPhrase ? '' : ' has-phrase'}${rail ? ' has-rail' : ''}` },
       friend, starterRow, placeView || tabs, boardHead, suggest, grid, adultTools, rail);
     // Lot 1, L1-06 : les voix des cartes visibles partent en pré-chargement, jamais pendant le rendu.
+    // Les mp3 livrés n'existent qu'en français et en darija ; les autres langues passent par la voix du téléphone.
     const visibleCards = [...starterCards, ...quickCards, ...(placeView ? [] : boardCards.filter(visibleFor))];
-    preloadVisibleVoices(visibleCards, state.lang, { getDefaultUrl: defaultVoiceUrl });
+    const useDefaultMp3 = state.lang === 'fr' || state.lang === 'dr';
+    preloadVisibleVoices(visibleCards, state.lang, { getDefaultUrl: useDefaultMp3 ? defaultVoiceUrl : null });
     const ms = scanSpeed();
     if (!state.parent && ms > 0) {
       const targets = [...grid.querySelectorAll('.card')].filter((el) => el.style.visibility !== 'hidden');

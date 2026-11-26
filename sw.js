@@ -10,7 +10,7 @@ const FILES = [
   './modules/progress.js', './modules/nour.js', './modules/timer.js', './modules/widgets.js',
   './modules/grid-layout.js', './modules/arasaac.js', './modules/spaces.js', './modules/dashboard.js',
   './modules/profil.js', './modules/visuals.js', './modules/ex-emotions.js',
-  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js', './modules/locales.js', './modules/locales-data.js', './modules/amazigh-lexicon.js', './modules/voice-packs.js', './modules/error-log.js', './modules/storage-persist.js',
+  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js', './modules/locales.js', './modules/locales-data.js', './modules/amazigh-lexicon.js', './modules/voice-packs.js', './modules/error-log.js', './modules/db-fallback.js', './modules/storage-persist.js',
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js', './modules/core-vocabulary-plan.js',
