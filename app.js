@@ -12,7 +12,7 @@ import { h, btn } from './modules/util.js';
 import { loadContext, recordTrial, todayTrials, firstName, profile, saveProfile } from './modules/aba.js';
 import { listChildren, activeChildId, MAIN_ID } from './modules/child-profiles.js';
 import { nour } from './modules/nour.js';
-import { assignPositions, relayout, nextFreeSlot, moveCard } from './modules/grid-layout.js';
+import { assignPositions, layoutFingerprint, layoutFingerprintMismatch, nextFreeSlot, moveCard } from './modules/grid-layout.js';
 import { createNavigator } from './modules/spaces.js';
 import { dashboardScreen } from './modules/dashboard.js';
 import { applyUppercase, UPPERCASE_SETTING_KEY } from './modules/about.js';
@@ -203,7 +203,7 @@ const tappableCard = (card, options = {}) => {
   });
 };
 
-Object.assign(app, { $, label, sayMenu, cardElement, cardVisual, fillLabel, onCardTap, tappableCard, renderAll, renderView, loadCards, showBackupAge });
+Object.assign(app, { $, label, sayMenu, cardElement, cardVisual, fillLabel, onCardTap, tappableCard, renderAll, renderView, loadCards, saveLayoutFingerprint, showBackupAge });
 // v10.42 (Lot 4.1) : Bande de phrase : cartes touchées, accords, temps, suggestions, lecture → modules/strip-controller.js
 Object.assign(app, createStripController(app));
 const { renderStrip, tenseHintFor, refreshTenseHints, renderMorphSlot, renderSuggestions, renderModel, setupStrip } = app;
@@ -383,6 +383,20 @@ Object.assign(app, createBackupUi(app));
 const { applyLangDir, setupParentBar } = app;
 // ---------- Démarrage et passages v1 → v2 → v3 (aucune carte ni photo existante n'est perdue) ----------
 
+// Lot 2 (L2-10) : l'empreinte des places est recalculée après chaque action adulte et au démarrage.
+// Elle ne doit jamais bloquer l'adulte ; son échec reste visible au journal (L2-11).
+async function saveLayoutFingerprint(cards) {
+  try {
+    await db.setSetting('layoutFingerprint', await layoutFingerprint(cards));
+  } catch {
+    logDiagnostic(LOG_TYPES.JS_RUNTIME, 'layout_fingerprint_save_failed', { module: 'app.js:saveLayoutFingerprint', sev: 'warn' });
+  }
+}
+
+// L2-11 : la vérification ne se fait qu'à la PREMIÈRE lecture de la page. Les relectures suivantes
+// (après synchro ou restauration) sont des actions adultes légitimes : on rafraîchit l'empreinte sans alerte.
+let startupLayoutAuditDone = false;
+
 async function loadCards() {
   let cards = await db.getAllCards();
   if (cards.length === 0 && !(await db.getSetting('seeded'))) {
@@ -436,11 +450,29 @@ async function loadCards() {
   }
   await db.setSetting('v2migrated', true);
   await db.setSetting('v3migrated', true);
+  // Lot 2 (L2-11) : si les places ont changé sans action adulte depuis la dernière empreinte, on le note
+  // au journal (UX_FRICTION) sans rien corriger ni réécrire l'empreinte. La place de la taille active,
+  // si elle n'a jamais été calculée (L2-03), n'est pas une alerte : elle est ajoutée après la comparaison.
+  const firstAudit = !startupLayoutAuditDone;
+  startupLayoutAuditDone = true;
+  const storedFingerprint = firstAudit ? await db.getSetting('layoutFingerprint').catch(() => null) : null;
+  const fingerprintMismatch = firstAudit && await layoutFingerprintMismatch(cards, storedFingerprint);
+  if (fingerprintMismatch) {
+    logDiagnostic(LOG_TYPES.UX_FRICTION, 'places modifiées sans action adulte', { space: 'startup', sev: 'warn' });
+  }
   const placed = assignPositions(cards, state.cols);
   db.putCards(placed).catch(() => logDiagnostic(LOG_TYPES.JS_RUNTIME, 'cards_save_failed', {
     module: 'app.js:loadCards',
     sev: 'error',
   }));
+  // L2-11 : la lecture de l'empreinte (audit) reste avant toute écriture ; sa réécriture, elle,
+  // ne retarde plus l'affichage de la grille (porte E2E « moins de 3 s ») et journalise son échec.
+  if (!fingerprintMismatch) {
+    setTimeout(() => saveLayoutFingerprint(placed).catch(() => logDiagnostic(LOG_TYPES.JS_RUNTIME, 'layout_fingerprint_save_failed', {
+      module: 'app.js:loadCards',
+      sev: 'warn',
+    })), 0);
+  }
   return placed;
 }
 

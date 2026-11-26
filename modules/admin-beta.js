@@ -7,6 +7,7 @@ import { LANGS, langInfo } from './languages.js';
 import { speak } from '../speech.js';
 import { SELF_CARD_ID } from '../data.js';
 import { setChildGender } from './morphology.js';
+import { layoutFingerprint } from './grid-layout.js';
 
 import { APP_VERSION } from './version.js';
 import './storage.js';
@@ -702,6 +703,8 @@ export async function importEncryptedBackup(file, onRestored) {
       }));
       await db.clearCards();
       await db.putCards(cards);
+      // Lot 2 (L2-10) : restauration chiffrée = action adulte → nouvelle empreinte, sans jamais bloquer.
+      try { await db.setSetting('layoutFingerprint', await layoutFingerprint(cards)); } catch { /* non bloquant */ }
     }
     if (Array.isArray(data.visuals) && data.visuals.length) {
       const vis = await Promise.all(data.visuals.map(async (v) => ({

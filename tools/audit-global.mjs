@@ -158,8 +158,8 @@ for (const file of ['modules/clinique.js', 'modules/clinic-i18n.js', 'modules/cl
 }
 
 // ---------- 9. Modules cliniques et données locales ---------------------------------
-if (!/DB_VERSION = 10/.test(read('db.js'))) fail('db.js doit être en version 10 (life_book + followups)');
-else pass('IndexedDB v10 avec les stores life_book et followups locaux');
+if (!/DB_VERSION = 11/.test(read('db.js'))) fail('db.js doit être en version 11 (plan moteur inviolable)');
+else pass('IndexedDB v11 avec plan moteur par taille de grille');
 if (!/createObjectStore\('life_book'/.test(read('db.js'))) fail('store life_book absent');
 if (!/createObjectStore\('followups'/.test(read('db.js'))) fail('store followups absent');
 if (!/export function clinicHome/.test(read('modules/clinique.js'))) fail('clinique.js sans clinicHome');

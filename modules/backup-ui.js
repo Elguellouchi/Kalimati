@@ -26,6 +26,7 @@ export function createBackupUi(app) {
   const $ = (...args) => app.$(...args);
   const EXPORTED_SETTINGS = app.EXPORTED_SETTINGS;
   const loadCards = (...args) => app.loadCards(...args);
+  const saveLayoutFingerprint = (...args) => app.saveLayoutFingerprint(...args);
   const nav = app.nav;
   const renderAll = (...args) => app.renderAll(...args);
   const renderSpaces = (...args) => app.renderSpaces(...args);
@@ -174,10 +175,29 @@ export function createBackupUi(app) {
     $('#cols').onchange = async (e) => {
       state.cols = Number(e.target.value);
       await db.setSetting('cols', state.cols);
-      const now = Date.now();
-      const cards = relayout(state.cards, state.cols).map((c) => ({ ...c, updatedAt: now }));
-      await db.putCards(cards);
-      state.cards = cards;
+      // Lot 2 (L2-02) : changer de taille NE DÉPLACE AUCUNE CARTE. Seule la place de la taille
+      // nouvellement affichée est calculée (une fois), si elle n'existe pas encore.
+      state.cards = assignPositions(state.cards, state.cols);
+      renderView();
+      await db.putCards(state.cards);
+      await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : action adulte → nouvelle empreinte
+    };
+    // Lot 2 (L2-08) : remise en ordre automatique, uniquement ici et seulement après 2 touchers.
+    // Sans 2e toucher en 4 secondes, le bouton revient comme avant (mécanisme de stories.js).
+    let confirmRelayout = false;
+    $('#relayout').onclick = async () => {
+      const b = $('#relayout');
+      if (!confirmRelayout) {
+        confirmRelayout = true;
+        b.textContent = 'Toucher encore pour confirmer';
+        setTimeout(() => { if (confirmRelayout) { confirmRelayout = false; b.textContent = 'Remettre en ordre automatique'; } }, 4000);
+        return;
+      }
+      confirmRelayout = false;
+      b.textContent = 'Remettre en ordre automatique';
+      state.cards = relayout(state.cards, state.cols);
+      await db.putCards(state.cards);
+      await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : action adulte → nouvelle empreinte
       renderView();
     };
     $('#photos').onclick = () => { state.space = 'emotions'; renderSpaces(); nav.openGallery(); };
@@ -320,6 +340,7 @@ export function createBackupUi(app) {
         await loadVisuals();
         await loadLevels();
         state.cards = cards; state.strip = [];
+        await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : restauration = action adulte → nouvelle empreinte
         renderAll();
       } catch (error) {
         window.alert(error.message || 'Sauvegarde illisible.');
@@ -339,6 +360,11 @@ export function createBackupUi(app) {
       const local = byId.get(card.id);
       if (!local) { byId.set(card.id, card); continue; }
       const merged = { ...local, ...card };
+      // Lot 2 : les places déjà fixées dans le téléphone ne sont jamais écrasées par la sauvegarde.
+      // La sauvegarde complète seulement les tailles encore absentes sur cet appareil.
+      merged.positions = { ...(card.positions || {}), ...(local.positions || {}) };
+      // L2-09 : l'identifiant stable ne manque jamais, même pour une carte d'une sauvegarde plus ancienne.
+      merged.wordId = typeof local.wordId === 'string' && local.wordId ? local.wordId : (typeof card.wordId === 'string' && card.wordId ? card.wordId : merged.id);
       const fromBackup = foldLegacyAudio(card);
       const keptLocal = foldLegacyAudio(local);
       for (const field of ['photo', 'video']) merged[field] = card[field] || local[field] || null;

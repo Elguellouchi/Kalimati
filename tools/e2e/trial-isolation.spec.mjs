@@ -7,8 +7,8 @@ import {
   installMainWorkerFixture, trialCacheName,
 } from './support.mjs';
 
-const MAIN_CACHE = 'kalimati-v10-47';
-const TRIAL_CACHE = 'kalimati-essai-v10-47';
+const MAIN_CACHE = 'kalimati-v10-48';
+const TRIAL_CACHE = 'kalimati-essai-v10-48';
 const HISTORICAL_CACHE = 'kalimati-v10-45';
 const HISTORICAL_REVISION = 'c3060ab';
 const CLOUD_MARKER = 'KALI-NEUTRAL-TEST-MARKER';
@@ -365,7 +365,7 @@ test('service workers — le worker principal réel ignore /essai/ et les deux c
   }, [MAIN_CACHE, TRIAL_CACHE])).toBe(true);
 });
 
-test('G0 navigateur — le worker principal v10.47 ignore /essai/ sans worker d’essai', async ({ page }, testInfo) => {
+test('G0 navigateur — le worker principal v10.48 ignore /essai/ sans worker d’essai', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== 'pixel-5-chromium',
     'service workers : Chromium seulement (décision D-2)');
   test.setTimeout(90_000);

@@ -5,6 +5,7 @@ import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './modules/a
 import { escapeHtml } from './modules/util.js';
 import { sayDefault, stopSpeaking } from './speech.js';
 import { isAmazighLang, isExtraLang, langInfo } from './modules/languages.js';
+import { moveNeedsConfirmation } from './modules/grid-layout.js';
 import { parentAmazighVoice, packAmazighVoice, saveParentAmazighVoice, removeParentAmazighVoice, removeParentAmazighVoicesOfCard } from './modules/voice-packs.js';
 
 // v10.7 : en amazigh, une ligne « Votre voix » enregistre le mot dans la variété choisie.
@@ -251,10 +252,12 @@ function setupLexicon() {
   });
 }
 
-export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = null, lang = 'fr' }) {
+export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = null, lang = 'fr', cols = 4 }) {
   amzLang = isAmazighLang(amazighLang) ? amazighLang : null;
   activeLang = lang || 'fr';
-  const blank = { id: `u-${Date.now()}`, cat: defaultCat, fr: '', sub: '', dr: '', ar: '', emoji: '', gram: 'noun', visualKey: null, sayFr: '', sayAr: '', photo: null, video: null, audios: {}, order: Date.now(), gridRow: null, gridCol: null, hidden: false };
+  const newId = `u-${Date.now()}`;
+  // Lot 2 (L2-09) : wordId = identifiant stable de la carte, indépendant des langues. Il ne change jamais.
+  const blank = { id: newId, wordId: newId, cat: defaultCat, fr: '', sub: '', dr: '', ar: '', emoji: '', gram: 'noun', visualKey: null, sayFr: '', sayAr: '', photo: null, video: null, audios: {}, order: Date.now(), gridRow: null, gridCol: null, hidden: false };
   const draft = card ? { sub: '', ...foldLegacyAudio(card), isNew: false } : { ...blank, isNew: true };
   const amzBefore = amzLang ? parentAmazighVoice(amzLang, draft.id) : null;
   draft.amzVoice = amzBefore;
@@ -311,9 +314,28 @@ export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = n
       onDelete(draft.id);
     };
   }
+  // Lot 2 (L2-07) : déplacer une carte change le geste appris par l'enfant. Avant d'enregistrer une
+  // nouvelle Ligne/Colonne, le parent confirme en 2 touchers (mécanisme de « Remettre en ordre automatique »).
+  let confirmMove = false;
+  let confirmMoveTimer = 0;
   $('#ed-save').onclick = async () => {
     const fr = $('#ed-fr').value.trim();
     if (!fr) { showError('Écrivez au moins le mot en français.'); return; }
+    const row = Number($('#ed-row').value);
+    const col = Number($('#ed-col').value);
+    if (!confirmMove && moveNeedsConfirmation(draft, row, col, cols)) {
+      confirmMove = true;
+      const saveBtn = $('#ed-save');
+      saveBtn.textContent = 'Déplacer change le geste appris par l’enfant. Continuer ?';
+      clearTimeout(confirmMoveTimer);
+      confirmMoveTimer = setTimeout(() => {
+        confirmMove = false;
+        saveBtn.textContent = 'Enregistrer';
+      }, 4000);
+      return;
+    }
+    confirmMove = false;
+    clearTimeout(confirmMoveTimer);
     await mediaJob;
     await close();
     // v10.7 : la voix amazighe ne va jamais sur la carte ; elle est gardée à part, dans ce téléphone.
@@ -326,8 +348,6 @@ export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = n
         window.alert(`La voix ${langInfo(amzLang).name} n’a pas pu être gardée. ${err?.message || ''}`.trim());
       }
     }
-    const row = Number($('#ed-row').value);
-    const col = Number($('#ed-col').value);
     const cat = $('#ed-cat').value;
     // Si le parent change le mot, la phrase dite d'origine (ex. « Ma sœur ») ne s'applique plus.
     const renamed = !isNew && fr !== card.fr;
