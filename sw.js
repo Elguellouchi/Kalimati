@@ -25,6 +25,8 @@ const FILES = [
   './modules/cabinet.js', './modules/followup.js', './modules/followup-schema.js',
   // v10.17 : mise à jour sans rechargement automatique
   './modules/app-update.js',
+  // Lot 1 (L1-09) : alerte parent et inventaire anonyme des gros médias
+  './modules/storage-warning.js',
   // v10.18 : migration des cartes sans identifiant historique en dur
   './modules/card-migration.js',
   // v10.23 : moteur tactile central, langue jumelle, quadrillage des émotions
@@ -87,12 +89,11 @@ self.addEventListener('install', (event) => {
     await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
     const missing = await warmOptionalAssets(cache);
     missing.forEach((file) => cache.add(file).catch(() => {}));
-    // v10.17 : pas de skipWaiting. La nouvelle version attend que l'appli soit fermée
-    // (ou que le parent touche « Actualiser ») : aucun rechargement pendant l'utilisation.
+    // L1-08 : pas de skipWaiting à l'installation ; l'application demande l'activation en arrière-plan.
   })());
 });
 
-// v10.17 : actualisation manuelle, uniquement sur toucher explicite du parent.
+// L1-08 : l'application envoie SKIP_WAITING uniquement quand elle passe en arrière-plan.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

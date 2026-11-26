@@ -27,6 +27,7 @@ import { networkModeBox } from './team-mode.js';
 import { followupShareBox } from './followup.js';
 import { getTimerShowNumbers, setTimerShowNumbers, TIMER_SETTING_KEY } from './timer.js';
 import { updateBox } from './app-update.js';
+import { storageWarningBox } from './storage-warning.js';
 import { childrenBox } from './children-box.js';
 
 function profileForm() {
@@ -415,6 +416,7 @@ export function dashboardScreen(nav) {
       evaluated && safePart('Parcours ABLLS-R', () => kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results)),
       safePart('Réglages parent', () => parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) })),
       safePart('Protection du stockage', () => storageProtectionBox()),
+      safePart('Espace de stockage', () => storageWarningBox()),
       safePart('Journal ABC', () => abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self))),
       safePart('Orthophonie', () => orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self))),
       safePart('Bilan ATEC', () => atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self))),

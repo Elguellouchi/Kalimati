@@ -599,9 +599,7 @@ async function init() {
   window.addEventListener('online', amazighPackSoon);
   // v10.7.2 : un téléchargement coupé (appli mise en arrière-plan) reprend au retour dans l'appli.
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') amazighPackSoon(); });
-  // v10.17 : la mise à jour ne recharge plus jamais la page toute seule (sur iPhone, cela
-  // pouvait laisser l'écran vide et se répéter). Elle s'active à la prochaine ouverture,
-  // ou sur toucher du parent depuis Progrès → Mise à jour de l'application.
+  // L1-08 : la nouvelle version s'applique seulement quand l'application passe en arrière-plan.
   startAppUpdateWatch();
 }
 
