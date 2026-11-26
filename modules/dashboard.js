@@ -22,10 +22,12 @@ import { LANGS, isAmazighLang, isAmazighScript, AMAZIGH_SCRIPTS, DARIJA_SCRIPTS,
 import { getInstalledVoicePacks, downloadAmazighVoicePack, removeAmazighVoicePack, exportDouarVoicePack, importDouarVoicePack } from './voice-packs.js';
 import { deliverBackup } from '../backup.js';
 import { errorLogSettingsBox } from './error-log.js';
+import { getStoragePersistedStatus, requestPersistentStorage } from './storage-persist.js';
 import { networkModeBox } from './team-mode.js';
 import { followupShareBox } from './followup.js';
 import { getTimerShowNumbers, setTimerShowNumbers, TIMER_SETTING_KEY } from './timer.js';
 import { updateBox } from './app-update.js';
+import { storageWarningBox } from './storage-warning.js';
 import { childrenBox } from './children-box.js';
 
 function profileForm() {
@@ -361,6 +363,37 @@ const safeAsync = async (promise, fallback, ms = 8000) => {
   } catch (err) { console.error('[Progrès]', err); return fallback; }
 };
 
+// Lot 1 (L1-02) : l'adulte voit d'un coup d'œil si les cartes sont à l'abri d'un effacement automatique du téléphone.
+const isIosDevice = () => typeof navigator !== 'undefined' && /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+
+function storageProtectionBox() {
+  const line = h('p', { role: 'status' });
+  const help = h('p', { class: 'note' }, 'Ajoutez Kalimati à l’écran d’accueil pour protéger vos données.');
+  const checkBtn = btn('Vérifier la protection du stockage', async () => {
+    checkBtn.disabled = true;
+    paint(await requestPersistentStorage());
+    checkBtn.disabled = false;
+  }, 'ghost tiny');
+  const paint = (status) => {
+    if (status === true) {
+      line.replaceChildren(h('strong', {}, 'Stockage protégé : oui'));
+      help.hidden = true;
+      checkBtn.hidden = true;
+    } else if (status === false || status === 'unsupported') {
+      line.replaceChildren(h('strong', {}, 'Stockage protégé : non'));
+      help.hidden = !isIosDevice();
+      checkBtn.hidden = true;
+    } else {
+      line.replaceChildren(h('strong', {}, 'Protection du stockage : pas encore vérifiée.'));
+      help.hidden = true;
+      checkBtn.hidden = false;
+    }
+  };
+  checkBtn.hidden = true;
+  getStoragePersistedStatus().then(paint).catch(() => paint(null));
+  return h('section', { class: 'card-box' }, h('h3', {}, '🔒 Protection du stockage'), line, help, checkBtn);
+}
+
 export function dashboardScreen(nav) {
   const body = h('div', { class: 'stack' }, h('p', { class: 'note' }, 'Calcul en cours…'));
   const self = () => dashboardScreen(nav);
@@ -382,6 +415,8 @@ export function dashboardScreen(nav) {
       evaluated && safePart('Objectifs PEI', () => kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today)),
       evaluated && safePart('Parcours ABLLS-R', () => kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results)),
       safePart('Réglages parent', () => parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) })),
+      safePart('Protection du stockage', () => storageProtectionBox()),
+      safePart('Espace de stockage', () => storageWarningBox()),
       safePart('Journal ABC', () => abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self))),
       safePart('Orthophonie', () => orthoSummaryCard(orthoLogs, () => nav.openScreen(() => orthoReportScreen(nav), self))),
       safePart('Bilan ATEC', () => atecSummaryCard(atecHistory, () => nav.openScreen(() => atecScreen(nav), self))),

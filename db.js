@@ -198,6 +198,7 @@ export const putRecording = (rec) => run('recordings', 'readwrite', (s) => s.put
 export const addRecording = putRecording;
 export const deleteRecording = (id) => run('recordings', 'readwrite', (s) => s.delete(id));
 export const getRecordingsOf = (key) => run('recordings', 'readonly', (s) => s.index('key').getAll(key));
+export const getAllRecordings = () => run('recordings', 'readonly', (s) => s.getAll());
 
 // Photos personnalisées : une vraie photo par « visualKey » (émotion, personne, objet, étape de routine)
 export const getVisualOverride = (key) => run('visual_overrides', 'readonly', (s) => s.get(key));
@@ -212,6 +213,7 @@ export function putVisualOverrides(items) {
 export const getOnlineCache = (key) => run('online_cache', 'readonly', (s) => s.get(key));
 export const putOnlineCache = (rec) => run('online_cache', 'readwrite', (s) => s.put(rec));
 export const getAllOnlineKeys = () => run('online_cache', 'readonly', (s) => s.getAllKeys());
+export const getAllOnlineCache = () => run('online_cache', 'readonly', (s) => s.getAll());
 
 // Planning visuel : une coche = { id, day, ts, routineId, stepId, autonomy: 'seule' | 'rappel' } ; réglages = { id, ... }
 export const addScheduleLog = (log) => run('schedule_logs', 'readwrite', (s) => s.put(log));
@@ -262,7 +264,7 @@ export async function storageEstimate() {
   try {
     if (!navigator.storage?.estimate) return null;
     const { usage = 0, quota = 0 } = await navigator.storage.estimate();
-    return { usageMb: Math.round((usage / 1048576) * 10) / 10, quotaMb: Math.round((quota / 1048576) * 10) / 10 };
+    return { usage, quota, usageMb: Math.round((usage / 1048576) * 10) / 10, quotaMb: Math.round((quota / 1048576) * 10) / 10 };
   } catch {
     return null;
   }

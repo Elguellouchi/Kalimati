@@ -14,6 +14,8 @@ import { assignPositions, relayout } from './grid-layout.js';
 import { LANGS, isAmazighLang, langInfo, spokenUi } from './languages.js';
 import { loadLevels } from './levels.js';
 import { loadMorphologyState } from './morphology.js';
+import { backupAgeDays, backupReminderElement } from './backup-reminder.js';
+import { fallbackBannerElement } from './db-fallback.js';
 import { setActiveLang } from './section-i18n.js';
 import { TIMER_SETTING_KEY, setTimerShowNumbers } from './timer.js';
 import { h } from './util.js';
@@ -30,6 +32,44 @@ export function createBackupUi(app) {
   const renderView = (...args) => app.renderView(...args);
   const showBackupAge = (...args) => app.showBackupAge(...args);
   const state = app.state;
+  // L1-03 : rappel de sauvegarde en mode parent (jamais en mode enfant).
+  // Le bandeau est distinct de #backup-age et précède le bouton #export existant.
+  async function refreshBackupReminder() {
+    const exportBtn = $('#export');
+    if (!exportBtn) return;
+    document.getElementById('backup-reminder')?.remove();
+    if (!state.parent) return;
+    const at = await db.getSetting('lastBackupAt').catch(() => null);
+    if (!state.parent) return;
+    const reminder = backupReminderElement({
+      days: backupAgeDays(at),
+      parent: true,
+      onBackup: () => exportBtn.click(),
+    });
+    if (reminder) exportBtn.before(reminder);
+  }
+
+  // L1-07 : en mode secours, un message discret dit au parent que les cartes reviendront
+  // au prochain démarrage. Jamais en mode enfant, jamais d'alerte rouge.
+  function refreshFallbackBanner() {
+    document.getElementById('fallback-banner')?.remove();
+    if (!state.parent) return;
+    const banner = fallbackBannerElement({ parent: true });
+    const bar = document.getElementById('parent-bar');
+    if (!banner || !bar) return;
+    bar.after(banner);
+  }
+
+  // renderAll() prévient les modules du changement de mode parent (verrouillage/déverrouillage).
+  let lastParentMode = null;
+  document.addEventListener('kalimati-parent', (event) => {
+    const parent = Boolean(event?.detail?.parent);
+    if (parent === lastParentMode) return;
+    lastParentMode = parent;
+    if (parent) refreshBackupReminder().catch(() => {});
+    else document.getElementById('backup-reminder')?.remove();
+    refreshFallbackBanner();
+  });
   async function collectSettings() {
     const entries = await Promise.all(EXPORTED_SETTINGS.map(async (key) => [key, await db.getSetting(key)]));
     return Object.fromEntries(entries.filter(([, value]) => value !== undefined));
@@ -184,6 +224,7 @@ export function createBackupUi(app) {
               ? '✅ Sauvegarde envoyée. Gardez ce fichier en lieu sûr (Fichiers, Drive ou e-mail).'
               : '✅ Sauvegarde téléchargée. Vous la trouverez dans « Téléchargements » ou « Fichiers ».') + kept, false);
             showBackupAge();
+            refreshBackupReminder().catch(() => {});
           } catch (error) {
             save.disabled = false;
             showPanel(`⚠️ L’enregistrement n’a pas marché. Réessayez. (${error.message || 'erreur inconnue'})`, true);
@@ -284,6 +325,9 @@ export function createBackupUi(app) {
         window.alert(error.message || 'Sauvegarde illisible.');
       }
     };
+    // Au chargement du panneau adulte : vérifie la date de la dernière sauvegarde.
+    refreshBackupReminder().catch(() => {});
+    refreshFallbackBanner();
   }
 
   // ---------- v10.3.2 : restauration par fusion (rien n'est effacé, le plus récent du téléphone est gardé) ----------

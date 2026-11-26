@@ -7,6 +7,7 @@ import { cardAudio } from './data.js';
 import { inflectStrip } from './modules/morphology.js';
 import { amazighVoiceFor, parentAmazighVoice, packAmazighVoice } from './modules/voice-packs.js';
 import { logDiagnostic, LOG_TYPES } from './modules/error-log.js';
+import { markAudioStart, recordAudioPlaying } from './modules/startup-timing.js';
 import { isTeamMode } from './modules/network-policy.js';
 
 const RATE = 0.85;
@@ -34,7 +35,8 @@ export function stopSpeaking() {
 }
 
 // onResult(ok, raison) : v10.7.2, pour dire sur l'Accueil pourquoi une carte amazighe est restée muette.
-export function playBlob(blob, { rate = 1, onResult = null } = {}) {
+// cardId (Lot 1, L1-05) : mesure du délai entre le toucher et le début du son.
+export function playBlob(blob, { rate = 1, onResult = null, cardId = null } = {}) {
   return new Promise((resolve) => {
     const url = URL.createObjectURL(blob);
     const audio = new Audio(url);
@@ -50,8 +52,10 @@ export function playBlob(blob, { rate = 1, onResult = null } = {}) {
       if (onResult && !ok && why !== 'AbortError') onResult(false, why);
       resolve(ok);
     };
+    audio.onplaying = () => recordAudioPlaying(cardId);
     audio.onended = () => done(true);
     audio.onerror = () => done(false, `illisible ${audio.error ? audio.error.code : ''}`.trim());
+    markAudioStart(cardId);
     let started;
     try { started = audio.play(); } catch (err) { done(false, err && err.name ? err.name : 'play'); return; }
     if (started && typeof started.then === 'function') {
@@ -175,31 +179,32 @@ export function defaultVoiceUrl(card, lang) {
 }
 
 // v10.5 : si le son ne part pas (hors ligne), on le relit depuis la copie gardée dans le téléphone.
-async function playCachedUrlAsBlob(url) {
+async function playCachedUrlAsBlob(url, cardId = null) {
   try {
     if (!('caches' in window)) return false;
     const hit = await caches.match(url, { ignoreSearch: true });
     if (!hit || !hit.ok) return false;
     const blob = await hit.blob();
-    return blob && blob.size > 0 ? await playBlob(blob) : false;
+    return blob && blob.size > 0 ? await playBlob(blob, { cardId }) : false;
   } catch { return false; }
 }
 
 // Joue un fichier son ; renvoie false s'il n'a pas pu être lu (pour passer à la voix du téléphone).
-async function playUrl(url) {
-  const ok = await playUrlDirect(url);
-  return ok || playCachedUrlAsBlob(url);
+async function playUrl(url, cardId = null) {
+  const ok = await playUrlDirect(url, cardId);
+  return ok || playCachedUrlAsBlob(url, cardId);
 }
 
-function playUrlDirect(url) {
+function playUrlDirect(url, cardId = null) {
   return new Promise((resolve) => {
     const audio = new Audio(url);
     currentAudio = audio;
     let started = false;
     const done = (ok) => { if (currentAudio === audio) currentAudio = null; resolve(ok); };
-    audio.onplaying = () => { started = true; };
+    audio.onplaying = () => { started = true; recordAudioPlaying(cardId); };
     audio.onended = () => done(true);
     audio.onerror = () => done(started);
+    markAudioStart(cardId);
     audio.play().catch(() => done(false));
   });
 }
@@ -225,17 +230,17 @@ export async function sayCard(card, lang) {
   if (isAmazighLang(lang)) {
     const voice = amazighVoiceFor(lang, card.id);
     if (!voice) { noteAmazighPlay(lang, false, 'sans voix', card.id); return false; }
-    return playBlob(voice, { onResult: (ok, why) => noteAmazighPlay(lang, ok, why, card.id) });
+    return playBlob(voice, { cardId: card.id, onResult: (ok, why) => noteAmazighPlay(lang, ok, why, card.id) });
   }
   // v10.21 (Lot 1) : ordre du cahier des charges — 1) voix du parent enregistrée pour cette langue,
   // 2) voix par défaut livrée avec l'appli, 3) mot traduit dit par la voix du téléphone (TTS BCP-47
   // exact de la langue, jamais un repli muet vers le français).
   const recording = recordingFor(card, lang);
-  if (recording) return playBlob(recording);
+  if (recording) return playBlob(recording, { cardId: card.id });
   // v10.22 (Lot 2) : la voix du téléphone dit la forme vocale (Tashkeel arabe), pas le mot affiché.
   if (isExtraLang(lang)) return speak(cardSpeechText(card, lang), { lang: hasWord(card, lang) ? lang : 'fr' });
   const url = defaultVoiceUrl(card, lang);
-  if (url && await playUrl(url)) return undefined;
+  if (url && await playUrl(url, card.id)) return undefined;
   return sayWithPhoneVoice(card, lang);
 }
 

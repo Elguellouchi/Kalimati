@@ -10,7 +10,7 @@ const FILES = [
   './modules/progress.js', './modules/nour.js', './modules/timer.js', './modules/widgets.js',
   './modules/grid-layout.js', './modules/arasaac.js', './modules/spaces.js', './modules/dashboard.js',
   './modules/profil.js', './modules/visuals.js', './modules/ex-emotions.js',
-  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js', './modules/locales.js', './modules/locales-data.js', './modules/amazigh-lexicon.js', './modules/voice-packs.js', './modules/error-log.js',
+  './modules/levels.js', './modules/catalog.js', './modules/content-plus.js', './modules/online-bank.js', './modules/ex-online.js', './modules/ex-next.js', './modules/ex-schedule.js', './modules/aac-plus.js', './modules/stories.js', './modules/calm.js', './modules/languages.js', './modules/locales.js', './modules/locales-data.js', './modules/amazigh-lexicon.js', './modules/voice-packs.js', './modules/error-log.js', './modules/db-fallback.js', './modules/storage-persist.js',
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js', './modules/core-vocabulary-plan.js',
@@ -25,10 +25,12 @@ const FILES = [
   './modules/cabinet.js', './modules/followup.js', './modules/followup-schema.js',
   // v10.17 : mise à jour sans rechargement automatique
   './modules/app-update.js',
+  // Lot 1 (L1-09) : alerte parent et inventaire anonyme des gros médias
+  './modules/storage-warning.js',
   // v10.18 : migration des cartes sans identifiant historique en dur
   './modules/card-migration.js',
   // v10.23 : moteur tactile central, langue jumelle, quadrillage des émotions
-  './modules/tap-engine.js', './modules/twin-language.js', './modules/mood-meter.js', './modules/text-to-picto.js', './modules/place-boards.js', './modules/scenes.js', './modules/caregiver-tips.js', './modules/child-profiles.js', './modules/children-box.js', './modules/talk-modes.js', './modules/ortho-path.js', './modules/ortho-path-data.js', './modules/trace-sound.js', './modules/model-videos.js', './modules/wardrobe-data.js', './modules/voice-mask.js', './modules/voice-mask-data.js', './modules/strip-controller.js', './modules/views.js', './modules/talk-tools.js', './modules/backup-ui.js',
+  './modules/tap-engine.js', './modules/twin-language.js', './modules/mood-meter.js', './modules/text-to-picto.js', './modules/place-boards.js', './modules/scenes.js', './modules/caregiver-tips.js', './modules/child-profiles.js', './modules/children-box.js', './modules/talk-modes.js', './modules/ortho-path.js', './modules/ortho-path-data.js', './modules/trace-sound.js', './modules/model-videos.js', './modules/wardrobe-data.js', './modules/voice-mask.js', './modules/voice-mask-data.js', './modules/strip-controller.js', './modules/views.js', './modules/talk-tools.js', './modules/backup-ui.js', './modules/backup-reminder.js', './modules/startup-timing.js', './modules/voice-preload.js',
   // v9.14 : voix des 7 Amis (Shimmer)
   './voix/dr/ami-nour-1.mp3', './voix/dr/ami-nour-2.mp3', './voix/dr/ami-fennou-1.mp3', './voix/dr/ami-fennou-2.mp3', './voix/dr/ami-fakroun-1.mp3', './voix/dr/ami-fakroun-2.mp3', './voix/dr/ami-hmama-1.mp3', './voix/dr/ami-hmama-2.mp3', './voix/dr/ami-jmimla-1.mp3', './voix/dr/ami-jmimla-2.mp3', './voix/dr/ami-mchicha-1.mp3', './voix/dr/ami-mchicha-2.mp3', './voix/dr/ami-bouma-1.mp3', './voix/dr/ami-bouma-2.mp3', './voix/fr/ami-nour-1.mp3', './voix/fr/ami-nour-2.mp3', './voix/fr/ami-fennou-1.mp3', './voix/fr/ami-fennou-2.mp3', './voix/fr/ami-fakroun-1.mp3', './voix/fr/ami-fakroun-2.mp3', './voix/fr/ami-hmama-1.mp3', './voix/fr/ami-hmama-2.mp3', './voix/fr/ami-jmimla-1.mp3', './voix/fr/ami-jmimla-2.mp3', './voix/fr/ami-mchicha-1.mp3', './voix/fr/ami-mchicha-2.mp3', './voix/fr/ami-bouma-1.mp3', './voix/fr/ami-bouma-2.mp3',
   './assets/manifest.json', './assets/mulberry/index.json', './assets/emoji/index.json', './assets/darija-lexicon.json',
@@ -87,12 +89,11 @@ self.addEventListener('install', (event) => {
     await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
     const missing = await warmOptionalAssets(cache);
     missing.forEach((file) => cache.add(file).catch(() => {}));
-    // v10.17 : pas de skipWaiting. La nouvelle version attend que l'appli soit fermée
-    // (ou que le parent touche « Actualiser ») : aucun rechargement pendant l'utilisation.
+    // L1-08 : pas de skipWaiting à l'installation ; l'application demande l'activation en arrière-plan.
   })());
 });
 
-// v10.17 : actualisation manuelle, uniquement sur toucher explicite du parent.
+// L1-08 : l'application envoie SKIP_WAITING uniquement quand elle passe en arrière-plan.
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });

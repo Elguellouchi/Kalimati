@@ -1,4 +1,5 @@
 // Kalimati v10.27 (darija en lettres arabes par défaut ; arabe standard sur les écrans enfant ; thèmes cahier d’école, simple, noir et blanc).
+import { markStartupStart, recordFirstRender } from './modules/startup-timing.js'; // Lot 1, L1-04 : chronomètre de démarrage, le plus tôt possible
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import './modules/storage.js';
 import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
@@ -42,6 +43,8 @@ import { initCloudSyncFromUrlAndAuto, captureMagicKeyFromUrl } from './modules/c
 import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 import { APP_VERSION } from './modules/version.js';
 import { initGlobalErrorLogger, LOG_TYPES, logDiagnostic, recordRejectedTap, setDiagnosticForbiddenNames } from './modules/error-log.js';
+import { isFallbackMode, enableFallbackMode, getFallbackCards } from './modules/db-fallback.js';
+import { requestPersistentStorage } from './modules/storage-persist.js';
 import { loadOnlineLookupSetting } from './modules/online-bank.js';
 import { loadNetworkMode } from './modules/network-policy.js';
 import { setTimerShowNumbers, TIMER_SETTING_KEY } from './modules/timer.js';
@@ -55,6 +58,9 @@ import { createTalkTools } from './modules/talk-tools.js';
 import { createStripController } from './modules/strip-controller.js';
 import { createViews } from './modules/views.js';
 import { createBackupUi } from './modules/backup-ui.js';
+
+// Lot 1, L1-04 : départ du chronomètre au tout début du script (les imports ES sont déjà chargés ici).
+markStartupStart();
 
 const HOLD_TO_UNLOCK_MS = 3000;
 const MAX_STRIP = 8;
@@ -168,7 +174,8 @@ function playCardVideo(card) {
 // Mode « Je montre » : l'adulte montre les mots sans remplir la phrase de l'enfant.
 function onCardTap(card, element) {
   // v10.15 : pendant « Explorer 30 s », le parent touche une carte pour la faire parler (pas d'éditeur).
-  if (state.parent) { if (exploreActive()) { stopSpeaking(); sayCard(card, state.lang); return; } editCard(card); return; }
+  // L1-07 : en mode secours, la base ne répond pas : on parle la carte sans ouvrir l'éditeur (lecture seule).
+  if (state.parent) { if (exploreActive() || isFallbackMode()) { stopSpeaking(); sayCard(card, state.lang); return; } editCard(card); return; }
   tapFeedback(element);
   stopSpeaking();
   sayCard(card, state.lang);
@@ -211,7 +218,7 @@ function renderView() {
   if (state.space === 'home') { view.replaceChildren(homeScreen()); return; }
   if (state.space === 'clinique') { view.replaceChildren(clinicHome({ lang: state.lang, cards: state.cards, parent: state.parent })); return; }
   if (state.space === 'cabinet') { view.replaceChildren(cabinetScreen({ parent: state.parent })); return; }
-  if (state.space === 'talk') { view.replaceChildren(renderTalk()); return; }
+  if (state.space === 'talk') { view.replaceChildren(renderTalk()); recordFirstRender(); return; }
   if (state.space === 'session') { nav.openSession(); return; }
   if (state.space === 'routines') { nav.openRoutines(); return; }
   if (state.space === 'emotions') { nav.openEmotions(); return; }
@@ -264,7 +271,8 @@ function renderAll() {
 
 // ---------- Bouton permanent 🚽 Toilettes (X.1) ----------
 async function renderToiletCount() {
-  const count = (await todayTrials('X.1')).filter((t) => t.result === 'plus').length;
+  // L1-07 : en mode secours, on n'interroge pas une base qui ne répond pas.
+  const count = isFallbackMode() ? 0 : (await todayTrials('X.1')).filter((t) => t.result === 'plus').length;
   $('#toilet-count').textContent = state.parent ? `${count}/4` : '';
   // v10.24 : l'étiquette était écrite en dur « Toilettes / Bit lma » : elle ne suivait jamais la langue.
   // Elle prend maintenant le mot de la carte dans la langue choisie — en darija, en lettres arabes.
@@ -300,6 +308,7 @@ function setupToilet() {
 // Rappel planifié X.3 : bandeau doux, sans son agressif.
 let reminderShown = false;
 async function checkReminder() {
+  if (isFallbackMode()) return; // L1-07 : base indisponible, on n'essaie pas de lire le rappel
   const reminder = await toiletReminder.get();
   const banner = $('#reminder');
   if (!reminder.next || Date.now() < reminder.next) { banner.hidden = true; reminderShown = false; return; }
@@ -337,11 +346,19 @@ function setupLock() {
   let unlockedAt = 0;
   const RELOCK_GUARD_MS = 1500; // v10.4 : pas de reverrouillage accidentel juste après l'ouverture
   const cancel = () => { clearTimeout(timer); timer = null; lock.classList.remove('holding'); };
+  // Lot 1 (L1-01) : au premier déverrouillage, demander au téléphone de garder les cartes pour de bon.
+  const unlockParent = () => {
+    state.parent = true;
+    renderAll();
+    db.getSetting('storagePersisted')
+      .then((saved) => { if (saved === null || saved === undefined) return requestPersistentStorage(); })
+      .catch(() => {});
+  };
   lock.addEventListener('pointerdown', (e) => {
     if (state.parent) return;
     try { lock.setPointerCapture(e.pointerId); } catch { /* ancien navigateur */ }
     lock.classList.add('holding');
-    timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+    timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); unlockParent(); }, HOLD_TO_UNLOCK_MS);
   });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => lock.addEventListener(type, cancel));
   // v10.5 (A05) : au clavier, garder Entrée ou Espace enfoncé 3 secondes.
@@ -349,7 +366,7 @@ function setupLock() {
     if ((e.key === 'Enter' || e.key === ' ') && !state.parent && !timer) {
       e.preventDefault();
       lock.classList.add('holding');
-      timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+      timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); unlockParent(); }, HOLD_TO_UNLOCK_MS);
     }
   });
   lock.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') cancel(); });
@@ -427,14 +444,20 @@ async function loadCards() {
   return placed;
 }
 
-async function init() {
-  captureMagicKeyFromUrl(); // v10.5 : la clé du lien #key= quitte l'adresse avant toute autre chose
-  // v10.8 : journal d'erreurs local (dans le téléphone, anonyme : ni prénom, ni voix, ni photo, ni phrase, ni clé).
-  initGlobalErrorLogger({
-    getContext: () => ({ v: APP_VERSION, lang: state.lang || 'fr', space: state.space || 'home', online: typeof navigator !== 'undefined' ? Boolean(navigator.onLine) : true }),
+// Lot 1, L1-07 : la voix de l'enfant ne doit jamais tomber en panne. Si la base du téléphone ne répond pas
+// en 6 s (Safari iPhone qui endort IndexedDB, verrou de fichier), on bascule en mode secours : cartes de
+// départ et voix intactes, jamais un écran vide.
+const DB_STARTUP_TIMEOUT_MS = 6000;
+
+function withinStartupBudget(promise, ms) {
+  let timer = 0;
+  const limit = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('idb_startup_timeout')), ms);
   });
-  window.addEventListener('kalimati-diagnostic', (e) => { if (e?.detail?.type) logDiagnostic(e.detail.type, e.detail.detail, e.detail); });
-  nav.attach($('#view'));
+  return Promise.race([promise, limit]).finally(() => clearTimeout(timer));
+}
+
+async function loadInitialState() {
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies
@@ -491,7 +514,27 @@ async function init() {
   setTimerShowNumbers((await db.getSetting(TIMER_SETTING_KEY)) === true);
   applyUppercase((await db.getSetting(UPPERCASE_SETTING_KEY)) === true);
   await loadLevels();
-  state.cards = await loadCards();
+  const cards = await loadCards();
+  // Le délai de 6 s a pu déjà basculer en mode secours : les cartes du téléphone ne remplacent
+  // alors plus les cartes de secours (elles reviendront au prochain démarrage, comme annoncé).
+  if (!isFallbackMode()) state.cards = cards;
+}
+
+async function init() {
+  captureMagicKeyFromUrl(); // v10.5 : la clé du lien #key= quitte l'adresse avant toute autre chose
+  // v10.8 : journal d'erreurs local (dans le téléphone, anonyme : ni prénom, ni voix, ni photo, ni phrase, ni clé).
+  initGlobalErrorLogger({
+    getContext: () => ({ v: APP_VERSION, lang: state.lang || 'fr', space: state.space || 'home', online: typeof navigator !== 'undefined' ? Boolean(navigator.onLine) : true }),
+  });
+  window.addEventListener('kalimati-diagnostic', (e) => { if (e?.detail?.type) logDiagnostic(e.detail.type, e.detail.detail, e.detail); });
+  nav.attach($('#view'));
+  try {
+    await withinStartupBudget(loadInitialState(), DB_STARTUP_TIMEOUT_MS);
+  } catch (err) {
+    enableFallbackMode(err);
+    state.cards = getFallbackCards();
+  }
+  // L1-07 : le mode secours n'interrompt jamais l'interface : l'enfant garde ses cartes et sa voix.
   setupLock(); setupParentBar(); setupParentPanel(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
   ['touchend', 'click'].forEach((type) => { document.addEventListener(type, unlockAudio); document.addEventListener(type, unlockSounds); });
@@ -531,7 +574,9 @@ async function init() {
     state.space = 'progress';
     renderSpaces();
     nav.openScreen(() => superAdminScreen(nav));
-  } else {
+  } else if (!isFallbackMode()) {
+    // L1-07 : en mode secours, la base ne répond pas : on n'ouvre pas l'assistant d'invitation
+    // (il lirait la base) et l'écran de secours reste affiché.
     await checkUrlInvite({
       onConfigured: async () => {
         await loadContext();
@@ -554,9 +599,7 @@ async function init() {
   window.addEventListener('online', amazighPackSoon);
   // v10.7.2 : un téléchargement coupé (appli mise en arrière-plan) reprend au retour dans l'appli.
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') amazighPackSoon(); });
-  // v10.17 : la mise à jour ne recharge plus jamais la page toute seule (sur iPhone, cela
-  // pouvait laisser l'écran vide et se répéter). Elle s'active à la prochaine ouverture,
-  // ou sur toucher du parent depuis Progrès → Mise à jour de l'application.
+  // L1-08 : la nouvelle version s'applique seulement quand l'application passe en arrière-plan.
   startAppUpdateWatch();
 }
 

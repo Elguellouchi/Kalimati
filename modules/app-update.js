@@ -1,19 +1,26 @@
-// 🔄 Mise à jour de l'application : jamais automatique.
-// Sur iPhone, un rechargement forcé au changement de version pouvait laisser IndexedDB
-// endormie (écran vide) et se répéter. Désormais la nouvelle version s'installe en
-// attente ; elle s'active au prochain lancement, ou quand le parent touche « Actualiser ».
+// L1-08 : activation et rechargement uniquement quand l'application passe en arrière-plan.
 import { APP_VERSION } from './version.js';
 import { h } from './util.js';
 
 let registration = null;
 let applying = false;
+let reloadPending = false;
+
+function activateWaiting() {
+  if (!registration?.waiting || applying) return;
+  // Ne pas remplacer un worker tiers qui contrôlerait déjà cette portée.
+  if (registration.active && !registration.active.scriptURL.endsWith('/sw.js')) return;
+  applying = true;
+  registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+}
 
 export function startAppUpdateWatch() {
   if (!('serviceWorker' in navigator)) return;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (!applying) return;
     applying = false;
-    location.reload();
+    if (document.visibilityState === 'hidden') location.reload();
+    else reloadPending = true;
   });
   navigator.serviceWorker.register('./sw.js', {
     updateViaCache: 'none',
@@ -21,22 +28,22 @@ export function startAppUpdateWatch() {
   }).then((reg) => {
     registration = reg;
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      if (document.visibilityState === 'visible') {
+        reg.update().catch(() => {});
+        return;
+      }
+      if (reloadPending) {
+        reloadPending = false;
+        location.reload();
+        return;
+      }
+      activateWaiting();
     });
   }).catch(() => { /* hors ligne ou service worker indisponible : l'appli marche quand même */ });
 }
 
 export function updateBox() {
-  const status = h('p', { class: 'note' }, `Version ${APP_VERSION} · une nouvelle version s'installe toute seule et s'active à la prochaine ouverture.`);
-  const apply = h('button', { type: 'button', class: 'btn primary', onclick: () => {
-    if (!registration?.waiting) return;
-    applying = true;
-    status.textContent = 'Actualisation…';
-    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-    // Relance de secours après un toucher explicite, si le navigateur ne signale pas la prise de main.
-    setTimeout(() => { if (applying) { applying = false; location.reload(); } }, 4000);
-  } }, '🔄 Actualiser maintenant');
-  apply.hidden = true;
+  const status = h('p', { class: 'note' }, `Version ${APP_VERSION} · une nouvelle version s'applique quand l'application passe en arrière-plan.`);
   const check = h('button', { type: 'button', class: 'btn ghost', onclick: async () => {
     status.textContent = 'Recherche de mise à jour…';
     if (!registration) {
@@ -47,12 +54,11 @@ export function updateBox() {
     }
     try { await registration.update(); } catch { /* réseau absent : on garde la version actuelle */ }
     if (registration.waiting) {
-      status.textContent = 'Une nouvelle version est prête.';
-      apply.hidden = false;
+      status.textContent = 'Une nouvelle version est prête. Elle s’appliquera quand l’application passera en arrière-plan.';
       return;
     }
     status.textContent = `Vous êtes à jour (version ${APP_VERSION}).`;
-    apply.hidden = true;
-  } }, '🔎 Vérifier une mise à jour');
-  return h('section', { class: 'card-box' }, h('h3', {}, '🔄 Mise à jour de l’application'), status, h('div', { class: 'row' }, check, apply));
+  },
+  }, '🔎 Vérifier une mise à jour');
+  return h('section', { class: 'card-box' }, h('h3', {}, '🔄 Mise à jour de l’application'), status, h('div', { class: 'row' }, check));
 }
