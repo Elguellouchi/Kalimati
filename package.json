@@ -1,6 +1,6 @@
 {
   "name": "kalimati",
-  "version": "10.48",
+  "version": "10.49",
   "private": true,
   "type": "module",
   "description": "Application de communication alternative et de suivi éducatif, utilisable hors ligne.",

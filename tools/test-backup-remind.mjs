@@ -22,7 +22,7 @@ class FakeNode {
   constructor(tag = 'div') {
     this.tagName = String(tag).toUpperCase();
     this.className = '';
-    this.style = {};
+    this.style = { setProperty(key, value) { this[key] = String(value); } };
     this.dataset = {};
     this.attributes = new Map();
     this.children = [];
