@@ -13,6 +13,7 @@
  */
 
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -126,6 +127,13 @@ await check('40 cartes au plus, une même adresse une seule fois', async () => {
   assert.equal(preloadVisibleVoices([dup, dup], 'fr'), 1, 'une même adresse n’est demandée qu’une fois');
   await tick();
   assert.equal(calls.length, before + 1);
+});
+
+await check('Vue Parler : pré-chargement branché juste après le rendu de la grille', () => {
+  const views = fs.readFileSync(path.join(ROOT, 'modules/views.js'), 'utf8');
+  assert.match(views, /from '\.\/voice-preload\.js'/);
+  assert.match(views, /preloadVisibleVoices\(visibleCards, state\.lang, \{ getDefaultUrl:/);
+  assert.match(views, /boardCards\.filter\(visibleFor\)/);
 });
 
 console.log(`\n🎉 test-voice-preload : OK (${passed} vérifications).`);
