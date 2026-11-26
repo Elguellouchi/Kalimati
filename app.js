@@ -42,6 +42,7 @@ import { initCloudSyncFromUrlAndAuto, captureMagicKeyFromUrl } from './modules/c
 import { checkUrlInvite, openSetupWizard, superAdminScreen } from './modules/admin-beta.js';
 import { APP_VERSION } from './modules/version.js';
 import { initGlobalErrorLogger, LOG_TYPES, logDiagnostic, recordRejectedTap, setDiagnosticForbiddenNames } from './modules/error-log.js';
+import { requestPersistentStorage } from './modules/storage-persist.js';
 import { loadOnlineLookupSetting } from './modules/online-bank.js';
 import { loadNetworkMode } from './modules/network-policy.js';
 import { setTimerShowNumbers, TIMER_SETTING_KEY } from './modules/timer.js';
@@ -337,11 +338,19 @@ function setupLock() {
   let unlockedAt = 0;
   const RELOCK_GUARD_MS = 1500; // v10.4 : pas de reverrouillage accidentel juste après l'ouverture
   const cancel = () => { clearTimeout(timer); timer = null; lock.classList.remove('holding'); };
+  // Lot 1 (L1-01) : au premier déverrouillage, demander au téléphone de garder les cartes pour de bon.
+  const unlockParent = () => {
+    state.parent = true;
+    renderAll();
+    db.getSetting('storagePersisted')
+      .then((saved) => { if (saved === null || saved === undefined) return requestPersistentStorage(); })
+      .catch(() => {});
+  };
   lock.addEventListener('pointerdown', (e) => {
     if (state.parent) return;
     try { lock.setPointerCapture(e.pointerId); } catch { /* ancien navigateur */ }
     lock.classList.add('holding');
-    timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+    timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); unlockParent(); }, HOLD_TO_UNLOCK_MS);
   });
   ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((type) => lock.addEventListener(type, cancel));
   // v10.5 (A05) : au clavier, garder Entrée ou Espace enfoncé 3 secondes.
@@ -349,7 +358,7 @@ function setupLock() {
     if ((e.key === 'Enter' || e.key === ' ') && !state.parent && !timer) {
       e.preventDefault();
       lock.classList.add('holding');
-      timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); state.parent = true; renderAll(); }, HOLD_TO_UNLOCK_MS);
+      timer = setTimeout(() => { cancel(); unlockedAt = Date.now(); unlockParent(); }, HOLD_TO_UNLOCK_MS);
     }
   });
   lock.addEventListener('keyup', (e) => { if (e.key === 'Enter' || e.key === ' ') cancel(); });
