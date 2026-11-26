@@ -3,44 +3,35 @@
 - **Date :** 2026-11-26
 - **Branche :** `lot-1-fiabilite`
 - **Ancêtre vérifié :** `c3060ab`
-- **Périmètre en cours :** L1-01 et L1-02 (Tâche 1 : stockage persistant et indicateur Progrès)
+- **Périmètre validé :** Tâche 1 (L1-01, L1-02) et Tâche 2 (L1-03).
 
 ## Ce qui change pour la famille
 
-Quand le parent ouvre le mode adulte pour la première fois, Kalimati demande au téléphone de garder les cartes « pour de bon », afin que le téléphone ne les efface pas tout seul quand il manque d’espace mémoire.
-
-Dans « Progrès » (accessible par le cadenas parent), une nouvelle boîte claire indique :
-- « Stockage protégé : oui » si le téléphone a accepté de verrouiller les données ;
-- « Stockage protégé : non » si ce n’est pas garanti. Sur iPhone et iPad, un conseil simple s'affiche alors : « Ajoutez Kalimati à l’écran d’accueil pour protéger vos données. »
+1. **Protection des cartes de l’enfant (L1-01, L1-02) :** Au premier déverrouillage parent, Kalimati demande au téléphone de garder les cartes « pour de bon ». Dans « Progrès », une boîte indique « Stockage protégé : oui / non » avec conseil iOS si non protégé.
+2. **Rappel de sauvegarde (L1-03) :** Quand le parent ouvre le mode adulte, si aucune sauvegarde n’a été faite ou si la dernière date de plus de 14 jours, un bandeau apparaît au-dessus du bouton « 💾 Sauvegarder » : « ⚠️ Aucune sauvegarde sur ce téléphone » ou « ⚠️ Dernière sauvegarde il y a N jours », avec un bouton « Faire une sauvegarde maintenant » (même logique que le bouton Sauvegarder). En mode enfant, rien n’apparaît. Après sauvegarde, le bandeau disparaît.
 
 Rien ne part sur internet : les données restent strictement sur l’appareil.
 
 ## Exigences faites
 
-- **L1-01 — Stockage persistant :**
-  - Création du module `modules/storage-persist.js`.
-  - Fonction `requestPersistentStorage()` qui appelle `navigator.storage.persist()`.
-  - Enregistrement du résultat (`true`, `false` ou `'unsupported'`) dans les réglages IndexedDB (`storagePersisted`).
-  - Déclenchement automatique au premier déverrouillage parent dans `app.js`.
-  - Prise en charge des erreurs avec journalisation locale anonyme dans `error-log.js` (`STORAGE_QUOTA`).
-- **L1-02 — Affichage Progrès :**
-  - Ajout de la boîte `storageProtectionBox()` dans `modules/dashboard.js`.
-  - Ligne d'état « Stockage protégé : oui / non » avec bouton de test manuel si non déterminé.
-  - Détection contextuelle iOS avec conseil d'ajout à l'écran d'accueil.
-- **Mise en cache hors ligne :**
-  - `./modules/storage-persist.js` ajouté à `FILES` dans `sw.js`.
+- **L1-01 — Stockage persistant :** Module `storage-persist.js`, `requestPersistentStorage()`, enregistrement `storagePersisted` (`true`/`false`/`’unsupported’`), déclenchement au déverrouillage parent, log `STORAGE_QUOTA` sans donnée personnelle.
+- **L1-02 — Affichage Progrès :** Boîte `storageProtectionBox()` dans `dashboard.js`, état « Stockage protégé : oui / non », aide iOS contextuelle, bouton test manuel.
+- **L1-03 — Rappel de sauvegarde si > 14 jours :**
+  - Module `modules/backup-reminder.js` (logique pure testable) : `BACKUP_REMIND_DAYS = 14`, `backupAgeDays()`, `backupReminderNeeded()`, `backupReminderElement()` (bandeau `id="backup-reminder"`, `role="alert"`, bouton primaire).
+  - Branchement dans `backup-ui.js` : `refreshBackupReminder()` au chargement, sur événement `kalimati-parent` et après sauvegarde réussie. Le bouton appelle `exportBtn.click()` (aucune duplication de logique).
+- **Mise en cache hors ligne :** `storage-persist.js` et `backup-reminder.js` ajoutés à `FILES` dans `sw.js`.
 - **Tests unitaires :**
-  - `tools/test-storage-persist.mjs` vérifie les 8 cas (API absente, persist accordé, refusé, erreur, non-régression de relecture, vérification état réel, module en cache, présence dans Progrès et app.js).
-  - Intégré dans `package.json` à la suite `npm test`.
+  - `test-storage-persist.mjs` : 8 vérifications.
+  - `test-backup-remind.mjs` : 9 vérifications (mode enfant, jamais sauvegardé, 14/15 jours, 13 jours, bouton export, branchement, cache SW).
+  - Intégrés dans `package.json` (ordre : `test-storage-persist.mjs` puis `test-backup-remind.mjs`).
 
 ## Exigences non faites et pourquoi
 
-Les exigences suivantes du Lot 1 font l'objet des tâches suivantes du lot :
-- **L1-03** (Rappel de sauvegarde si > 14 jours) : Tâche 2.
-- **L1-04 & L1-05** (Budgets de démarrage et du son) & **L1-06** (Pré-chargement des voix) : Tâche 3.
+Les exigences restantes du Lot 1 feront l’objet des tâches 3 à 6 :
+- **L1-04 & L1-05** (Budgets de démarrage < 1,5s et du son < 300ms) & **L1-06** (Pré-chargement des voix) : Tâche 3.
 - **L1-07** (Mode secours IndexedDB 6s) : Tâche 4.
-- **L1-08** (Mise à jour sans coupure en arrière-plan) : vérifié lors de l'intégration globale.
-- **L1-09** (Détection d'espace plein > 85%) : Tâche 5.
+- **L1-08** (Mise à jour sans coupure en arrière-plan) : vérifié lors de l’intégration globale.
+- **L1-09** (Détection d’espace plein > 85%) : Tâche 5.
 - **L1-10** (Tests E2E de non-régression sur cas limites) : Tâche 6.
 
 ## Tests lancés et résultat
@@ -54,18 +45,18 @@ Résultat : **Succès (code de sortie 0)**.
 
 Extrait réel des 20 dernières lignes de `test.log` :
 ```text
-test-pluriel : OK
-test-storage : OK
-✅ API absente -> « unsupported » enregistré
-✅ persist() accordé -> true enregistré
-✅ persist() refusé -> false enregistré
-✅ persist() en erreur -> false enregistré et signalé au journal
-✅ Statut déjà connu : relecture sans écraser le réglage (non-régression)
-✅ Aucun réglage : vérifie l’état réel du navigateur et l’enregistre
-✅ Aucun réglage et aucune API : "pas encore déterminé" (null)
-✅ Le module est gardé hors ligne et affiché dans Progrès
-
 🎉 test-storage-persist : OK (8 vérifications).
+✅ Constante : rappel à partir de 14 jours
+✅ Age : null quand jamais sauvegardé, jours entiers sinon
+✅ Mode enfant : aucun rappel, même sans sauvegarde
+✅ Jamais sauvegardé (mode parent) : rappel visible avec bouton
+✅ Sauvegarde de 15 jours (mode parent) : rappel visible
+✅ Bord exact de 14 jours : rappel visible
+✅ Sauvegarde de moins de 14 jours : aucun rappel
+✅ Le bouton déclenche la logique d’export (équivalent à un clic sur #export)
+✅ Branchement : panneau parent -> #export, et module gardé hors ligne
+
+🎉 test-backup-remind : OK (9 vérifications).
 REFUSÉ G0 — commentaire seul
 REFUSÉ G0 — premier écouteur fetch non gardé
 REFUSÉ G0 — gestionnaire onfetch non gardé
@@ -82,9 +73,9 @@ test-cache-scope : OK
 ## Vérifié sur quels appareils
 
 - Tests unitaires automatisés Node 22 sous Windows.
-- Tests de simulation du navigateur (faux IndexedDB et pilotage de `navigator.storage`).
+- Tests de simulation du navigateur (faux IndexedDB, faux DOM, pilotage de `navigator.storage`).
 
 ## Questions pour Aziz
 
-1. Validez-vous le premier commit de la Tâche 1 (L1-01 et L1-02) sur la branche `lot-1-fiabilite` ?
-2. Souhaitez-vous enchaîner directement sur la Tâche 2 (L1-03 : rappel de sauvegarde après 14 jours sans sauvegarde) ?
+1. Validez-vous le commit des Tâches 1 et 2 (L1-01, L1-02, L1-03) sur la branche `lot-1-fiabilite` ?
+2. Souhaitez-vous enchaîner sur la Tâche 3 (L1-04, L1-05, L1-06 : budgets de démarrage, du son et pré-chargement des voix) ?
