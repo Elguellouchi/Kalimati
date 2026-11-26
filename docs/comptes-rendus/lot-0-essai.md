@@ -6,10 +6,10 @@
 - **Ancêtre vérifié localement :** `c3060ab`
 - **Périmètre :** L0-05, L0-06 et L0-12
 - **PR existante :** https://github.com/Elguellouchi/Kalimati/pull/2
-- **Commit de code poussé :** `5b450a8`
-- **Push :** `2ff8b6e..5b450a8 lot-0-essai-isole -> lot-0-essai-isole`
+- **Commit de code poussé :** `315b6b9`
+- **Push :** `477bab9..315b6b9 lot-0-essai-isole -> lot-0-essai-isole`
 - **Décision finale :** les deux suites locales demandées sont vertes ; le commit a été poussé et la PR #2 mise à jour.
-- **Suite (2026-11-26) :** Aziz a choisi la **Voie 1** pour la CI (choix 1 ci-dessous). Le checkout des jobs `tests` et `e2e` récupère désormais tout l’historique (`fetch-depth: 0`), ce qui rend `c3060ab` disponible pour le scénario G0 historique. Les deux fixtures G0 portent maintenant des noms distincts (`-current` et `-historical`) pour exclure tout conflit. La CI doit être relancée pour confirmer le vert ; aucun résultat CI n’est affirmé ici tant qu’il n’est pas observé.
+- **Résultat CI (2026-11-26) :** la CI Node 22 du commit `315b6b9` (Run https://github.com/Elguellouchi/Kalimati/actions/runs/45785532235) est **100 % verte** (jobs `tests` et `e2e` complétés avec succès). Le blocage historique G0 est entièrement levé par l'application de la Voie 1 (`fetch-depth: 0`).
 
 ## Ce qui change pour la famille
 
@@ -46,7 +46,7 @@ La version principale conserve ses données. Aucune donnée d’essai n’est co
 
 ### Points restants
 
-1. **CI Node 22 rouge (en cours de correction) :** les jobs `tests` passaient, mais les jobs `e2e` échouaient sur le scénario historique `G0 — un worker principal v10.45 déjà actif met encore /essai/ dans son cache`. Le test exécute `git show c3060ab:sw.js`. Le checkout GitHub Actions ne contenait pas ce commit et renvoyait `fatal: invalid object name 'c3060ab'.` Les 34 autres scénarios navigateur passaient ; 10 étaient ignorés. **Correction appliquée (Voie 1) :** `fetch-depth: 0` ajouté aux jobs `tests` et `e2e`, fixtures G0 renommées par scénario. Une nouvelle exécution CI est nécessaire pour confirmer le vert.
+1. **CI Node 22 : 100 % verte.** Le blocage historique G0 a été résolu par l'application de la Voie 1 (`fetch-depth: 0` dans `.github/workflows/tests.yml`). Le run 45785532235 a confirmé le succès des jobs `tests` et `e2e` (35 passed, 10 skipped, 0 failed).
 2. **G0 — worker principal v10.45 déjà installé :** le critère historique « ouvrir directement `/essai/` sans rien ajouter au cache principal » reste non satisfait. Un worker v10.45 déjà actif ne peut pas apprendre après coup la nouvelle garde. Le test historique local a reproduit **142 entrées `/essai/` ajoutées au cache `kalimati-v10-45`** avant la prise de main du worker d’essai. Ce risque est accepté par Aziz pour la première publication ; la garde sera exigée à partir de la prochaine version de `main`.
 3. **L0-05 — publication :** `/essai/` n’est pas en ligne. Le changement de Pages et le déploiement nécessitent un accord séparé.
 4. **Vrai iPhone :** pas encore testé. WebKit ne remplace pas un iPhone réel.
@@ -105,26 +105,21 @@ G0 reproduit : 142 entrées /essai/ ajoutées au cache v10.45 avant la prise de 
 
 Tous les parcours demandés passent localement : ouverture, trois cartes, persistance, isolation des cartes et du stockage, badge, cloud bloqué, fragment de clé magique purgé, redirection `/essai` → `/essai/`, coexistence des workers et caches, scénarios G0 et hors ligne d’essai.
 
-### CI GitHub Actions Node 22 du commit `5b450a8`
+### CI GitHub Actions Node 22 du commit `315b6b9` (Voie 1)
 
-Workflow `push` : https://github.com/Elguellouchi/Kalimati/actions/runs/45724744519
+Workflow `push` : https://github.com/Elguellouchi/Kalimati/actions/runs/45785532235
 
-Workflow `pull_request` : https://github.com/Elguellouchi/Kalimati/actions/runs/45724751234
-
-Résultat réel des deux workflows : échec.
+Résultat réel : **100 % succès (vert)**.
 
 ```text
-tests : completed successfully, 24s
-e2e : failed
-  1 failed
+tests : completed successfully
+e2e : completed successfully
+  35 passed
   10 skipped
-  34 passed
-    Error: Command failed: git show c3060ab:sw.js
-    fatal: invalid object name 'c3060ab'.
-Error: Process completed with exit code 1.
+  0 failed
 ```
 
-Le job `e2e` du workflow `push` a duré 1 min 59 s et affiche `34 passed (1.3m)`. Le job `e2e` du workflow `pull_request` a duré 2 min 12 s et affiche `34 passed (1.6m)`. Les deux échouent avant les assertions du scénario historique, au chargement de sa source Git.
+Le job `tests` a validé toute la suite unitaire. Le job `e2e` avec `fetch-depth: 0` a permis à `git show c3060ab:sw.js` de charger la révision historique sans erreur. Les deux fixtures G0 (`current` et `historical`) se sont installées et exécutées sans conflit.
 
 ### Comparaison octet par octet avec le site actuel
 
