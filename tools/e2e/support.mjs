@@ -43,12 +43,12 @@ export async function trialCacheName(page) {
     (await caches.keys()).find((name) => name === 'kalimati-essai-v10-47') || null);
 }
 
-export async function installMainWorkerFixture(page, source) {
+export async function installMainWorkerFixture(page, source, label = 'main') {
   const localRoot = fileURLToPath(new URL('../../', import.meta.url));
   const root = process.env.SERVE_ROOT
     ? path.resolve(process.env.SERVE_ROOT)
     : path.resolve(localRoot, '..', `${path.basename(localRoot)}-e2e`, '_site');
-  const filename = `g0.main-worker-fixture-${process.pid}.js`;
+  const filename = `g0.main-worker-fixture-${process.pid}-${label}.js`;
   const fixturePath = path.join(root, filename);
   const fixtureUrl = `/${filename}`;
   const cleanup = () => rmSync(fixturePath, { force: true });

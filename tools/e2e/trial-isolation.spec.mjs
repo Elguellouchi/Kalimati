@@ -386,7 +386,7 @@ test('G0 navigateur — le worker principal v10.47 ignore /essai/ sans worker d�
   })());
 });`);
   if (withoutInstall === source) throw new Error('Le gestionnaire install du worker courant n’a pas été isolé.');
-  const cleanup = await installMainWorkerFixture(page, withoutInstall);
+  const cleanup = await installMainWorkerFixture(page, withoutInstall, 'current');
   try {
     await openTalkGrid(page);
     await waitCachedApp(page);
@@ -394,7 +394,7 @@ test('G0 navigateur — le worker principal v10.47 ignore /essai/ sans worker d�
     expect(before.length).toBeGreaterThan(0);
 
     await openTrialTalkGrid(page);
-    expect(await trialController(page)).toMatch(/\.main-worker-fixture-\d+\.js$/);
+    expect(await trialController(page)).toMatch(/\.main-worker-fixture-\d+-current\.js$/);
     expect(await page.evaluate(async () =>
       (await navigator.serviceWorker.getRegistration('/essai/'))?.scope || '')).not.toMatch(/\/essai\/$/);
     expect(await trialCacheName(page)).toBeNull();
@@ -437,7 +437,7 @@ test('G0 — un worker principal v10.45 déjà actif met encore /essai/ dans son
     await cache.addAll(FILES.map((file) => new Request(file, { cache: 'no-cache' })));
   })());
 });`);
-  const cleanup = await installMainWorkerFixture(page, historicalSource);
+  const cleanup = await installMainWorkerFixture(page, historicalSource, 'historical');
   try {
     await openTalkGrid(page);
     await waitCachedApp(page);

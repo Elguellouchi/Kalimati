@@ -8,7 +8,8 @@
 - **PR existante :** https://github.com/Elguellouchi/Kalimati/pull/2
 - **Commit de code poussé :** `5b450a8`
 - **Push :** `2ff8b6e..5b450a8 lot-0-essai-isole -> lot-0-essai-isole`
-- **Décision finale :** les deux suites locales demandées sont vertes ; le commit a été poussé et la PR #2 mise à jour. La CI Node 22 est rouge sur un seul scénario historique G0 car son checkout ne contient pas `c3060ab`. Arrêt sans nouvelle correction, conformément à la règle d’arrêt.
+- **Décision finale :** les deux suites locales demandées sont vertes ; le commit a été poussé et la PR #2 mise à jour.
+- **Suite (2026-11-26) :** Aziz a choisi la **Voie 1** pour la CI (choix 1 ci-dessous). Le checkout des jobs `tests` et `e2e` récupère désormais tout l’historique (`fetch-depth: 0`), ce qui rend `c3060ab` disponible pour le scénario G0 historique. Les deux fixtures G0 portent maintenant des noms distincts (`-current` et `-historical`) pour exclure tout conflit. La CI doit être relancée pour confirmer le vert ; aucun résultat CI n’est affirmé ici tant qu’il n’est pas observé.
 
 ## Ce qui change pour la famille
 
@@ -37,7 +38,7 @@ La version principale conserve ses données. Aucune donnée d’essai n’est co
 - **Contrôle G0 durci :** le contrôle exécute le vrai worker dans un environnement de service worker réaliste, conserve tous les écouteurs `fetch`, attend leurs promesses et leurs effets, refuse `onfetch` et `TRIAL=true`, puis sonde des chemins non listés, navigations, paramètres, plages et répétitions.
 - **Régression G0 :** huit contournements reproduits en rouge sont refusés : commentaire seul, premier écouteur non gardé, `onfetch` non gardé, transport différé dans `waitUntil`, branche gardée seulement hors navigateur, chemin non listé, navigation interceptée et interception à la deuxième requête. Le forçage `TRIAL=true` est également refusé.
 - **Lancement E2E autonome :** `playwright.config.js` démarre `tools/serve.mjs --artifact` ; sans `SERVE_ROOT`, ce mode construit `_site` dans un dossier frère puis le sert. Un serveur existant n’est plus réutilisé.
-- **Fixtures G0 :** les fichiers temporaires sont écrits dans le dossier réellement servi, avec le nom `g0.main-worker-fixture-<pid>.js`, sans point au début. Aucune vérification métier n’a été modifiée.
+- **Fixtures G0 :** les fichiers temporaires sont écrits dans le dossier réellement servi, avec le nom `g0.main-worker-fixture-<pid>-<label>.js` (`current` ou `historical`), sans point au début. Les deux scénarios G0 n’écrasent donc plus la même fixture. Aucune vérification métier n’a été modifiée.
 - **Décision G0 :** Aziz accepte, pour la première publication, le risque lié à un worker principal `v10.45` déjà installé. `check-pages-root.mjs` exige alors seulement l’égalité octet par octet de `sw.js` et `index.html` avec le site public. La garde G0 reste dans le code et les tests et sera exigée à partir de la prochaine version de `main` avec `--require-main-guard`. Cette décision est consignée dans `docs/PUBLIER.md` et dans la Spec.
 - **Publication documentée :** `docs/PUBLIER.md` impose le lancement manuel immédiat du workflow après le passage autorisé de Pages sur GitHub Actions.
 
@@ -45,7 +46,7 @@ La version principale conserve ses données. Aucune donnée d’essai n’est co
 
 ### Points restants
 
-1. **CI Node 22 rouge :** les jobs `tests` passent, mais les jobs `e2e` échouent sur le scénario historique `G0 — un worker principal v10.45 déjà actif met encore /essai/ dans son cache`. Le test exécute `git show c3060ab:sw.js`. Le checkout GitHub Actions ne contient pas ce commit et renvoie `fatal: invalid object name 'c3060ab'.` Les 34 autres scénarios navigateur passent ; 10 sont ignorés. Aucune nouvelle correction ni nouvelle relance n’a été lancée après ce constat.
+1. **CI Node 22 rouge (en cours de correction) :** les jobs `tests` passaient, mais les jobs `e2e` échouaient sur le scénario historique `G0 — un worker principal v10.45 déjà actif met encore /essai/ dans son cache`. Le test exécute `git show c3060ab:sw.js`. Le checkout GitHub Actions ne contenait pas ce commit et renvoyait `fatal: invalid object name 'c3060ab'.` Les 34 autres scénarios navigateur passaient ; 10 étaient ignorés. **Correction appliquée (Voie 1) :** `fetch-depth: 0` ajouté aux jobs `tests` et `e2e`, fixtures G0 renommées par scénario. Une nouvelle exécution CI est nécessaire pour confirmer le vert.
 2. **G0 — worker principal v10.45 déjà installé :** le critère historique « ouvrir directement `/essai/` sans rien ajouter au cache principal » reste non satisfait. Un worker v10.45 déjà actif ne peut pas apprendre après coup la nouvelle garde. Le test historique local a reproduit **142 entrées `/essai/` ajoutées au cache `kalimati-v10-45`** avant la prise de main du worker d’essai. Ce risque est accepté par Aziz pour la première publication ; la garde sera exigée à partir de la prochaine version de `main`.
 3. **L0-05 — publication :** `/essai/` n’est pas en ligne. Le changement de Pages et le déploiement nécessitent un accord séparé.
 4. **Vrai iPhone :** pas encore testé. WebKit ne remplace pas un iPhone réel.
@@ -165,9 +166,8 @@ Il s’agit de profils navigateur émulés, pas d’appareils réels. Aucun vrai
 
 ## Questions pour Aziz
 
-La règle d’arrêt est appliquée. Aucune nouvelle correction ni nouvelle relance n’est engagée. Deux choix possibles pour la prochaine consigne :
+**Voie 1 retenue et appliquée (2026-11-26) :** Aziz a choisi le choix 1. Le checkout CI récupère tout l’historique (`fetch-depth: 0`), ce qui remet `c3060ab:sw.js` à disposition sans changer les vérifications. Risque faible ; le checkout CI sera un peu plus long et plus lourd. Aucune action supplémentaire n’est demandée pour ce point, hors relance de la CI.
 
-1. **Récupérer tout l’historique dans le checkout du job E2E (`fetch-depth: 0`) :** le scénario historique retrouve exactement `c3060ab:sw.js` et toutes les vérifications restent inchangées. Risque faible ; le checkout CI sera plus long et plus lourd.
-2. **Conserver une fixture historique exacte de `sw.js` au commit `c3060ab` :** le test utilise cette fixture au lieu de l’historique Git. Toutes les vérifications restent inchangées. Risque moyen : il faudra documenter et maintenir cette copie historique avec son SHA.
+Le choix 2 (copie historique figée) n’est pas retenu.
 
 Le changement Pages, le déploiement, le vrai iPhone et les 48 heures avant promotion restent des décisions séparées.
