@@ -29,6 +29,7 @@ import { getTimerShowNumbers, setTimerShowNumbers, TIMER_SETTING_KEY } from './t
 import { updateBox } from './app-update.js';
 import { storageWarningBox } from './storage-warning.js';
 import { childrenBox } from './children-box.js';
+import { lexiqueScreen } from './lexique-view.js';
 
 function profileForm() {
   const fields = [['name', 'Prénom de l’enfant'], ['age', 'Âge (ex. 8 ans)'], ['father', 'Prénom du papa'], ['mother', 'Comment elle appelle sa maman'], ['sister', 'Prénom de la sœur ou du frère'], ['psy', 'Prénom de la psychologue / thérapeute'], ['city', 'Ville']];
@@ -415,6 +416,7 @@ export function dashboardScreen(nav) {
       evaluated && safePart('Objectifs PEI', () => kpiBlock('🎯 PEI 3 mois (objectifs prioritaires)', GOALS.filter((g) => g.phase !== 'next'), results, today)),
       evaluated && safePart('Parcours ABLLS-R', () => kpiBlock('🚀 Parcours ABLLS-R complet (PEI + prochains niveaux)', GOALS, results)),
       safePart('Réglages parent', () => parentBetaSettingsBox({ onRefresh: () => nav.openScreen(self) })),
+      safePart('Lexique', () => lexiqueScreen(nav, self)),
       safePart('Protection du stockage', () => storageProtectionBox()),
       safePart('Espace de stockage', () => storageWarningBox()),
       safePart('Journal ABC', () => abcSummaryCard(abcLogs, () => nav.openScreen(() => abcScreen(nav), self))),

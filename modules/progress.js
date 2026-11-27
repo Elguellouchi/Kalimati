@@ -116,7 +116,7 @@ const RULES = {
     const validated = trials.some((t) => t.meta && t.meta.validated);
     const last = trials.filter(isScored).slice(-10);
     const share = percent(last.filter(isPlus).length, last.length);
-    return { done: validated, pct: validated ? 100 : share, detail: validated ? 'Validé avec l’orthophoniste' : `${share} % « net » sur les 10 derniers essais` };
+    return { done: validated, pct: validated ? 100 : share, detail: validated ? 'Relu par l’orthophoniste' : `${share} % « net » sur les 10 derniers essais` };
   },
 };
 

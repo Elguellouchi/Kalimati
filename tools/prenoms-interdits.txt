@@ -1,0 +1,4 @@
+# Liste synthétique de format. Ajouter uniquement des marqueurs neutres.
+# Un nom par ligne ; les lignes vides et les commentaires sont ignorés.
+NOMSYNTHETIQUE
+NOMTEMPORAIRE

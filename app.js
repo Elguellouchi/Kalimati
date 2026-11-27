@@ -2,7 +2,7 @@
 import { markStartupStart, recordFirstRender } from './modules/startup-timing.js'; // Lot 1, L1-04 : chronomètre de démarrage, le plus tôt possible
 import './modules/util.js'; // en premier : garde-fou contre les textes « null »
 import './modules/storage.js';
-import { CATEGORIES, GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
+import { GRAMMAR, defaultCards, visualKeyOf, TOILET_CARD_ID, SELF_CARD_ID, cardAudio, foldLegacyAudio } from './data.js';
 import * as db from './db.js';
 import { sayCard, sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, speak, unlockAudio, loadDefaultVoices, defaultVoiceUrl, setCloudSpeechAllowed, SPEECH_SETTING_KEY, lastAmazighPlay } from './speech.js';
 import { openEditor } from './editor.js';
@@ -58,6 +58,9 @@ import { createTalkTools } from './modules/talk-tools.js';
 import { createStripController } from './modules/strip-controller.js';
 import { createViews } from './modules/views.js';
 import { createBackupUi } from './modules/backup-ui.js';
+import { allCategories, cardPassesReviewFilter } from './modules/lexique-rules.js';
+import { lexiconBadge } from './modules/lexique-view.js';
+import { initLexiqueSettings } from './modules/lexique-init.js';
 
 // Lot 1, L1-04 : départ du chronomètre au tout début du script (les imports ES sont déjà chargés ici).
 markStartupStart();
@@ -71,12 +74,12 @@ const SNOOZE_MS = 10 * 60000;
 const EXPORTED_SETTINGS = ['lang', 'twinLang', 'cols', 'darijaScript', 'clinic', 'profile', 'toiletReminder', 'levels',
   'customSchedules', 'scheduleTempOverrides', 'stories', 'atecHistory', 'atec_history', 'aacHistory', 'touch', 'visualStyle', 'childGender', 'therapistName', 'speechCloudAllowed', 'friendsAlbum', 'hideFriends', 'timerShowNumbers', 'uppercaseText', 'placeBoards', 'visualScenes', 'talkMode'];
 
-const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [], videos: [], talkMode: 'coach', intent: null };
+const state = { cards: [], cat: 'manger', lang: 'fr', twin: null, amazighScript: 'both', cols: 4, parent: false, strip: [], space: 'home', playing: -1, modeling: false, model: [], place: null, placeBoards: [], scenes: [], videos: [], talkMode: 'coach', intent: null, onlyReviewed: false, emojiSkinTone: 'default' };
 const photoUrls = new Map();
 const $ = (selector) => document.querySelector(selector);
-const nav = createNavigator({ container: null, state, goHome: () => openSpace('home') });
+const nav = createNavigator({ container: null, state, renderAll: () => renderAll(), renderAllTalk: () => { if (state.space === 'talk') renderAll(); }, goHome: () => openSpace('home') });
 // v10.42 (Lot 4.1) : le chef d'orchestre partage l'état et ses fonctions avec les modules découpés.
-const app = { state, nav, photoUrls, CORE_CAT, EXPORTED_SETTINGS };
+const app = { state, nav, photoUrls, CORE_CAT, EXPORTED_SETTINGS, renderAllTalk: () => { if (state.space === 'talk') renderAll(); } };
 
 // ---------- Cartes ----------
 // v10.7 : en amazigh, le mot s'affiche en tifinagh et/ou en lettres latines (réglage « Écriture amazighe » dans Progrès).
@@ -117,7 +120,7 @@ function fillLabel(el, text, lang) {
 }
 
 function cardElement(card, { small = false, lang = state.lang, className = '' } = {}) {
-  const category = CATEGORIES.find((c) => c.id === card.cat);
+  const category = allCategories.find((c) => c.id === card.cat);
   const gram = GRAMMAR[card.gram] || GRAMMAR.noun;
   // v10.23 (pépite 1) : le mot de l'autre langue du binôme, sous le mot parlé. Rien ne se déplace :
   // la position vient de l'id de la carte, donc les deux langues partagent le même plan moteur.
@@ -135,6 +138,7 @@ function cardElement(card, { small = false, lang = state.lang, className = '' } 
   button.style.setProperty('--gram', gram.color);
   button.style.setProperty('--cat', category ? category.color : '#999');
   if (state.parent && !small) {
+    if (card.lexicon?.owned) button.append(lexiconBadge(card));
     const needsPhoto = card.cat === 'personnes' && !card.photo && !button.querySelector('.has-photo');
     if (state.lang === 'dr' && !cardAudio(card, 'dr') && !defaultVoiceUrl(card, 'dr')) button.append(h('span', { class: 'badge dr' }, '🎙️ Voix Darija à enregistrer'));
     // v10.7 : en amazigh, une carte sans voix du parent ni voix du pack reste muette : on le montre au parent
@@ -176,6 +180,7 @@ function onCardTap(card, element) {
   // v10.15 : pendant « Explorer 30 s », le parent touche une carte pour la faire parler (pas d'éditeur).
   // L1-07 : en mode secours, la base ne répond pas : on parle la carte sans ouvrir l'éditeur (lecture seule).
   if (state.parent) { if (exploreActive() || isFallbackMode()) { stopSpeaking(); sayCard(card, state.lang); return; } editCard(card); return; }
+  if (!cardPassesReviewFilter(card, { onlyReviewed: state.onlyReviewed })) return;
   tapFeedback(element);
   stopSpeaking();
   sayCard(card, state.lang);
@@ -490,6 +495,9 @@ function withinStartupBudget(promise, ms) {
 }
 
 async function loadInitialState() {
+  const lexiqueSettings = await initLexiqueSettings({ db, localStorage, rawChildren: globalThis.KalimatiStorage.getItem('kalimati-children') });
+  state.onlyReviewed = lexiqueSettings.onlyReviewed;
+  state.emojiSkinTone = lexiqueSettings.emojiSkinTone;
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies

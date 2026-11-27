@@ -8,6 +8,7 @@ import { nour } from './nour.js';
 import { renderVisual } from './visuals.js';
 import { addStar } from './rewards-kids.js';
 import { setHiddenConceptSlugs, slug } from './catalog.js';
+import { cardPassesReviewFilter } from './lexique-rules.js';
 import { tx, getActiveLang } from './section-i18n.js';
 
 // === v10.9 (lot A) : réglages et moteurs (aide avant l'erreur, cartes masquées, mode calme, 2 à 4 choix, démo muette) ===
@@ -25,6 +26,7 @@ let fixedChoiceCountState = 'auto'; // 'auto' | 2 | 3 | 4
 let calmModeState = false;
 let activeGameId = 'default';
 let catalogCardsState = [];
+let playableReviewState = { parent: false, onlyReviewed: false };
 let hiddenCardIds = new Set();
 let hiddenCardWords = new Set();
 let demosSeenState = {};
@@ -133,12 +135,13 @@ export function computeHintDelayMs({ baseSec = hintDelaySecState, recentScores =
 }
 
 // ---------- Pépite 2 : Cartes jouables non masquées ----------
-export function setPlayableCards(cards = []) {
+export function setPlayableCards(cards = [], { parent = false, onlyReviewed = false } = {}) {
   catalogCardsState = Array.isArray(cards) ? cards : [];
+  playableReviewState = { parent, onlyReviewed };
   hiddenCardIds = new Set();
   hiddenCardWords = new Set();
   for (const c of catalogCardsState) {
-    if (c && c.hidden === true) {
+    if (c && !cardPassesReviewFilter(c, { parent, onlyReviewed })) {
       if (c.id) hiddenCardIds.add(String(c.id));
       if (c.vkey) hiddenCardIds.add(String(c.vkey));
       if (c.fr) hiddenCardWords.add(normalizeWord(c.fr));
@@ -148,10 +151,10 @@ export function setPlayableCards(cards = []) {
   return playableCards(catalogCardsState);
 }
 
-export function playableCards(cards = catalogCardsState, { category = null } = {}) {
+export function playableCards(cards = catalogCardsState, { category = null, parent = playableReviewState.parent, onlyReviewed = playableReviewState.onlyReviewed } = {}) {
   const list = Array.isArray(cards) ? cards : [];
   return list.filter((c) => {
-    if (!c || c.hidden === true) return false;
+    if (!cardPassesReviewFilter(c, { parent, onlyReviewed })) return false;
     if (category && c.cat !== category) return false;
     return true;
   });

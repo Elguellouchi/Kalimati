@@ -243,7 +243,7 @@ const TSARA_CARDS = [
 function tsaraReflexBox() {
   return h('details', { class: 'card-box tsara-box' },
     h('summary', {}, '🛟 Fiches réflexes : Que faire à chaud ? (méthode TSARA)'),
-    h('p', { class: 'note' }, 'Repères rapides validés pour les parents et l’AVS face aux situations sensibles :'),
+    h('p', { class: 'note' }, 'Repères rapides relus pour les parents et l’AVS face aux situations sensibles :'),
     h('div', { class: 'stack' }, TSARA_CARDS.map((c) => h('div', { class: 'tsara-card' },
       h('strong', {}, c.title),
       h('p', { class: 'note' }, h('b', {}, '1. À chaud : '), c.now),

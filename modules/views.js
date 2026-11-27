@@ -2,7 +2,7 @@
 // Code déplacé tel quel depuis app.js (v10.42, Lot 4.1) : aucun comportement ne change.
 // Les fonctions encore dans app.js sont lues au moment de l’appel (app.<nom>).
 import * as db from '../db.js';
-import { CATEGORIES, GRAMMAR, visualKeyOf } from '../data.js';
+import { GRAMMAR, visualKeyOf } from '../data.js';
 import { openEditor } from '../editor.js';
 import { lastAmazighPlay, speak, stopSpeaking, unlockAudio, defaultVoiceUrl } from '../speech.js';
 import { scanSpeed, touchSettingsBox } from './aac-plus.js';
@@ -12,6 +12,7 @@ import { clinicT } from './clinic-i18n.js';
 import { friendCompanionBanner } from './friends.js';
 import { moveCard, nextFreeSlot } from './grid-layout.js';
 import { LANGS, categoryName, isAmazighLang, langInfo, ui } from './languages.js';
+import { allCategories, cardPassesReviewFilter } from './lexique-rules.js';
 import { nour } from './nour.js';
 import { tx } from './section-i18n.js';
 import { cardsForIntent } from './talk-modes.js';
@@ -50,16 +51,17 @@ export function createViews(app) {
   const videoEditorBox = (...args) => app.videoEditorBox(...args);
   // ---------- Espace Parler ----------
   const sortedCards = (cat) => state.cards.filter((c) => c.cat === cat).sort((a, b) => (a.gridRow - b.gridRow) || (a.gridCol - b.gridCol) || (a.order - b.order));
-  const visibleFor = (card) => state.parent || !card.hidden;
+  const visibleFor = (card) => state.parent
+    || cardPassesReviewFilter(card, { parent: false, onlyReviewed: state.onlyReviewed });
 
   // Apport PictoTEA : impression / export PDF du tableau CAA personnalisé (avec vraies photos / pictos)
   function printAacBoard() {
-    const active = state.cards.filter((c) => !c.hidden);
-    const cols = CATEGORIES.map((cat) => {
+    const active = state.cards.filter((card) => cardPassesReviewFilter(card, { parent: false, onlyReviewed: state.onlyReviewed }));
+    const cols = allCategories.map((cat) => {
       const items = active.filter((c) => c.cat === cat.id);
       if (!items.length) return null;
       return h('div', { class: 'aac-print-cat' },
-        h('h3', { style: { color: cat.color } }, `${cat.emoji} ${cat.name}`),
+        h('h3', { style: { color: cat.color } }, `${cat.emoji || ''} ${categoryName(cat, 'fr')}`.trim()),
         h('div', { class: 'aac-print-grid' }, items.map((c) => {
           const gram = GRAMMAR[c.gram] || GRAMMAR.noun;
           return h('div', { class: 'aac-print-card', style: { borderColor: gram.color } },
@@ -138,7 +140,7 @@ export function createViews(app) {
       else { state.cat = intentCards[0].cat; renderView(); flashSearch(intentCards[0]); }
       return `💡 ${intentCards.map((c) => label(c, state.lang)).join(', ')}`;
     }
-    const found = state.cards.find((c) => [label(c, state.lang), c.fr, c.dr].filter(Boolean).some((text) => String(text).toLowerCase().includes(q)));
+    const found = state.cards.filter(visibleFor).find((c) => [label(c, state.lang), c.fr, c.dr].filter(Boolean).some((text) => String(text).toLowerCase().includes(q)));
     if (!found) return clinicT('searchNotFound', state.lang);
     state.cat = found.cat;
     renderView();
@@ -215,14 +217,14 @@ export function createViews(app) {
     // v9.12 : Nour accompagne l'espace Parler (masquable par le parent). v10.19 : il laisse la place dès que la phrase commence.
     const friend = state.parent ? null : friendCompanionBanner('talk', { lang: state.lang });
     // Grandes tuiles de catégories : emoji + mot, jamais une petite pastille illisible.
-    const tabs = h('nav', { class: 'tabs talk-cats', 'aria-label': 'Catégories' }, CATEGORIES.map((category) => {
+    const tabs = h('nav', { class: 'tabs talk-cats', 'aria-label': 'Catégories' }, allCategories.map((category) => {
       const tab = h('button', {
         type: 'button',
         class: `tab talk-cat${category.id === state.cat ? ' active' : ''}`,
         'aria-current': category.id === state.cat ? 'true' : null,
         onclick: () => { state.cat = category.id; renderView(); requestAnimationFrame(() => document.querySelector('.talk-board-head')?.scrollIntoView({ block: 'nearest' })); },
       },
-      h('span', { class: 'talk-cat-emoji', 'aria-hidden': 'true' }, CATEGORY_EMOJI[category.id] || '💬'),
+      h('span', { class: 'talk-cat-emoji', 'aria-hidden': 'true' }, category.emoji || CATEGORY_EMOJI[category.id] || '💬'),
       h('span', { class: 'talk-cat-name' }, categoryName(category, state.lang)));
       tab.dataset.cat = category.id;
       tab.style.setProperty('--cat', category.color);
@@ -236,10 +238,10 @@ export function createViews(app) {
       placeTab.style.setProperty('--cat', '#5E60CE');
       tabs.append(placeTab);
     }
-    const activeCategory = CATEGORIES.find((c) => c.id === state.cat) || CATEGORIES[0];
+    const activeCategory = allCategories.find((c) => c.id === state.cat) || allCategories[0];
     const boardCards = sortedCards(state.cat);
     const boardHead = h('div', { class: 'talk-board-head' },
-      h('span', { class: 'talk-board-emoji', 'aria-hidden': 'true' }, CATEGORY_EMOJI[state.cat] || '💬'),
+      h('span', { class: 'talk-board-emoji', 'aria-hidden': 'true' }, activeCategory.emoji || CATEGORY_EMOJI[state.cat] || '💬'),
       h('h2', { class: 'talk-board-title' }, categoryName(activeCategory, state.lang)),
       h('span', { class: 'talk-board-count' }, `${boardCards.filter(visibleFor).length}`));
     const grid = h('div', { class: `grid${exploring ? ' exploring' : ''}`, style: { '--cols': state.cols, '--cat-board': activeCategory.color } });
@@ -248,8 +250,15 @@ export function createViews(app) {
       const el = tappable(card);
       el.style.gridRow = String(card.gridRow);
       el.style.gridColumn = String(card.gridCol);
-      if (card.hidden && !state.parent && !exploring) { el.style.visibility = 'hidden'; el.setAttribute('aria-hidden', 'true'); el.tabIndex = -1; }
-      const hint = !state.parent && !card.hidden ? tenseHintFor(card) : '';
+      const revealHidden = exploring
+        && card.hidden
+        && cardPassesReviewFilter(card, { onlyReviewed: state.onlyReviewed });
+      if (!visibleFor(card) && !revealHidden) {
+        el.style.visibility = 'hidden';
+        el.setAttribute('aria-hidden', 'true');
+        el.tabIndex = -1;
+      }
+      const hint = !state.parent && visibleFor(card) ? tenseHintFor(card) : '';
       if (hint) el.append(h('span', { class: 'card-tense', 'aria-hidden': 'true' }, hint));
       grid.append(el);
     }

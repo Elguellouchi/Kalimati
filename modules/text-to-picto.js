@@ -92,7 +92,11 @@ const EXTRA = [
   ['ami', '🧒', ['amie', 'copain', 'copine']], ['télé', '📺', ['tele', 'television']], ['téléphone', '📱', ['telephone']],
   ['calme', '🤫'], ['bravo', '👏'], ['gentil', '💛', ['gentille']], ['doucement', '🐢'], ['vite', '⚡'], ['ici', '📍'], ['avec', '🤝'],
 ];
-export const extraConcepts = () => [
-  ...EXTRA.map(([fr, emoji, alt = []]) => ({ id: `extra:${fr}`, fr, emoji, alt, extra: true })),
-  ...CATALOG.map((c) => ({ id: `extra:${c.id}`, fr: c.fr, emoji: c.emoji, alt: [], extra: true })),
-];
+export const extraConcepts = ({ excludedWords = [] } = {}) => {
+  const excluded = new Set(Array.from(excludedWords || [], (word) => normWord(word)).filter(Boolean));
+  const concepts = [
+    ...EXTRA.map(([fr, emoji, alt = []]) => ({ id: `extra:${fr}`, fr, emoji, alt, extra: true })),
+    ...CATALOG.map((c) => ({ id: `extra:${c.id}`, fr: c.fr, emoji: c.emoji, alt: [], extra: true })),
+  ];
+  return excluded.size ? concepts.filter((concept) => ![concept.fr, ...(concept.alt || [])].some((word) => excluded.has(normWord(word)))) : concepts;
+};

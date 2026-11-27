@@ -86,7 +86,7 @@ export function createNavigator(app) {
     title ? h('div', {}, h('h2', {}, title), sub ? h('p', { class: 'note' }, sub) : null) : null);
   // v10.9 (lot A, pépite 2) : les jeux ne reçoivent que les cartes non masquées dans Parler.
   const context = () => {
-    setPlayableCards(app.state.cards);
+    setPlayableCards(app.state.cards, { parent: app.state.parent, onlyReviewed: app.state.onlyReviewed });
     return { lang: app.state.lang, parent: app.state.parent, cards: playableCards(app.state.cards), onCleanup: (fn) => cleanups.push(fn) };
   };
   const photoHint = () => (app.state.parent ? h('p', { class: 'photo-hint' }, tx('photoHint', app.state.lang)) : null);
@@ -237,6 +237,9 @@ export function createNavigator(app) {
   }
 
   return {
+    state: app.state,
+    renderAll: app.renderAll,
+    renderAllTalk: app.renderAllTalk,
     attach(container) { app.container = container; },
     openSession() { history.length = 0; go(sessionHome); },
     openRoutines() { history.length = 0; go(routinesHome); },

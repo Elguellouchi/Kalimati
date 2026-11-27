@@ -1,5 +1,6 @@
 // Fenêtre du parent pour créer ou modifier une carte : photo, pictogramme ARASAAC, vidéo, mots, rôle, place, voix.
-import { CATEGORIES, GRAMMAR, cardAudio, foldLegacyAudio } from './data.js';
+import { GRAMMAR, cardAudio, foldLegacyAudio } from './data.js';
+import { allCategories } from './modules/lexique-rules.js';
 import { preparePhoto, prepareVideo, startRecording, canRecord } from './media.js';
 import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './modules/arasaac.js';
 import { escapeHtml } from './modules/util.js';
@@ -34,7 +35,7 @@ import { suggestDarija } from './modules/darija-lexicon.js';
 const dialog = document.getElementById('editor');
 
 function template(draft) {
-  const options = CATEGORIES.map((c) => `<option value="${c.id}" ${c.id === draft.cat ? 'selected' : ''}>${escapeHtml(c.fr)}</option>`).join('');
+  const options = allCategories.map((c) => `<option value="${c.id}" ${c.id === draft.cat ? 'selected' : ''}>${escapeHtml(c.fr)}</option>`).join('');
   const grams = Object.entries(GRAMMAR).map(([id, g]) => `<option value="${id}" ${id === draft.gram ? 'selected' : ''}>${escapeHtml(g.label)}</option>`).join('');
   const recordHint = canRecord() ? '' : '<p class="hint">Ce navigateur ne permet pas d\'enregistrer la voix.</p>';
   return `
@@ -351,7 +352,7 @@ export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = n
     const cat = $('#ed-cat').value;
     // Si le parent change le mot, la phrase dite d'origine (ex. « Ma sœur ») ne s'applique plus.
     const renamed = !isNew && fr !== card.fr;
-    onSave({
+    const saved = {
       ...rest,
       fr,
       sub: $('#ed-sub').value.trim(),
@@ -363,7 +364,12 @@ export function openEditor(card, { defaultCat, onSave, onDelete, amazighLang = n
       hidden: $('#ed-hidden').checked,
       sayFr: renamed ? '' : (rest.sayFr || ''),
       sayAr: renamed ? '' : (rest.sayAr || ''),
-    }, { slot: row >= 1 && col >= 1 ? { row, col } : null, catChanged: !isNew && card.cat !== cat });
+    };
+    if (!isNew && saved.lexicon?.owned && ['fr', 'dr', 'ar', 'emoji', 'gram', 'cat', 'sub', 'sayFr', 'sayAr']
+      .some((field) => String(saved[field] ?? '') !== String(card[field] ?? ''))) {
+      saved.lexicon = { ...saved.lexicon, customized: true };
+    }
+    onSave(saved, { slot: row >= 1 && col >= 1 ? { row, col } : null, catChanged: !isNew && card.cat !== cat });
   };
   dialog.showModal();
 }

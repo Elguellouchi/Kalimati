@@ -1,6 +1,6 @@
 // v10.41 — Lot 3 : dictionnaires cliniques par langue (locales/<lang>.json), hors ligne.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 for (const name of ['Element', 'DocumentFragment', 'Document', 'HTMLElement']) if (!globalThis[name]) globalThis[name] = class {};
 
 const { defaultCards } = await import('../data.js');
@@ -52,4 +52,12 @@ assert.ok(!bundle.includes('disambiguation') && !bundle.includes('"grammar"'), '
 assert.ok(!/fetch\(/.test(read('modules/locales.js')), 'aucun téléchargement de dictionnaire');
 for (const code of EXTRA) assert.ok(bundle.includes(`"${code}": {`), `${code} absent du paquet`);
 ok('dictionnaires dans l’appli, gardés hors ligne, sans les notes de relecture');
+
+const runtimeFiles = ['index.html', 'manifest.webmanifest', 'style.css',
+  ...readdirSync(new URL('../', import.meta.url)).filter((name) => name.endsWith('.js')).map((name) => name),
+  ...readdirSync(new URL('../modules/', import.meta.url)).filter((name) => name.endsWith('.js')).map((name) => `modules/${name}`),
+  ...readdirSync(new URL('../locales/', import.meta.url)).filter((name) => name.endsWith('.json')).map((name) => `locales/${name}`)];
+const refusedWording = runtimeFiles.filter((file) => /\bvalidé(?:e|s|es)?\b|(?<![\p{L}\p{N}_])validé(?![\p{L}\p{N}_])/iu.test(read(file)));
+assert.deepEqual(refusedWording, [], 'aucune forme de « validé » dans les sources runtime');
+ok('vocabulaire runtime : aucune promesse de relecture clinique');
 console.log('test-lot3-dictionnaires : OK');

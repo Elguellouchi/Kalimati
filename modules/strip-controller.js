@@ -7,6 +7,7 @@ import { logOrtho } from './ex-ortho.js';
 import { unlockFriendSticker } from './friends.js';
 import { isAmazighLang, isExtraLang, langInfo, zhClassifierAt } from './languages.js';
 import { getTense, inflectStrip, setTense } from './morphology.js';
+import { cardPassesReviewFilter } from './lexique-rules.js';
 import { showsCoach, showsHints } from './talk-modes.js';
 import { twinOf, twinSwap } from './twin-language.js';
 import { h } from './util.js';
@@ -28,12 +29,26 @@ export function createStripController(app) {
   // dans la langue de l'enfant, sans repli français.
   const morphLangOk = (strip) => strip.length > 0 && strip.every((item) => item.lang === 'fr' || item.lang === 'dr' || isAmazighLang(item.lang) || isExtraLang(item.lang));
   const stripAmazighLang = () => state.strip.find((item) => isAmazighLang(item.lang))?.lang || (isAmazighLang(state.lang) ? state.lang : null);
+  const passesChildFilter = (card) => state.parent || cardPassesReviewFilter(card, { onlyReviewed: state.onlyReviewed });
+  function pruneStripForReview() {
+    const playing = state.playing;
+    const kept = [];
+    let nextPlaying = -1;
+    state.strip.forEach((item, index) => {
+      if (!passesChildFilter(item.card)) return;
+      if (index === playing) nextPlaying = kept.length;
+      kept.push(item);
+    });
+    state.strip = kept;
+    state.playing = nextPlaying;
+  }
   function stripInflection() {
     if (!morphLangOk(state.strip)) return null;
     try { return inflectStrip(state.strip, { lang: stripAmazighLang(), scriptMode: state.amazighScript }); } catch { return null; }
   }
 
   function renderStrip() {
+    pruneStripForReview();
     setCardCatalog(state.cards);
     const inflected = stripInflection();
     const items = state.strip.map((item, i) => {
@@ -104,7 +119,7 @@ export function createStripController(app) {
       const card = state.cards.find((c) => c.id === el.dataset.cardId);
       if (!card) continue;
       let hint = el.querySelector('.card-tense');
-      const text = card.hidden ? '' : tenseHintFor(card);
+      const text = card.hidden || !passesChildFilter(card) ? '' : tenseHintFor(card);
       if (!text) { hint?.remove(); continue; }
       if (!hint) { hint = h('span', { class: 'card-tense', 'aria-hidden': 'true' }); el.append(hint); }
       hint.textContent = text;
@@ -182,7 +197,7 @@ export function createStripController(app) {
   function renderSuggestions() {
     const row = document.getElementById('suggest-row');
     if (!row) return;
-    const next = state.modeling || !showsHints(state.talkMode) ? [] : suggestionsFor(state.strip, state.cards);
+    const next = state.modeling || !showsHints(state.talkMode) ? [] : suggestionsFor(state.strip, state.cards.filter(passesChildFilter));
     row.replaceChildren(...(next.length ? [h('span', { class: 'suggest-label' }, '💡'), ...next.map((card) => tappableCard(card, { small: true }))] : []));
     row.hidden = !next.length;
     // v10.37 (mode Aide / Coach) : les cartes probables brillent dans la grille, sans prendre de place.
@@ -199,6 +214,7 @@ export function createStripController(app) {
   function renderModel() {
     const line = document.getElementById('model-line');
     if (!line) return;
+    if (!state.parent) state.model = state.model.filter((item) => passesChildFilter(item.card));
     line.replaceChildren(h('span', { class: 'suggest-label' }, '🧑‍🏫 Je montre :'),
       ...state.model.map((item) => cardElement(item.card, { small: true, lang: item.lang })),
       state.model.length ? h('button', { type: 'button', class: 'strip-btn play', 'aria-label': 'Redire', onclick: () => sayCards(state.model) }, '▶') : null);
