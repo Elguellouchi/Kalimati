@@ -114,3 +114,48 @@ test('e — grille Parler/Manger : colonnes exactes et cartes sans chevauchement
     expect(overlaps, `taille ${cols} : aucune carte ne doit chevaucher une autre`).toEqual([]);
   }
 });
+
+test('f — remise en ordre automatique : retour visible même si les cartes sont déjà ordonnées', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  await page.evaluate(async () => {
+    const db = await import('/db.js');
+    const layout = await import('/modules/grid-layout.js');
+    const cols = Number(await db.getSetting('cols')) || 4;
+    await db.putCards(layout.relayout(await db.getAllCards(), cols));
+  });
+  await openTalkGrid(page);
+  await unlockParent(page);
+
+  const toggle = page.locator('#pb-toggle');
+  if (await toggle.getAttribute('aria-expanded') !== 'true') await toggle.click();
+  const button = page.locator('#relayout');
+  await expect(button).toBeVisible();
+  await expect(button).toHaveText('Remettre en ordre automatique');
+
+  const positionsBefore = await page.evaluate(async () => {
+    const db = await import('/db.js');
+    const cols = String(await db.getSetting('cols') || 4);
+    return (await db.getAllCards())
+      .map((card) => ({ id: card.id, position: card.positions?.[cols] || null }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  });
+
+  await button.click();
+  await expect(button).toHaveText('Toucher encore pour confirmer');
+  await button.click();
+  await expect(button).toHaveText('Cartes remises en ordre ✔');
+
+  const positionsAfter = await page.evaluate(async () => {
+    const db = await import('/db.js');
+    const cols = String(await db.getSetting('cols') || 4);
+    return (await db.getAllCards())
+      .map((card) => ({ id: card.id, position: card.positions?.[cols] || null }))
+      .sort((a, b) => a.id.localeCompare(b.id));
+  });
+  expect(positionsAfter).toEqual(positionsBefore);
+
+  await page.waitForTimeout(2500);
+  await expect(button).toHaveText('Cartes remises en ordre ✔');
+  await expect(button).toHaveText('Remettre en ordre automatique', { timeout: 1000 });
+});

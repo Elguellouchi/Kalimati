@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE_VERSION = 'v10-49';
+const CACHE_VERSION = 'v10-50';
 const TRIAL = /(^|\/)essai(?:\/|$)/.test(self.location.pathname);
 const CACHE = TRIAL ? `kalimati-essai-${CACHE_VERSION}` : `kalimati-${CACHE_VERSION}`;
 const FILES = [
