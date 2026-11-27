@@ -540,4 +540,169 @@ function memoryLocal(values = {}) {
   console.log('test-lexique 18 statistiques : OK');
 }
 
-console.log('test-lexique groupes 1-18 : OK');
+// 19. Teintes : six valeurs, personnes compatibles, ZWJ et carte source intacte.
+{
+  const {
+    SKIN_TONES,
+    SKIN_TONE_LABELS,
+    setEmojiSkinTone,
+    getEmojiSkinTone,
+    emojiForItem,
+  } = await import('../modules/emoji-skin-tone.js');
+  assert.deepEqual(SKIN_TONES, ['default', '1', '2', '3', '4', '5']);
+  assert.deepEqual(SKIN_TONE_LABELS, {
+    default: 'Jaune par défaut',
+    1: 'Claire',
+    2: 'Moyennement claire',
+    3: 'Moyenne',
+    4: 'Moyennement foncée',
+    5: 'Foncée',
+  });
+  const expected = {
+    default: '👩‍⚕️',
+    1: '👩🏻‍⚕️',
+    2: '👩🏼‍⚕️',
+    3: '👩🏽‍⚕️',
+    4: '👩🏾‍⚕️',
+    5: '👩🏿‍⚕️',
+  };
+  const modifiers = { default: '', 1: '🏻', 2: '🏼', 3: '🏽', 4: '🏾', 5: '🏿' };
+  const multi = '👩🏽‍🤝‍👨🏻';
+  for (const tone of SKIN_TONES) {
+    setEmojiSkinTone(tone);
+    assert.equal(getEmojiSkinTone(), tone);
+    assert.equal(emojiForItem({ emoji: '👩🏽‍⚕️', gram: 'person' }), expected[tone]);
+    assert.equal(emojiForItem({ emoji: multi, lexicon: { role: 'person' } }), `👩${modifiers[tone]}‍🤝‍👨${modifiers[tone]}`);
+    assert.equal(emojiForItem({ emoji: '👩🏽‍⚕️', gram: 'noun' }), '👩🏽‍⚕️');
+    assert.equal(emojiForItem({ emoji: '🙂', gram: 'person' }), '🙂');
+  }
+  setEmojiSkinTone('3');
+  const card = Object.freeze({
+    emoji: '👩🏽‍⚕️',
+    gram: 'person',
+    photo: 'photo-parent',
+    audios: Object.freeze({ fr: 'voix-parent' }),
+    hidden: true,
+    positions: Object.freeze({ 4: Object.freeze({ row: 2, col: 3 }) }),
+  });
+  const before = structuredClone(card);
+  assert.equal(emojiForItem(card), '👩🏽‍⚕️');
+  assert.deepEqual(card, before);
+  setEmojiSkinTone('invalide');
+  assert.equal(getEmojiSkinTone(), '3');
+  console.log('test-lexique 19 teintes : OK');
+}
+
+// 20. Voix : inventaire exact, alias lexicaux et ordre parent/MP3/local sans réseau.
+{
+  const words = [
+    { wordId: 'w-voix-a', legacyId: 'c-base-oui', fr: 'Oui', drAr: 'اه', arStandard: 'نعم' },
+    { wordId: 'w-voix-b', legacyId: 'c-manger-pain', fr: 'Pain relu', drAr: 'ناكل', arStandard: '' },
+  ];
+  const voiceIndex = {
+    dr: { 'c-base-oui': 'اه', 'c-manger-pain': 'ناكل' },
+    fr: { 'c-base-oui': 'Oui', 'c-manger-pain': 'Pain' },
+  };
+  const voiceFiles = new Set(['dr/c-base-oui.mp3', 'fr/c-base-oui.mp3']);
+  assert.equal(renderMissingVoices(words, voiceIndex, voiceFiles), 'wordId;langue\nw-voix-b;dr\nw-voix-b;fr\n');
+
+  const index = JSON.parse(await read('voix/index.json'));
+  const audioStarts = [];
+  const spoken = [];
+  let fetchCalls = 0;
+  const synth = {
+    speaking: false,
+    pending: false,
+    getVoices: () => [{ name: 'voix locale fixture', lang: 'fr-FR', localService: true }],
+    addEventListener: () => {},
+    resume: () => {},
+    cancel: () => {},
+    speak: (utterance) => {
+      spoken.push(utterance);
+      queueMicrotask(() => utterance.onend?.());
+    },
+  };
+  class FakeAudio {
+    constructor(src) {
+      this.src = src;
+      audioStarts.push(src);
+    }
+    play() {
+      queueMicrotask(() => {
+        this.onplaying?.();
+        this.onended?.();
+      });
+      return Promise.resolve();
+    }
+    pause() {}
+  }
+  class FakeUtterance {
+    constructor(text) { this.text = text; }
+  }
+  class FakeElement {}
+  class FakeDocumentFragment {}
+  class FakeDocument {}
+  const previous = {
+    fetch: globalThis.fetch,
+    Audio: globalThis.Audio,
+    SpeechSynthesisUtterance: globalThis.SpeechSynthesisUtterance,
+    window: globalThis.window,
+    navigator: globalThis.navigator,
+    Element: globalThis.Element,
+    DocumentFragment: globalThis.DocumentFragment,
+    Document: globalThis.Document,
+  };
+  try {
+    Object.defineProperty(globalThis, 'Element', { configurable: true, value: FakeElement });
+    Object.defineProperty(globalThis, 'DocumentFragment', { configurable: true, value: FakeDocumentFragment });
+    Object.defineProperty(globalThis, 'Document', { configurable: true, value: FakeDocument });
+    Object.defineProperty(globalThis, 'window', { configurable: true, value: { speechSynthesis: synth, addEventListener: () => {} } });
+    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: { userAgent: 'fixture', onLine: true } });
+    globalThis.Audio = FakeAudio;
+    globalThis.SpeechSynthesisUtterance = FakeUtterance;
+    globalThis.fetch = async (url) => {
+      assert.equal(url, './voix/index.json');
+      fetchCalls += 1;
+      return { ok: true, json: async () => index };
+    };
+    const { loadDefaultVoices, defaultVoiceUrl, sayCard } = await import('../speech.js');
+    await loadDefaultVoices();
+    assert.equal(defaultVoiceUrl({ id: 'u-fixture', lexicon: { wordId: 'c-base-oui' }, wordId: 'c-base-non', sayFr: 'Oui' }, 'fr'), './voix/fr/c-base-oui.mp3');
+    assert.equal(defaultVoiceUrl({ id: 'u-fixture', wordId: 'c-base-oui', sayFr: 'Oui' }, 'fr'), './voix/fr/c-base-oui.mp3');
+    assert.equal(defaultVoiceUrl({ id: 'c-base-oui', fr: 'Oui' }, 'fr'), './voix/fr/c-base-oui.mp3');
+    assert.equal(defaultVoiceUrl({ id: 'c-base-oui', sayFr: 'Texte modifié' }, 'fr'), null);
+    assert.equal(defaultVoiceUrl({ id: 'u-fixture', lexicon: { wordId: 'c-base-oui' }, sayAr: index.dr['c-base-oui'] }, 'dr'), './voix/dr/c-base-oui.mp3');
+
+    await sayCard({ id: 'u-parent', lexicon: { wordId: 'c-base-oui' }, sayFr: 'Oui', audios: { fr: new Blob(['voix parent']) } }, 'fr');
+    assert.equal(audioStarts.length, 1);
+    assert.match(audioStarts[0], /^blob:/);
+    assert.equal(spoken.length, 0);
+
+    audioStarts.length = 0;
+    await sayCard({ id: 'u-index', lexicon: { wordId: 'c-base-oui' }, sayFr: 'Oui' }, 'fr');
+    assert.deepEqual(audioStarts, ['./voix/fr/c-base-oui.mp3']);
+    assert.equal(spoken.length, 0);
+
+    audioStarts.length = 0;
+    await sayCard({ id: 'u-local', fr: 'Texte local' }, 'fr');
+    assert.deepEqual(audioStarts, []);
+    assert.equal(spoken.length, 1);
+    assert.equal(spoken[0].text, 'Texte local');
+    assert.equal(fetchCalls, 1);
+  } finally {
+    globalThis.fetch = previous.fetch;
+    globalThis.Audio = previous.Audio;
+    globalThis.SpeechSynthesisUtterance = previous.SpeechSynthesisUtterance;
+    if (previous.window === undefined) delete globalThis.window;
+    else Object.defineProperty(globalThis, 'window', { configurable: true, value: previous.window });
+    if (previous.navigator === undefined) delete globalThis.navigator;
+    else Object.defineProperty(globalThis, 'navigator', { configurable: true, value: previous.navigator });
+    for (const name of ['Element', 'DocumentFragment', 'Document']) {
+      if (previous[name] === undefined) delete globalThis[name];
+      else Object.defineProperty(globalThis, name, { configurable: true, value: previous[name] });
+    }
+  }
+  console.log('test-lexique 20 voix : OK');
+}
+
+console.log('test-lexique groupes 1-20 : OK');

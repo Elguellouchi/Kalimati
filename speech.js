@@ -13,7 +13,7 @@ import { isTeamMode } from './modules/network-policy.js';
 const RATE = 0.85;
 // Sur Android (Chrome), une phrase lancée juste après cancel() est perdue : on attend un court instant.
 // Jamais sur iPhone / iPad : Safari n'accepte la voix que si elle part directement du toucher.
-const IS_ANDROID = /Android/i.test(navigator.userAgent);
+const IS_ANDROID = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 const AFTER_CANCEL_MS = IS_ANDROID ? 150 : 0;
 let currentAudio = null;
 let queueToken = 0;
@@ -83,7 +83,7 @@ function voices() {
   if (!voiceList.length) voiceList = window.speechSynthesis.getVoices();
   return voiceList;
 }
-if ('speechSynthesis' in window) {
+if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
   window.speechSynthesis.addEventListener('voiceschanged', () => { voiceList = window.speechSynthesis.getVoices(); });
 }
 
@@ -175,7 +175,11 @@ export function defaultVoiceUrl(card, lang) {
   if (isAmazighLang(lang)) return null; // v10.7 : pas de voix française livrée pour une carte dite en amazigh
   const key = lang === 'dr' ? 'dr' : 'fr';
   const text = spokenText(card, key);
-  return text && defaultVoices[key][card.id] === text ? `./voix/${key}/${encodeURIComponent(card.id)}.mp3` : null;
+  const ids = [card?.lexicon?.wordId, card?.wordId, card?.id].filter(Boolean);
+  for (const id of new Set(ids)) {
+    if (defaultVoices[key][id] === text) return `./voix/${key}/${encodeURIComponent(id)}.mp3`;
+  }
+  return null;
 }
 
 // v10.5 : si le son ne part pas (hors ligne), on le relit depuis la copie gardée dans le téléphone.

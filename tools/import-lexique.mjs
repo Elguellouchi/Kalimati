@@ -1,4 +1,4 @@
-import { readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { readFile, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { CATEGORIES, defaultCards } from '../data.js';
@@ -77,6 +77,23 @@ function forbiddenNames(text) {
   return text.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
 }
 
+async function listVoiceFiles(voiceIndex) {
+  const files = new Set();
+  for (const language of Object.keys(voiceIndex)) {
+    let entries;
+    try {
+      entries = await readdir(resolve(root, 'voix', language), { withFileTypes: true });
+    } catch (error) {
+      if (error?.code === 'ENOENT') continue;
+      throw error;
+    }
+    for (const entry of entries) {
+      if (entry.isFile() && /\.mp3$/i.test(entry.name)) files.add(`${language}/${entry.name}`);
+    }
+  }
+  return files;
+}
+
 function printErrors(errors) {
   for (const error of errors) {
     const field = error.field ? `, champ ${error.field}` : '';
@@ -110,6 +127,7 @@ export async function runImport(args) {
     console.error('index_vocal_invalide');
     return 1;
   }
+  const voiceFiles = await listVoiceFiles(voiceIndex);
   const result = importLexique({
     sourceText,
     categoriesText,
@@ -117,6 +135,7 @@ export async function runImport(args) {
     baseCategories: CATEGORIES,
     defaultCards: defaultCards(),
     voiceIndex,
+    voiceFiles,
   });
   if (result.errors.length) {
     printErrors(result.errors);

@@ -5,6 +5,7 @@ import * as db from '../db.js';
 import { h, btn } from './util.js';
 import { resizePhoto } from '../media.js';
 import { searchPictograms, downloadPictogram, ARASAAC_CREDIT } from './arasaac.js';
+import { emojiForItem, getEmojiSkinTone } from './emoji-skin-tone.js';
 
 const PHOTO_MAX_SIDE = 800;
 const photos = new Map(); // visualKey → URL de la photo
@@ -55,13 +56,18 @@ export async function setVisualStyle(style) {
 function libreSources(box) {
   if (visualStyle === 'system') return [];
   const emoji = box.dataset.emoji || '';
-  const plain = emoji.replace(/️/g, '');
+  const renderedEmoji = box.dataset.renderedEmoji || emoji;
+  const plain = renderedEmoji.replace(/️/g, '');
+  const person = box.dataset.gram === 'person' || box.dataset.role === 'person';
+  const exactOnly = person && getEmojiSkinTone() !== 'default' && /\p{Emoji_Modifier_Base}/u.test(renderedEmoji);
   const sources = [];
   if (visualStyle === 'mulberry') {
-    const file = libre.mulberry.words[box.dataset.word] || libre.mulberry.emoji[emoji] || libre.mulberry.emoji[plain];
+    const file = exactOnly
+      ? libre.mulberry.emoji[renderedEmoji] || libre.mulberry.emoji[plain]
+      : libre.mulberry.words[box.dataset.word] || libre.mulberry.emoji[emoji] || libre.mulberry.emoji[emoji.replace(/️/g, '')];
     if (file) sources.push({ src: `./assets/mulberry/${file}`, cls: 'visual-picto' });
   }
-  const moji = libre.emoji[emoji] || libre.emoji[plain];
+  const moji = exactOnly ? libre.emoji[renderedEmoji] || libre.emoji[plain] : libre.emoji[emoji] || libre.emoji[emoji.replace(/️/g, '')];
   if (moji) sources.push({ src: `./assets/emoji/${moji}`, cls: 'visual-moji' });
   return sources;
 }
@@ -69,7 +75,7 @@ function libreSources(box) {
 function libreImage(box, sources) {
   const [first, ...rest] = sources;
   const img = h('img', { src: first.src, alt: '', class: first.cls, draggable: 'false' });
-  img.onerror = () => img.replaceWith(rest.length ? libreImage(box, rest) : h('span', { class: 'emoji' }, box.dataset.emoji || '❔'));
+  img.onerror = () => img.replaceWith(rest.length ? libreImage(box, rest) : h('span', { class: 'emoji' }, box.dataset.renderedEmoji || box.dataset.emoji || '❔'));
   return img;
 }
 
@@ -218,6 +224,8 @@ function fill(box) {
   const key = box.dataset.vkey;
   const url = photos.get(key);
   const keep = [...box.children].filter((c) => c.classList.contains('photo-btn'));
+  const emoji = box.dataset.emoji || '';
+  box.dataset.renderedEmoji = emojiForItem({ emoji, gram: box.dataset.gram, lexicon: { role: box.dataset.role } });
   let content;
   if (url) content = h('img', { src: url, alt: '', class: 'visual-photo' });
   else {
@@ -225,16 +233,22 @@ function fill(box) {
     const sources = svg ? [] : libreSources(box);
     if (svg) content = h('span', { class: 'visual-art', html: `<svg viewBox="0 0 200 200" role="img" aria-hidden="true">${svg}</svg>` });
     else if (sources.length) content = libreImage(box, sources);
-    else content = h('span', { class: 'emoji' }, box.dataset.emoji || '❔');
+    else content = h('span', { class: 'emoji' }, box.dataset.renderedEmoji || '❔');
   }
   box.classList.toggle('has-photo', Boolean(url));
   box.replaceChildren(content, ...keep);
 }
 
-// item : { visualKey | vkey, emoji, label | fr }. Options : button (📷 visible en mode parent), cls.
+// item : { visualKey | vkey, emoji, label | fr, gram, lexicon.role }. Options : button (📷 visible en mode parent), cls.
 export function renderVisual(item, { button = true, cls = '' } = {}) {
   const key = keyFor(item);
-  const box = h('span', { class: `visual ${cls}`.trim(), dataset: { vkey: key, emoji: item.emoji || '', word: slugKey(item.label || item.fr || '') } });
+  const box = h('span', { class: `visual ${cls}`.trim(), dataset: {
+    vkey: key,
+    emoji: item.emoji || '',
+    word: slugKey(item.label || item.fr || ''),
+    gram: item.gram || '',
+    role: item.lexicon?.role || '',
+  } });
   if (button) {
     const label = item.label || item.fr || '';
     box.append(h('span', { class: 'photo-btn', role: 'button', tabindex: '0', title: 'Mettre une photo', onclick: (e) => { e.stopPropagation(); e.preventDefault(); openPhotoPickerModal(key, label); } }, '📷'));
@@ -269,7 +283,13 @@ export function openPhotoPickerModal(visualKey, label, onSaved) {
   const error = h('p', { class: 'hint', role: 'alert' });
   const results = h('div', { class: 'ed-picto-grid' });
   const source = [...document.querySelectorAll('.visual')].find((box) => box.dataset.vkey === visualKey);
-  const preview = renderVisual({ vkey: visualKey, emoji: source ? source.dataset.emoji : '', label: source ? source.dataset.word : '' }, { button: false, cls: 'picker-preview' });
+  const preview = renderVisual({
+    vkey: visualKey,
+    emoji: source ? source.dataset.emoji : '',
+    label: source ? source.dataset.word : '',
+    gram: source ? source.dataset.gram : '',
+    lexicon: { role: source ? source.dataset.role : '' },
+  }, { button: false, cls: 'picker-preview' });
   const save = async (blob, origin) => {
     await setVisual(visualKey, blob, { source: origin, label });
     if (onSaved) onSaved(blob);

@@ -660,23 +660,40 @@ export function renderLexiqueModule(data) {
   return `export const LEXIQUE = ${JSON.stringify(data, null, 2)};\n`;
 }
 
-export function renderMissingVoices(words, voiceIndex = {}) {
-  const languages = Object.keys(voiceIndex).sort();
+function expectedVoiceText(word, language) {
+  if (language === 'fr') return word.fr;
+  if (language === 'dr') return word.drAr;
+  if (language === 'ar') return word.arStandard;
+  return '';
+}
+
+function hasVoiceFile(voiceFiles, language, id) {
+  if (!voiceFiles) return false;
+  const path = `${language}/${id}.mp3`;
+  if (voiceFiles instanceof Set) return voiceFiles.has(path);
+  return Array.isArray(voiceFiles) && voiceFiles.includes(path);
+}
+
+export function renderMissingVoices(words, voiceIndex = {}, voiceFiles = null) {
+  const languages = Object.keys(voiceIndex);
   const rows = [];
   for (const word of words) {
     for (const language of languages) {
       const voices = voiceIndex[language] || {};
-      if (!voices[word.wordId] && !(word.legacyId && voices[word.legacyId])) rows.push([word.wordId, language]);
+      const expected = expectedVoiceText(word, language);
+      const ids = [word.wordId, word.legacyId].filter(Boolean);
+      const present = ids.some((id) => voices[id] === expected && hasVoiceFile(voiceFiles, language, id));
+      if (!present) rows.push([word.wordId, language]);
     }
   }
   return `wordId;langue\n${rows.map((row) => row.join(';')).join('\n')}${rows.length ? '\n' : ''}`;
 }
 
-export function importLexique({ sourceText, categoriesText, forbiddenNames = [], today = new Date().toISOString().slice(0, 10), baseCategories = [], defaultCards = [], voiceIndex = {} }) {
+export function importLexique({ sourceText, categoriesText, forbiddenNames = [], today = new Date().toISOString().slice(0, 10), baseCategories = [], defaultCards = [], voiceIndex = {}, voiceFiles = null }) {
   const categoryResult = validateCategoriesCsv(categoriesText, { baseCategories, forbiddenNames, today });
   const wordResult = validateLexiqueCsv(sourceText, { categories: [...baseCategories, ...categoryResult.categories], defaultCards, forbiddenNames, today });
   const errors = [...categoryResult.errors, ...wordResult.errors];
   if (errors.length) return { data: null, missingCsv: null, errors };
   const data = buildLexiqueData({ categories: categoryResult.categories, words: wordResult.words });
-  return { data, missingCsv: renderMissingVoices(data.words, voiceIndex), errors: [] };
+  return { data, missingCsv: renderMissingVoices(data.words, voiceIndex, voiceFiles), errors: [] };
 }
