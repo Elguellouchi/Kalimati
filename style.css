@@ -124,7 +124,7 @@ body.parent .photo-btn { display: grid; }
 .tab.active { background: var(--cat); color: #fff; }
 .grid {
   padding: 0 var(--gap) var(--gap);
-  display: grid; gap: var(--gap); grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); align-content: start;
+  display: grid; gap: var(--gap); grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr)); grid-auto-rows: max-content; align-content: start;
 }
 /* Double codage : bordure = clé de Fitzgerald (rôle du mot), bandeau du haut = catégorie. */
 .card {
