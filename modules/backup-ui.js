@@ -185,20 +185,26 @@ export function createBackupUi(app) {
     // Lot 2 (L2-08) : remise en ordre automatique, uniquement ici et seulement après 2 touchers.
     // Sans 2e toucher en 4 secondes, le bouton revient comme avant (mécanisme de stories.js).
     let confirmRelayout = false;
+    let confirmRelayoutTimer = 0;
+    let relayoutDoneTimer = 0;
     $('#relayout').onclick = async () => {
       const b = $('#relayout');
+      clearTimeout(relayoutDoneTimer);
       if (!confirmRelayout) {
         confirmRelayout = true;
         b.textContent = 'Toucher encore pour confirmer';
-        setTimeout(() => { if (confirmRelayout) { confirmRelayout = false; b.textContent = 'Remettre en ordre automatique'; } }, 4000);
+        clearTimeout(confirmRelayoutTimer);
+        confirmRelayoutTimer = setTimeout(() => { if (confirmRelayout) { confirmRelayout = false; b.textContent = 'Remettre en ordre automatique'; } }, 4000);
         return;
       }
       confirmRelayout = false;
-      b.textContent = 'Remettre en ordre automatique';
+      clearTimeout(confirmRelayoutTimer);
       state.cards = relayout(state.cards, state.cols);
       await db.putCards(state.cards);
       await saveLayoutFingerprint(state.cards); // Lot 2 (L2-10) : action adulte → nouvelle empreinte
       renderView();
+      b.textContent = 'Cartes remises en ordre ✔';
+      relayoutDoneTimer = setTimeout(() => { b.textContent = 'Remettre en ordre automatique'; }, 3000);
     };
     $('#photos').onclick = () => { state.space = 'emotions'; renderSpaces(); nav.openGallery(); };
     const adminBtn = document.getElementById('admin-console-btn');
