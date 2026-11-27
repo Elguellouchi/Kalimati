@@ -17,5 +17,7 @@ ok(cleanCustomBoards('nope').length === 0, 'réglage abîmé ignoré');
 const dentiste = boardItems(PLACES[0], cards, (c) => [c.fr]);
 const extra = dentiste.find((i) => i.card && i.card.extra);
 ok(extra && passingCard(extra).fr === 'Bouche' && passingCard(extra).extra === true, 'mot dessiné → carte de passage (jamais enregistrée)');
+const filtered = boardItems({ text: 'pomme, docteur, mer, banane' }, cards.filter((card) => card.fr !== 'Pomme'), (c) => [c.fr, c.dr], { excludedWords: ['Pomme', 'docteur', 'mer'] });
+ok(filtered.length === 4 && filtered.slice(0, 3).every((item) => !item.card) && Boolean(filtered[3].card), 'tableau express : les exclusions sont transmises aux mots dessinés');
 if (fail) { console.error(`${fail} échec(s)`); process.exit(1); }
 console.log('test-places : OK');

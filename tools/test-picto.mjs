@@ -22,6 +22,9 @@ const ids2 = (t) => matchPictos(t, idx2).map((x) => x.card ? x.card.id : `«${x.
 ok(ids2('On va chez le médecin') === 'aller «chez» extra:médecin', 'mot de secours : médecin a un dessin');
 ok(ids2('Demain on va au dentiste en bus') === 'extra:demain aller extra:dentiste extra:bus', 'sortie annoncée en images');
 ok(matchPictos('Je veux du pain', idx2)[1].card.id === 'pain', 'une vraie carte passe avant le mot de secours');
+const idx3 = buildIndex([...cards.filter((card) => card.id !== 'pain'), ...extraConcepts({ excludedWords: ['pomme', 'docteur', 'mer'] })], (c) => (c.extra ? [c.fr, ...c.alt] : [c.fr, c.dr]));
+const ids3 = (t) => matchPictos(t, idx3).map((x) => x.card ? x.card.id : `«${x.text}»`).join(' ');
+ok(ids3('pomme docteur mer') === '«pomme» «docteur» «mer»', 'un mot exclu ne réapparaît pas par un dessin ou un alias du catalogue');
 ok(extraConcepts().length > 300, 'catalogue illustré disponible hors ligne');
 if (fail) { console.error(`${fail} échec(s)`); process.exit(1); }
 console.log('test-picto : OK');

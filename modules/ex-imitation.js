@@ -194,7 +194,7 @@ function phonemeTab(phoneme) {
   list.append(
     h('div', { class: 'phon-cue' }, renderVisual({ emoji: phoneme.emoji, vkey: `phoneme:${phoneme.id}`, label: `bouche son ${phoneme.id}` }), h('p', {}, phoneme.cue)),
     ...phoneme.words.map(wordRow),
-    btn('✅ Progrès validé avec l’orthophoniste', async (e) => {
+    btn('✅ Progrès relu par l’orthophoniste', async (e) => {
       if (!validate._confirmed) {
         validate._confirmed = true;
         validate.textContent = 'Confirmer la validation orthophoniste ?';

@@ -2,12 +2,12 @@
 // Code déplacé tel quel depuis app.js (v10.42, Lot 4.1) : aucun comportement ne change.
 // Les fonctions encore dans app.js sont lues au moment de l’appel (app.<nom>).
 import * as db from '../db.js';
-import { CATEGORIES } from '../data.js';
 import { resizePhoto } from '../media.js';
 import { sayCard, speak, stopSpeaking, unlockAudio } from '../speech.js';
 import { firstName } from './aba.js';
 import { MOTOR_STAGES, applyProgressiveStage } from './core-vocabulary-plan.js';
 import { LANGS, categoryName, isAmazighLang } from './languages.js';
+import { allCategories, cardPassesReviewFilter } from './lexique-rules.js';
 import { VIDEO_SETTING_KEY, VIDEO_WHO, cleanVideos, newVideoId, videoBlobKey, videoProblem } from './model-videos.js';
 import { PLACES, PLACE_SETTING_KEY, boardItems, cleanCustomBoards, newBoardId, passingCard } from './place-boards.js';
 import { EXPLORE_SCENES, GRID_SIZES, SCENE_SETTING_KEY, cellBox, cleanScenes, newSceneId, sceneImageKey } from './scenes.js';
@@ -27,6 +27,12 @@ export function createTalkTools(app) {
   const renderView = (...args) => app.renderView(...args);
   const saveCards = (...args) => app.saveCards(...args);
   const state = app.state;
+  const childCards = () => state.cards.filter((card) => cardPassesReviewFilter(card, { parent: false, onlyReviewed: state.onlyReviewed }));
+  const excludedCardWords = () => state.cards
+    .filter((card) => !cardPassesReviewFilter(card, { parent: false, onlyReviewed: state.onlyReviewed }))
+    .flatMap((card) => [label(card), card.fr, card.dr, card.ar]);
+  const toolCards = () => state.parent ? state.cards.filter((card) => !card.hidden) : childCards();
+  const toolExcludedWords = () => state.parent ? [] : excludedCardWords();
   // v10.6 (P3.f) : vocabulaire de base dévoilé par paliers. Seulement sur demande de l'adulte.
   // Les cartes gardent leur place ; on masque ou montre seulement les 21 mots du plan.
   let motorPlanNote = '';
@@ -38,12 +44,13 @@ export function createTalkTools(app) {
   // à un anneau (cartable, sac, ceinture). Le rond en haut à gauche indique où percer.
   const KEYRING_CORE = ['Je veux', 'Aide-moi', 'Encore', 'Fini', 'Oui', 'Non', 'Attends', "J'ai mal", 'Toilettes', 'Eau', 'Manger', 'Calme'];
   function keyringItems(setId) {
-    const usable = state.cards.filter((c) => !c.hidden);
+    const usable = childCards();
+    const excludedWords = excludedCardWords();
     const toCards = (items) => items.filter((i) => i.card).map((i) => (i.card.extra ? passingCard(i) : i.card));
-    if (setId === 'core') return toCards(boardItems({ words: KEYRING_CORE }, usable, (c) => [label(c), c.fr]));
+    if (setId === 'core') return toCards(boardItems({ words: KEYRING_CORE }, usable, (c) => [label(c), c.fr], { excludedWords }));
     if (setId.startsWith('cat:')) return usable.filter((c) => c.cat === setId.slice(4));
     const board = allPlaceBoards().find((b) => b.id === setId);
-    return board ? toCards(boardItems(board, usable, (c) => [label(c), c.fr, c.dr])) : [];
+    return board ? toCards(boardItems(board, usable, (c) => [label(c), c.fr, c.dr], { excludedWords })) : [];
   }
   function printKeyring(setId, title) {
     const cards = keyringItems(setId).slice(0, 24);
@@ -64,7 +71,7 @@ export function createTalkTools(app) {
     setTimeout(() => window.print(), 300);
   }
   function keyringBox() {
-    const options = [['core', 'Mots essentiels (12)'], ...CATEGORIES.map((c) => [`cat:${c.id}`, `Dossier : ${categoryName(c, 'fr')}`]),
+    const options = [['core', 'Mots essentiels (12)'], ...allCategories.map((c) => [`cat:${c.id}`, `Dossier : ${categoryName(c, 'fr')}`]),
       ...allPlaceBoards().map((b) => [b.id, `Lieu : ${b.title}`])];
     const pick = h('select', { 'aria-label': 'Cartes du porte-clés' }, options.map(([v, t]) => h('option', { value: v }, t)));
     return h('details', { class: 'card-box keyring-box' }, h('summary', {}, '🔑 Porte-clés à imprimer'),
@@ -110,13 +117,15 @@ export function createTalkTools(app) {
     if (String(state.place).startsWith('explore:') || String(state.place).startsWith('scene:')) return sceneView(grid);
     if (String(state.place).startsWith('video:')) return videoView(grid, tappable);
     if (state.place === 'intent' && state.intent) {
-      state.intent.cards.forEach((card) => grid.append(tappable(card)));
+      state.intent.cards.forEach((card) => {
+        if (state.parent || cardPassesReviewFilter(card, { onlyReviewed: state.onlyReviewed })) grid.append(tappable(card));
+      });
       return h('div', { class: 'place-head' }, h('strong', {}, `💡 ${state.intent.title}`),
         placeBtn('↩', 'Revenir à mes mots', () => { state.place = null; state.intent = null; renderView(); }));
     }
     const board = allPlaceBoards().find((b) => b.id === state.place);
     if (!board) { state.place = null; return null; }
-    const items = boardItems(board, state.cards.filter((c) => !c.hidden), (c) => [label(c), c.fr, c.dr, c.ar]);
+    const items = boardItems(board, toolCards(), (c) => [label(c), c.fr, c.dr, c.ar], { excludedWords: toolExcludedWords() });
     for (const item of items) {
       if (!item.card) { grid.append(h('span', { class: 'card place-word', role: 'note' }, h('span', { class: 'label' }, item.text))); continue; }
       grid.append(tappable(item.card.extra ? passingCard(item) : item.card));
@@ -177,9 +186,12 @@ export function createTalkTools(app) {
   }
   let sceneIndexCache = null;
   function sceneWordCard(word) {
-    if (!sceneIndexCache || sceneIndexCache.cards !== state.cards || sceneIndexCache.lang !== state.lang) {
-      sceneIndexCache = { cards: state.cards, lang: state.lang,
-        index: buildIndex([...state.cards.filter((c) => !c.hidden), ...extraConcepts()], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar])) };
+    if (!sceneIndexCache || sceneIndexCache.cards !== state.cards || sceneIndexCache.lang !== state.lang
+      || sceneIndexCache.parent !== state.parent || sceneIndexCache.onlyReviewed !== state.onlyReviewed) {
+      sceneIndexCache = {
+        cards: state.cards, lang: state.lang, parent: state.parent, onlyReviewed: state.onlyReviewed,
+        index: buildIndex([...toolCards(), ...extraConcepts({ excludedWords: toolExcludedWords() })], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar])),
+      };
     }
     const item = matchPictos(word, sceneIndexCache.index, { skipSmallWords: false }).find((it) => it.card);
     if (!item) return null;
@@ -440,7 +452,7 @@ export function createTalkTools(app) {
     const note = h('p', { class: 'note' }, '');
     const draw = () => {
       pictoDraft = input.value;
-      const index = buildIndex([...state.cards.filter((c) => !c.hidden), ...extraConcepts()], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar]));
+      const index = buildIndex([...toolCards(), ...extraConcepts({ excludedWords: toolExcludedWords() })], (c) => (c.extra ? [c.fr, ...c.alt] : [label(c), c.fr, c.dr, c.ar]));
       items = matchPictos(input.value, index);
       line.replaceChildren(...items.map((it) => pictoEl(it, false)));
       const found = items.filter((it) => it.card).length;

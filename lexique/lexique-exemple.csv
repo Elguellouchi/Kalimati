@@ -1,0 +1,22 @@
+wordId;niveau;palier;categorie;role;emoji;fr;dr_lat;dr_ar;ar;pos_2;pos_3;pos_4;pos_5;relecteur_fr;relecteur_dr;date_relecture;note;fonction
+w-base-je-veux;noyau;1;base;person;🙋;Je veux;Bghit;بغيت;;1:1;1:1;1:1;1:1;;;;;
+w-base-oui;noyau;1;base;social;👍;Oui;Ah;اه;;1:2;1:2;1:2;1:2;;;;;
+w-base-non;noyau;1;base;social;👎;Non;La;لا;;2:1;1:3;1:3;1:3;;;;;
+w-base-encore;noyau;1;base;adj;➕;Encore;Zid;زيد;;2:2;2:1;1:4;1:4;;;;;
+w-base-fini;noyau;1;base;social;✋;Fini;Safi;صافي;;3:1;2:2;2:1;1:5;;;;;
+w-base-aide-moi;noyau;1;base;social;🤝;Aide-moi;3awnni;عاوني;;3:2;2:3;2:2;2:1;;;;;
+w-base-attends;noyau;2;base;social;⏳;Attends;Tsenna;تسنى;;4:1;3:1;2:3;2:2;;;;;
+w-base-j-ai-mal;noyau;1;base;social;🤕;J'ai mal;Kayderni;كيضرني;;4:2;3:2;2:4;2:3;;;;;
+w-base-bonjour;noyau;2;base;social;👋;Bonjour;Salam;سلام;;5:1;3:3;3:1;2:4;;;;;
+w-base-au-revoir;noyau;2;base;social;🖐️;Au revoir;Bslama;بسلامة;;5:2;4:1;3:2;2:5;;;;;
+w-base-viens-jouer;noyau;3;base;social;🧑‍🤝‍🧑;Viens jouer;Aji nl3bou;أجي نلعبو;;6:1;4:2;3:3;3:1;;;;;
+w-actions-manger;noyau;1;actions;verb;🍽️;Manger;Nakoul;ناكل;;1:1;1:1;1:1;1:1;;;;;
+w-actions-boire;noyau;1;actions;verb;🥤;Boire;Nchreb;نشرب;;1:2;1:2;1:2;1:2;;;;;
+w-actions-jouer;noyau;1;actions;verb;🧸;Jouer;Nl3eb;نلعب;;2:1;1:3;1:3;1:3;;;;;
+w-actions-donner;noyau;1;actions;verb;🫴;Donner;3tini;عطيني;;2:2;2:1;1:4;1:4;;;;;
+w-actions-ouvrir;noyau;2;actions;verb;🚪;Ouvrir;Nhel;نحل;;3:1;2:2;2:1;1:5;;;;;
+w-actions-laver;noyau;2;actions;verb;🧼;Laver;Nghsel;نغسل;;3:2;2:3;2:2;2:1;;;;;
+w-actions-courir;noyau;3;actions;verb;🏃;Courir;Njri;نجري;;4:1;3:1;2:3;2:2;;;;;
+w-actions-sauter;noyau;3;actions;verb;🦘;Sauter;N9fez;نقفز;;4:2;3:2;2:4;2:3;;;;;
+w-actions-couper;noyau;3;actions;verb;✂️;Couper;N9te3;نقطع;;5:1;3:3;3:1;2:4;;;;;
+w-actions-dessiner;noyau;3;actions;verb;🖍️;Dessiner;Nrsem;نرسم;;5:2;4:1;3:2;2:5;;;;;

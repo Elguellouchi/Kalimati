@@ -1,0 +1,543 @@
+import assert from 'node:assert/strict';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+import { CATEGORIES, defaultCards } from '../data.js';
+import { CORE_MOTOR_PLAN_V1 } from '../modules/core-vocabulary-plan.js';
+import {
+  parseCsv,
+  validateCategoriesCsv,
+  validateLexiqueCsv,
+  computeReviewStatus,
+  normalizeForbiddenText,
+  containsForbiddenName,
+  canonicalRevision,
+  buildLexiqueData,
+  renderLexiqueModule,
+  renderMissingVoices,
+  importLexique,
+  planLexiqueApplication,
+  isLexicallyCustomized,
+  matchesHistoricalCard,
+  cardPassesReviewFilter,
+  computeLexiqueStats,
+} from '../modules/lexique-core.js';
+import { initLexiqueSettings } from '../modules/lexique-init.js';
+import { layoutFingerprint } from '../modules/grid-layout.js';
+import { writeOutputsAtomically } from '../tools/import-lexique.mjs';
+
+const HEADER = 'wordId;niveau;palier;categorie;role;emoji;fr;dr_lat;dr_ar;ar;pos_2;pos_3;pos_4;pos_5;relecteur_fr;relecteur_dr;date_relecture;note;fonction';
+const COLUMNS = HEADER.split(';');
+const CATEGORY_HEADER = 'id;fr;dr;ar;emoji;color';
+const TODAY = '2026-11-27';
+const root = fileURLToPath(new URL('../', import.meta.url));
+const cli = join(root, 'tools', 'import-lexique.mjs');
+const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8');
+const base = defaultCards();
+const options = { categories: CATEGORIES, defaultCards: base, forbiddenNames: [], today: TODAY };
+
+function fixtureWord(overrides = {}) {
+  return {
+    wordId: 'w-fixture', niveau: 'noyau', palier: '1', categorie: 'base', role: 'social',
+    emoji: '🙂', fr: 'fixture', dr_lat: 'fixture', dr_ar: 'فيxtures', ar: '',
+    pos_2: '1:1', pos_3: '1:1', pos_4: '1:1', pos_5: '1:1',
+    relecteur_fr: '', relecteur_dr: '', date_relecture: '', note: '', fonction: '',
+    ...overrides,
+  };
+}
+
+function csvCell(value) {
+  const text = String(value ?? '');
+  return /[;"\r\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
+}
+
+function lexiqueCsv(rows, header = COLUMNS) {
+  return `${header.join(';')}\n${rows.map((row) => header.map((key) => csvCell(row[key])).join(';')).join('\n')}\n`;
+}
+
+function validate(rows, extra = {}, header = COLUMNS) {
+  return validateLexiqueCsv(lexiqueCsv(rows, header), { ...options, ...extra });
+}
+
+function hasReason(result, reason) {
+  return result.errors.some((error) => error.reason === reason);
+}
+
+// 1. Exemple : 21 mots du plan moteur, tous brouillons, sans relecture choisie.
+{
+  const result = validateLexiqueCsv(await read('lexique/lexique-exemple.csv'), options);
+  assert.deepEqual(result.errors, []);
+  assert.equal(result.words.length, 21);
+  assert.ok(result.words.every((word) => word.status === 'brouillon'));
+  for (const planned of CORE_MOTOR_PLAN_V1) {
+    const word = result.words.find((entry) => entry.wordId === `w-${planned.id.slice(2)}`);
+    const card = base.find((entry) => entry.id === planned.id);
+    assert.ok(word, planned.id);
+    assert.equal(word.fr, planned.fr);
+    assert.equal(word.drLat, planned.dr);
+    assert.equal(word.drAr, planned.ar);
+    assert.equal(word.categorie, planned.cat);
+    assert.equal(word.role, planned.gram);
+    assert.equal(word.palier, planned.stage);
+    assert.equal(word.emoji, card.emoji);
+    assert.deepEqual(word.positions['4'], { row: planned.gridRow, col: planned.gridCol });
+    assert.equal(word.legacyId, planned.id);
+    assert.equal(word.relecteurFr, '');
+    assert.equal(word.relecteurDr, '');
+    assert.equal(word.dateRevision, '');
+  }
+  console.log('test-lexique 1 exemple : OK');
+}
+
+// 2. Parseur : BOM, CRLF, champs cités, guillemet échappé, multiligne, lignes vides.
+{
+  const parsed = parseCsv('\uFEFFa;b\r\n"x;y";"z""q"\r\n"ligne 1\n\nligne 3";v\r\n\r\n', ['a', 'b']);
+  assert.deepEqual(parsed.errors, []);
+  assert.deepEqual(parsed.header, ['a', 'b']);
+  assert.deepEqual(parsed.rows.map((row) => row.cells), [['x;y', 'z"q'], ['ligne 1\n\nligne 3', 'v']]);
+  assert.equal(parsed.rows[1].line, 3);
+  assert.equal(parseCsv('a;b\n"x;y', ['a', 'b']).errors[0].reason, 'guillemet_non_ferme');
+  console.log('test-lexique 2 parseur : OK');
+}
+
+// 3. En-tête et structure : colonnes, ordre, cellules, guillemets.
+{
+  assert.ok(hasReason(validate([fixtureWord()], {}, COLUMNS.filter((column) => column !== 'fr')), 'colonne_manquante'));
+  assert.ok(hasReason(validate([fixtureWord()], {}, [...COLUMNS, 'fr']), 'colonne_dupliquee'));
+  assert.ok(hasReason(validate([fixtureWord()], {}, [...COLUMNS, 'inconnu']), 'colonne_inconnue'));
+  const wrongOrder = [...COLUMNS];
+  [wrongOrder[6], wrongOrder[7]] = [wrongOrder[7], wrongOrder[6]];
+  assert.ok(hasReason(validate([fixtureWord()], {}, wrongOrder), 'ordre_colonnes_invalide'));
+  const extraCell = `${HEADER}\n${COLUMNS.map((key) => csvCell(fixtureWord()[key])).join(';')};x\n`;
+  assert.ok(hasReason(validateLexiqueCsv(extraCell, options), 'nombre_cellules_incorrect'));
+  const missingCell = `${HEADER}\n${COLUMNS.slice(0, -1).map((key) => csvCell(fixtureWord()[key])).join(';')}\n`;
+  assert.ok(hasReason(validateLexiqueCsv(missingCell, options), 'nombre_cellules_incorrect'));
+  const optionalAbsent = validate([fixtureWord()], {}, COLUMNS.filter((column) => !['ar', 'note', 'fonction'].includes(column)));
+  assert.deepEqual(optionalAbsent.errors, []);
+  assert.equal(optionalAbsent.words[0].arStandard, '');
+  const categoryOptions = { baseCategories: CATEGORIES, forbiddenNames: [], today: TODAY };
+  const baseRedeclared = validateCategoriesCsv(`${CATEGORY_HEADER}\nbase;Base;دابا;قاعدة;🙂;#112233\n`, categoryOptions);
+  assert.ok(hasReason(baseRedeclared, 'categorie_base_interdite'));
+  const categoryWithoutArabic = validateCategoriesCsv(`${CATEGORY_HEADER}\nfixture;Fixture;Fixture;;🙂;#112233\n`, categoryOptions);
+  assert.ok(categoryWithoutArabic.errors.some((error) => error.field === 'ar' && error.reason === 'champ_obligatoire_vide'));
+  console.log('test-lexique 3 en-tete : OK');
+}
+
+// 4. Champs : identité, énumérations, textes, date et emoji.
+{
+  assert.ok(hasReason(validate([fixtureWord({ wordId: 'fixture' })]), 'wordId_invalide'));
+  assert.ok(hasReason(validate([fixtureWord(), fixtureWord()]), 'wordId_duplique'));
+  for (const [field, value] of [['niveau', 'autre'], ['palier', '5'], ['role', 'autre'], ['fonction', 'autre']]) {
+    assert.ok(hasReason(validate([fixtureWord({ [field]: value })]), 'valeur_invalide'), field);
+  }
+  for (const field of ['fr', 'dr_lat', 'dr_ar']) {
+    assert.ok(hasReason(validate([fixtureWord({ [field]: '   ' })]), 'champ_obligatoire_vide'), field);
+    assert.ok(hasReason(validate([fixtureWord({ [field]: 'x'.repeat(41) })]), 'texte_trop_long'), field);
+  }
+  assert.ok(hasReason(validate([fixtureWord({ date_relecture: '2026-02-30' })]), 'date_invalide'));
+  assert.ok(hasReason(validate([fixtureWord({ date_relecture: '2026-11-28' })]), 'date_future'));
+  assert.ok(hasReason(validate([fixtureWord({ emoji: 'fixture' })]), 'emoji_invalide'));
+  assert.ok(hasReason(validate([fixtureWord({ emoji: '🙂'.repeat(17) })]), 'emoji_trop_long'));
+  assert.deepEqual(validate([fixtureWord({ emoji: '👩🏽‍⚕️', fr: '  fixture  ' })]).words[0].fr, 'fixture');
+  console.log('test-lexique 4 champs : OK');
+}
+
+// 5. Positions : collision locale, catégories distinctes et bornes.
+{
+  const duplicate = validate([
+    fixtureWord({ wordId: 'w-fixture-a' }),
+    fixtureWord({ wordId: 'w-fixture-b' }),
+  ]);
+  assert.ok(hasReason(duplicate, 'position_dupliquee'));
+  const separate = validate([
+    fixtureWord({ wordId: 'w-fixture-a' }),
+    fixtureWord({ wordId: 'w-fixture-b', categorie: 'manger' }),
+  ]);
+  assert.deepEqual(separate.errors, []);
+  for (const position of ['0:1', '-1:1', '1.5:1', '1:0', '1:3']) {
+    assert.ok(hasReason(validate([fixtureWord({ pos_2: position })]), 'position_invalide'), position);
+  }
+  console.log('test-lexique 5 positions : OK');
+}
+
+// 6. Statuts et deuxième voix indépendante.
+{
+  assert.equal(computeReviewStatus({ relecteurFr: 'AB' }), 'brouillon');
+  assert.equal(computeReviewStatus({ relecteurDr: 'CD' }), 'relu-langue');
+  assert.equal(computeReviewStatus({ relecteurFr: 'AB', relecteurDr: 'CD', dateRevision: '2026-11-01' }), 'relu-langue');
+  assert.equal(computeReviewStatus({ relecteurFr: 'AB', relecteurDr: 'CD', dateRevision: '2026-11-01', secondVoice: 'EF' }), 'relu-clinique');
+  assert.ok(hasReason(validate([fixtureWord({ relecteur_fr: 'AB', relecteur_dr: 'CD', note: '2e_voix=CD' })]), 'seconde_voix_identique'));
+  assert.ok(hasReason(validate([fixtureWord({ relecteur_fr: 'AB', note: '2e_voix=AB' })]), 'seconde_voix_identique'));
+  assert.ok(hasReason(validate([fixtureWord({ note: '2e_voix=abcdef' })]), 'note_invalide'));
+  assert.ok(hasReason(validate([fixtureWord({ relecteur_dr: 'cd' })]), 'relecteur_invalide'));
+  const complete = validate([fixtureWord({ relecteur_fr: 'AB', relecteur_dr: 'CD', date_relecture: '2026-11-01', note: ' 2e_voix = EF ' })]);
+  assert.deepEqual(complete.errors, []);
+  assert.equal(complete.words[0].secondVoice, 'EF');
+  assert.equal(complete.words[0].status, 'relu-clinique');
+  console.log('test-lexique 6 statuts : OK');
+}
+
+// 7. Confidentialité : champs textuels, catégories, coordonnées, erreurs sans valeur.
+{
+  const forbidden = ['NOMSYNTHETIQUE'];
+  for (const field of ['fr', 'dr_lat', 'dr_ar', 'ar']) {
+    const result = validate([fixtureWord({ [field]: 'fixture NOMSYNTHETIQUE' })], { forbiddenNames: forbidden });
+    assert.ok(hasReason(result, 'nom_interdit'), field);
+    assert.ok(!JSON.stringify(result.errors).includes('NOMSYNTHETIQUE'));
+  }
+  for (const value of ['https://fixture.invalid', 'fixture@fixture.invalid', '+212 600 000 000']) {
+    const result = validate([fixtureWord({ fr: value })], { forbiddenNames: forbidden });
+    assert.ok(hasReason(result, 'coordonnees_interdites'), value);
+    assert.ok(!JSON.stringify(result.errors).includes(value));
+  }
+  const categoryResult = validateCategoriesCsv(`${CATEGORY_HEADER}\nfixture;NOMSYNTHETIQUE;fixture;فيxtures;🙂;#123ABC\n`, {
+    baseCategories: CATEGORIES, forbiddenNames: forbidden, today: TODAY,
+  });
+  assert.ok(hasReason(categoryResult, 'nom_interdit'));
+  assert.ok(!JSON.stringify(categoryResult.errors).includes('NOMSYNTHETIQUE'));
+  assert.equal(normalizeForbiddenText('  Fîxture-ÉXEMPLE! '), 'fixture exemple');
+  assert.equal(containsForbiddenName('bonjour NOMSYNTHETIQUE', forbidden), true);
+  assert.equal(containsForbiddenName('fixture', forbidden), false);
+  console.log('test-lexique 7 confidentialite : OK');
+}
+
+const temp = await mkdtemp(join(tmpdir(), 'kalimati-lexique-'));
+try {
+  // 8. Liste synthétique temporaire hors dépôt, utilisée par la CLI.
+  {
+    const source = join(temp, 'source.csv');
+    const categories = join(temp, 'categories.csv');
+    const forbidden = join(temp, 'liste.txt');
+    const output = join(temp, 'lexique-data.js');
+    const missing = join(temp, 'voix-manquantes.csv');
+    await writeFile(source, lexiqueCsv([fixtureWord()]), 'utf8');
+    await writeFile(categories, `${CATEGORY_HEADER}\n`, 'utf8');
+    await writeFile(forbidden, '# fixture\nNOMTEMPORAIRE\n', 'utf8');
+    const run = spawnSync(process.execPath, [cli, '--source', source, '--categories', categories, '--forbidden', forbidden, '--output', output, '--missing-output', missing], { encoding: 'utf8' });
+    assert.equal(run.status, 0, run.stderr);
+    assert.ok(!run.stdout.includes(forbidden));
+    assert.ok(!run.stderr.includes(forbidden));
+    assert.match(await readFile(output, 'utf8'), /export const LEXIQUE/);
+    console.log('test-lexique 8 liste temporaire : OK');
+  }
+
+  // 9. Validation sans écriture et restauration après panne du second remplacement.
+  {
+    const source = join(temp, 'invalide.csv');
+    const categories = join(temp, 'categories.csv');
+    const forbidden = join(temp, 'liste.txt');
+    const output = join(temp, 'sentinelle.js');
+    const missing = join(temp, 'sentinelle-voix.csv');
+    await writeFile(source, lexiqueCsv([fixtureWord({ wordId: 'invalide' })]), 'utf8');
+    await writeFile(categories, `${CATEGORY_HEADER}\n`, 'utf8');
+    await writeFile(forbidden, 'NOMTEMPORAIRE\n', 'utf8');
+    await writeFile(output, 'SENTINELLE-A', 'utf8');
+    await writeFile(missing, 'SENTINELLE-B', 'utf8');
+    const run = spawnSync(process.execPath, [cli, '--source', source, '--categories', categories, '--forbidden', forbidden, '--output', output, '--missing-output', missing], { encoding: 'utf8' });
+    assert.notEqual(run.status, 0);
+    assert.equal(await readFile(output, 'utf8'), 'SENTINELLE-A');
+    assert.equal(await readFile(missing, 'utf8'), 'SENTINELLE-B');
+
+    const files = new Map([['sortie.js', 'ANCIEN-A'], ['voix.csv', 'ANCIEN-B']]);
+    const io = {
+      readIfExists: async (path) => files.get(path) ?? null,
+      write: async (path, content) => { files.set(path, content); },
+      rename: async (from, to) => {
+        if (to === 'voix.csv') throw new Error('panne second remplacement');
+        files.set(to, files.get(from));
+        files.delete(from);
+      },
+      removeIfExists: async (path) => { files.delete(path); },
+    };
+    await assert.rejects(writeOutputsAtomically({ outputPath: 'sortie.js', missingOutputPath: 'voix.csv', moduleText: 'NOUVEAU-A', missingCsv: 'NOUVEAU-B', io }), /panne second remplacement/);
+    assert.equal(files.get('sortie.js'), 'ANCIEN-A');
+    assert.equal(files.get('voix.csv'), 'ANCIEN-B');
+    assert.ok(![...files.keys()].some((path) => path.includes('.tmp-')));
+    console.log('test-lexique 9 atomicite : OK');
+  }
+
+  // 10. Génération déterministe, note exclue, révision stable LF/CRLF.
+  {
+    const row = fixtureWord({ relecteur_fr: 'AB', relecteur_dr: 'CD', date_relecture: '2026-11-01', note: '2e_voix=EF' });
+    const lf = await importLexique({ sourceText: lexiqueCsv([row]), categoriesText: `${CATEGORY_HEADER}\n`, forbiddenNames: [], baseCategories: CATEGORIES, defaultCards: base, today: TODAY, voiceIndex: {} });
+    const crlf = await importLexique({ sourceText: lexiqueCsv([row]).replaceAll('\n', '\r\n'), categoriesText: `${CATEGORY_HEADER}\r\n`, forbiddenNames: [], baseCategories: CATEGORIES, defaultCards: base, today: TODAY, voiceIndex: {} });
+    assert.deepEqual(lf.errors, []);
+    assert.deepEqual(crlf.errors, []);
+    assert.equal(lf.data.revision, crlf.data.revision);
+    assert.equal(renderLexiqueModule(lf.data), renderLexiqueModule(crlf.data));
+    assert.ok(!('note' in lf.data.words[0]));
+    assert.ok(!renderLexiqueModule(lf.data).includes('2e_voix='));
+    assert.equal(lf.data.words[0].secondVoice, 'EF');
+    assert.equal(await canonicalRevision(lf.data.categories, lf.data.words), lf.data.revision);
+    const data = await buildLexiqueData({ categories: lf.data.categories, words: lf.data.words });
+    assert.equal(data.revision, lf.data.revision);
+    assert.equal(data.revision, createHash('sha256').update(JSON.stringify({ categories: data.categories, words: data.words })).digest('hex'));
+    assert.equal(renderMissingVoices([], {}), 'wordId;langue\n');
+    console.log('test-lexique 10 generation : OK');
+  }
+} finally {
+  await rm(temp, { recursive: true, force: true });
+}
+
+function lexicalWord(overrides = {}) {
+  const result = validate([fixtureWord(overrides)]);
+  assert.deepEqual(result.errors, []);
+  return result.words[0];
+}
+
+function positionsAt(row, col) {
+  return Object.fromEntries(['2', '3', '4', '5'].map((cols) => [cols, { row, col }]));
+}
+
+function historicalCard(word, overrides = {}) {
+  const card = structuredClone(base.find((entry) => entry.id === word.legacyId));
+  assert.ok(card);
+  return { ...card, wordId: card.id, ...overrides };
+}
+
+function memoryDb(settings = {}, cards = [], failWrites = false) {
+  const values = new Map(Object.entries(settings));
+  const writes = [];
+  return {
+    values,
+    writes,
+    async getSetting(key) { return values.get(key); },
+    async setSetting(key, value) {
+      if (failWrites) throw new Error('persistance indisponible');
+      values.set(key, value);
+      writes.push([key, value]);
+    },
+    async getAllCards() { return cards; },
+  };
+}
+
+function memoryLocal(values = {}) {
+  const items = new Map(Object.entries(values));
+  return {
+    items,
+    getItem(key) { return items.get(key) ?? null; },
+    setItem(key, value) { items.set(key, String(value)); },
+  };
+}
+
+// 11. Carte historique exacte : rattachement, champs protégés et empreinte stable.
+{
+  const word = lexicalWord({
+    wordId: 'w-base-oui', fr: 'Oui relu', dr_lat: 'Ah relu', dr_ar: 'اه مراجعة',
+    relecteur_dr: 'CD',
+  });
+  const card = historicalCard(word, {
+    photo: 'sentinel-photo', video: 'sentinel-video', audios: { fr: 'sentinel-voice' },
+    audioFr: 'sentinel-fr', audioDr: 'sentinel-dr', hidden: true,
+  });
+  const before = structuredClone(card);
+  const fingerprintBefore = await layoutFingerprint([card]);
+  const plan = planLexiqueApplication({ words: [word], cards: [card], cols: 4, revision: 'revision-11', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.deepEqual(plan.conflicts, []);
+  assert.equal(plan.additions.length, 0);
+  assert.equal(plan.updates.length, 1);
+  assert.equal(plan.changed.length, 1);
+  const changed = plan.changed[0];
+  assert.equal(changed.id, 'c-base-oui');
+  assert.equal(changed.wordId, 'c-base-oui');
+  assert.equal(changed.lexicon.wordId, 'w-base-oui');
+  assert.equal(changed.lexicon.legacy, true);
+  assert.equal(changed.lexicon.legacyFr, before.fr);
+  assert.equal(changed.lexicon.status, 'relu-langue');
+  assert.equal(changed.fr, word.fr);
+  assert.equal(changed.dr, word.drLat);
+  assert.equal(changed.ar, word.drAr);
+  for (const field of ['id', 'wordId', 'photo', 'video', 'audios', 'audioFr', 'audioDr', 'hidden', 'positions', 'gridRow', 'gridCol', 'order', 'visualKey', 'sub', 'sayFr', 'sayAr', 'cat', 'emoji', 'gram']) {
+    assert.deepEqual(changed[field], before[field], field);
+  }
+  assert.deepEqual(card, before);
+  assert.equal(await layoutFingerprint([changed]), fingerprintBefore);
+  console.log('test-lexique 11 historique : OK');
+}
+
+// 12. Correspondance stricte : famille et alias large intacts, création séparée.
+{
+  const word = lexicalWord();
+  const family = { id: 'u-family', cat: 'base', fr: 'fixture', dr: 'fixture', ar: '', positions: positionsAt(1, 1) };
+  const lookalike = { id: 'c-fixture', cat: 'base', fr: 'fixture', dr: 'fixture', ar: '', emoji: '🙂', gram: 'social', sub: '', sayFr: '', sayAr: '', positions: positionsAt(1, 1) };
+  assert.equal(matchesHistoricalCard(family, { ...word, legacyId: 'u-family' }, base), false);
+  assert.equal(matchesHistoricalCard(lookalike, word, base), false);
+  const known = historicalCard(lexicalWord({ wordId: 'w-base-oui' }));
+  assert.equal(matchesHistoricalCard(known, lexicalWord({ wordId: 'w-base-oui' }), base), true);
+  assert.equal(matchesHistoricalCard({ ...known, fr: 'texte local' }, lexicalWord({ wordId: 'w-base-oui' }), base), false);
+  const cards = [family, lookalike];
+  const before = structuredClone(cards);
+  const plan = planLexiqueApplication({ words: [word], cards, cols: 2, revision: 'revision-12', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.equal(plan.changed.length, 1);
+  assert.equal(plan.additions[0].id, 'w-fixture');
+  assert.deepEqual(plan.additions[0].positions['2'], { row: 1, col: 2 });
+  assert.deepEqual(cards, before);
+  console.log('test-lexique 12 correspondance stricte : OK');
+}
+
+// 13. Personnalisation textuelle conservée ; photo, voix, hidden et position seuls ne personnalisent pas.
+{
+  const word = lexicalWord();
+  const initial = planLexiqueApplication({ words: [word], cards: [], cols: 2, revision: 'revision-13a', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  const owned = { ...initial.additions[0], fr: 'texte parent', dr: 'texte parent latin', ar: 'نص محلي', lexicon: { ...initial.additions[0].lexicon, customized: true } };
+  const revisedWord = { ...word, fr: 'texte révisé', drLat: 'texte révisé latin', drAr: 'نص مراجع' };
+  const next = planLexiqueApplication({ words: [revisedWord], cards: [owned], cols: 2, revision: 'revision-13b', now: '2026-11-28T00:00:00.000Z', defaultCards: base });
+  assert.equal(next.changed[0].fr, 'texte parent');
+  assert.equal(next.changed[0].dr, 'texte parent latin');
+  assert.equal(next.changed[0].ar, 'نص محلي');
+  assert.equal(next.changed[0].lexicon.customized, true);
+  assert.equal(next.changed[0].lexicon.revision, 'revision-13b');
+
+  const historicalWord = lexicalWord({ wordId: 'w-base-oui' });
+  const mediaOnly = historicalCard(historicalWord, {
+    photo: 'photo locale', audios: { fr: 'voix locale' }, hidden: true,
+    positions: positionsAt(9, 2), gridRow: 9, gridCol: 2,
+  });
+  assert.equal(isLexicallyCustomized(mediaOnly, base.find((entry) => entry.id === 'c-base-oui')), false);
+  const attached = planLexiqueApplication({ words: [{ ...historicalWord, fr: 'source révisée' }], cards: [mediaOnly], cols: 2, revision: 'revision-13c', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.equal(attached.changed[0].fr, 'source révisée');
+  assert.equal(attached.changed[0].lexicon.customized, false);
+  assert.equal(attached.changed[0].hidden, true);
+  assert.deepEqual(attached.changed[0].positions, mediaOnly.positions);
+  assert.equal(isLexicallyCustomized({ ...historicalCard(historicalWord), sub: 'précision parent' }, base.find((entry) => entry.id === 'c-base-oui')), true);
+  console.log('test-lexique 13 personnalisation : OK');
+}
+
+// 14. Collision, changement de catégorie et grille sans place disponible.
+{
+  const word = lexicalWord();
+  const occupant = { id: 'u-occupant', cat: 'base', positions: positionsAt(1, 1) };
+  const collision = planLexiqueApplication({ words: [word], cards: [occupant], cols: 3, revision: 'revision-14a', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.deepEqual(collision.conflicts, []);
+  assert.deepEqual(collision.additions[0].positions['3'], { row: 1, col: 2 });
+  assert.equal(collision.report.moved, 1);
+  assert.deepEqual(occupant.positions, positionsAt(1, 1));
+
+  const created = planLexiqueApplication({ words: [word], cards: [], cols: 2, revision: 'revision-14b', now: '2026-11-27T00:00:00.000Z', defaultCards: base }).additions[0];
+  const categoryConflict = planLexiqueApplication({ words: [{ ...word, categorie: 'manger' }], cards: [created], cols: 2, revision: 'revision-14c', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.equal(categoryConflict.changed.length, 0);
+  assert.equal(categoryConflict.conflicts[0].reason, 'categorie_differente');
+  assert.deepEqual(created.positions, positionsAt(1, 1));
+
+  const fillers = Array.from({ length: 5 }, (_, index) => ({
+    id: `u-fill-${index}`,
+    cat: 'base',
+    positions: Object.fromEntries([2, 3, 4, 5].map((cols) => [String(cols), { row: 1, col: (index % cols) + 1 }])),
+  }));
+  const full = planLexiqueApplication({ words: [word], cards: fillers, cols: 5, maxRows: 1, revision: 'revision-14d', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.equal(full.additions.length, 0);
+  assert.equal(full.changed.length, 0);
+  assert.equal(full.conflicts[0].reason, 'espace_epuise');
+  assert.equal(fillers.length, 5);
+  console.log('test-lexique 14 collisions : OK');
+}
+
+// 15. Réapplication idempotente et ligne retirée non destructive.
+{
+  const word = lexicalWord();
+  const first = planLexiqueApplication({ words: [word], cards: [], cols: 2, revision: 'revision-15', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  const second = planLexiqueApplication({ words: [word], cards: first.additions, cols: 2, revision: 'revision-15', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.deepEqual(second.changed, []);
+  assert.deepEqual(second.additions, []);
+  assert.deepEqual(second.updates, []);
+  const removed = planLexiqueApplication({ words: [], cards: first.additions, cols: 2, revision: 'revision-15', now: '2026-11-27T00:00:00.000Z', defaultCards: base });
+  assert.deepEqual(removed.changed, []);
+  assert.equal(first.additions.length, 1);
+  assert.equal(first.additions[0].lexicon.status, 'brouillon');
+  console.log('test-lexique 15 reapplication : OK');
+}
+
+// 16. Initialisation : téléphone neuf, installation, choix explicite, marqueurs et repli.
+{
+  const freshDb = memoryDb();
+  const freshLocal = memoryLocal();
+  const fresh = await initLexiqueSettings({ db: freshDb, localStorage: freshLocal, rawChildren: null });
+  assert.equal(fresh.onlyReviewed, true);
+  assert.equal(fresh.emojiSkinTone, 'default');
+  assert.equal(freshDb.values.get('lexiqueV1Initialized'), true);
+  assert.equal(freshLocal.items.get('kalimati-lexique-v1-seen'), '1');
+  const again = await initLexiqueSettings({ db: freshDb, localStorage: freshLocal, rawChildren: null });
+  assert.equal(again.onlyReviewed, true);
+  assert.equal(again.emojiSkinTone, 'default');
+
+  const installedCases = [
+    [memoryDb({ lexiqueV1Initialized: true }), memoryLocal(), null],
+    [memoryDb({}, [{ id: 'u-fixture' }]), memoryLocal(), null],
+    [memoryDb({ seeded: true }), memoryLocal(), null],
+    [memoryDb({ lang: 'fr' }), memoryLocal(), null],
+    [memoryDb(), memoryLocal(), '[{"id":"main"}]'],
+    [memoryDb(), memoryLocal({ 'kalimati-lexique-v1-seen': '1' }), null],
+  ];
+  for (const [db, localStorage, rawChildren] of installedCases) {
+    const settings = await initLexiqueSettings({ db, localStorage, rawChildren });
+    assert.equal(settings.onlyReviewed, false);
+  }
+  for (const key of ['lang', 'cols', 'darijaScript', 'profile', 'layoutFingerprint', 'levels']) {
+    const settings = await initLexiqueSettings({ db: memoryDb({ [key]: key === 'cols' ? 2 : 'present' }), localStorage: memoryLocal(), rawChildren: null });
+    assert.equal(settings.onlyReviewed, false, key);
+  }
+  const explicit = await initLexiqueSettings({ db: memoryDb({ onlyReviewed: true, lexiqueV1Initialized: true, emojiSkinTone: '3' }), localStorage: memoryLocal(), rawChildren: '[{"id":"main"}]' });
+  assert.deepEqual(explicit, { onlyReviewed: true, emojiSkinTone: '3' });
+  const failed = await initLexiqueSettings({ db: memoryDb({}, [], true), localStorage: memoryLocal(), rawChildren: null });
+  assert.equal(failed.onlyReviewed, false);
+  assert.equal(failed.emojiSkinTone, 'default');
+  console.log('test-lexique 16 initialisation : OK');
+}
+
+// 17. Filtre enfant sans mutation, statuts recalculés et hidden prioritaire.
+{
+  const proofs = { relecteurFr: 'AB', relecteurDr: 'CD', dateRevision: '2026-11-01', secondVoice: 'EF' };
+  const cards = [
+    { id: 'w-draft', hidden: false, lexicon: { owned: true, customized: false, legacy: false, wordId: 'w-draft', status: 'relu-clinique' } },
+    { id: 'w-language', hidden: false, lexicon: { owned: true, customized: false, legacy: false, wordId: 'w-language', relecteurDr: 'CD', status: 'brouillon' } },
+    { id: 'w-clinical', hidden: false, lexicon: { owned: true, customized: false, legacy: false, wordId: 'w-clinical', ...proofs, status: 'brouillon' } },
+    { id: 'w-custom', hidden: false, lexicon: { owned: true, customized: true, legacy: false, wordId: 'w-custom' } },
+    { id: 'w-legacy', hidden: false, lexicon: { owned: true, customized: false, legacy: true, wordId: 'w-legacy' } },
+    { id: 'c-base-oui', hidden: false, lexicon: { owned: false, wordId: 'w-base-oui' } },
+    { id: 'u-family', hidden: false },
+    { id: 'w-hidden', hidden: true, lexicon: { owned: true, customized: false, legacy: false, wordId: 'w-hidden', ...proofs } },
+  ];
+  const before = structuredClone(cards);
+  assert.deepEqual(cards.map((card) => cardPassesReviewFilter(card, { onlyReviewed: true })), [false, true, true, true, true, true, true, false]);
+  assert.equal(cardPassesReviewFilter(cards[0], { parent: true, onlyReviewed: true }), true);
+  assert.equal(cardPassesReviewFilter(cards[7], { parent: true, onlyReviewed: true }), false);
+  assert.equal(cardPassesReviewFilter(cards[0], { onlyReviewed: false }), true);
+  assert.deepEqual(cards, before);
+  console.log('test-lexique 17 filtre : OK');
+}
+
+// 18. Statistiques exactes, y compris les catégories et paliers à zéro.
+{
+  const words = [
+    { wordId: 'w-a', categorie: 'base', palier: 1, relecteurFr: '', relecteurDr: '' },
+    { wordId: 'w-b', categorie: 'base', palier: 2, relecteurFr: '', relecteurDr: 'CD' },
+    { wordId: 'w-c', categorie: 'manger', palier: 4, relecteurFr: 'AB', relecteurDr: 'CD', dateRevision: '2026-11-01', secondVoice: 'EF' },
+    { wordId: 'w-d', categorie: 'custom', palier: 4, relecteurFr: 'AB', relecteurDr: 'CD', dateRevision: '2026-11-01', secondVoice: 'EF' },
+  ];
+  const categories = [{ id: 'base' }, { id: 'manger' }, { id: 'custom' }, { id: 'empty' }];
+  const cards = [
+    { lexicon: { owned: true, wordId: 'w-a' } },
+    { lexicon: { owned: true, wordId: 'w-c' } },
+    { lexicon: { owned: false } },
+  ];
+  assert.deepEqual(computeLexiqueStats(words, cards, categories), {
+    total: 4,
+    applied: 2,
+    byStatus: { brouillon: 1, 'relu-langue': 1, 'relu-clinique': 2 },
+    byPalier: { 1: 1, 2: 1, 3: 0, 4: 2 },
+    byCategory: { base: 2, manger: 1, custom: 1, empty: 0 },
+  });
+  assert.deepEqual(computeLexiqueStats([], [], []), {
+    total: 0,
+    applied: 0,
+    byStatus: { brouillon: 0, 'relu-langue': 0, 'relu-clinique': 0 },
+    byPalier: { 1: 0, 2: 0, 3: 0, 4: 0 },
+    byCategory: {},
+  });
+  console.log('test-lexique 18 statistiques : OK');
+}
+
+console.log('test-lexique groupes 1-18 : OK');

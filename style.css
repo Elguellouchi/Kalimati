@@ -2604,3 +2604,22 @@ body.calm-mode .auto-next-bar > span { animation: auto-next-fill var(--t, 2s) li
 .with-cam .mask-face { opacity: .88; }
 .mask-mouth { position: absolute; top: 64%; left: 50%; width: 46px; height: 6px; transform: translateX(-50%); border-radius: 0 0 26px 26px; background: #5b2a2a; }
 .mask-count { font-size: 20px; min-width: 2em; }
+
+/* v10.51 — Lexique relu, réservé au parent. */
+.lexique-box { display: grid; gap: 10px; }
+.lexique-box h3, .lexique-box h4 { margin: 4px 0 0; }
+.lexique-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 6px; }
+.lexique-stat { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; padding: 6px 10px; border-radius: 12px; background: var(--bg); }
+.lexique-stat span { font-size: 13px; color: var(--muted); }
+.lexique-stat strong { font-size: 18px; }
+.lexicon-badge { position: absolute; top: 8px; inset-inline-end: 4px; z-index: 2; max-width: calc(100% - 8px); padding: 2px 5px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--text); font-size: 12px; font-weight: 700; line-height: 1.05; text-align: end; }
+.card:has(.badge.video) .lexicon-badge { top: 38px; }
+.lexicon-badge[data-status="brouillon"] { background: #F1F1F1; color: #444; }
+.lexicon-badge[data-status="relu-langue"] { background: #FFF3D6; color: #6B4E00; }
+.lexicon-badge[data-status="relu-clinique"] { background: #E2F4EB; color: #176B62; }
+.lexique-words { display: grid; gap: 6px; }
+.lexique-word { display: grid; grid-template-columns: minmax(100px, 1.2fr) repeat(2, minmax(80px, 1fr)); align-items: center; gap: 6px; padding: 8px; border-radius: 12px; background: var(--bg); }
+.lexique-word .lexicon-badge { position: static; justify-self: start; }
+#lexique-report ul { margin: 0; padding-inline-start: 20px; }
+#lexique-report li { margin: 4px 0; padding: 6px 8px; border-radius: 8px; background: var(--bg); overflow-wrap: anywhere; }
+@media (max-width: 520px) { .lexique-word { grid-template-columns: 1fr 1fr; } .lexique-word strong { grid-column: 1 / -1; } }

@@ -34,8 +34,8 @@ export const newBoardId = () => `express-${Date.now().toString(36)}`;
 
 // Un mot (ou une ligne) par case. Pour un lieu fourni, chaque mot de la liste est cherché seul ;
 // pour un tableau express, le parent peut séparer par des virgules ou des retours à la ligne.
-export function boardItems(board, cards, wordsOf) {
-  const index = buildIndex([...cards, ...extraConcepts()], (c) => (c.extra ? [c.fr, ...(c.alt || [])] : wordsOf(c)));
+export function boardItems(board, cards, wordsOf, { excludedWords = [] } = {}) {
+  const index = buildIndex([...cards, ...extraConcepts({ excludedWords })], (c) => (c.extra ? [c.fr, ...(c.alt || [])] : wordsOf(c)));
   const pieces = board.words ? board.words : String(board.text || '').split(/[\n,;]+/);
   const seen = new Set();
   const out = [];

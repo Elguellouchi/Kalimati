@@ -53,7 +53,7 @@ export const GOALS = [
 
   { id: 'E.1', title: 'Répéter 10 mots de 2 syllabes', criterion: '8/10 pour chacun des 10 mots', rule: { type: 'perItem', need: 8, of: 10, items: 10 } },
   { id: 'E.2', title: 'Imiter une phrase de 2-3 mots', criterion: '4/5 pour 5 phrases', rule: { type: 'perItem', need: 4, of: 5, items: 5 } },
-  { id: 'E.3', title: 'Clarté de /t/, /d/, /k/', criterion: 'Validé avec l’orthophoniste', rule: { type: 'manual' } },
+  { id: 'E.3', title: 'Clarté de /t/, /d/, /k/', criterion: 'Relu par l’orthophoniste', rule: { type: 'manual' } },
 
   { id: 'F.1', title: 'PECS phase 1 : échanger une image', criterion: '8/10, 5 images, 3 séances', rule: S3(0.8, 10, { minDistinct: 5 }) },
   { id: 'F.2', title: 'PECS phase 2 : se déplacer vers l’adulte (≥ 2 m)', criterion: '8/10 à 2 m, 3 séances', rule: S3(0.8) },

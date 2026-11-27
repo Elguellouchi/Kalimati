@@ -96,7 +96,7 @@ export function cardWord(card, code, { scriptMode = 'both' } = {}) {
 // Vrai si la carte a une traduction (sinon elle est dite en français).
 export const hasWord = (card, code) => {
   if (isAmazighLang(code)) return Boolean((card[code] && typeof card[code] === 'object') || hasAmazighWord(card.fr, code));
-  return !isExtraLang(code) || localeHasWord(code, card.id) || /\(Moi\)\s*$/.test(card.fr || '');
+  return !isExtraLang(code) || ((lexiconApplies(card, code) && localeHasWord(code, card.id)) || /\(Moi\)\s*$/.test(card.fr || ''));
 };
 
 // v10.22 (Lot 2) : forme prononcée par la voix du téléphone. Le mot affiché peut différer de la forme
@@ -109,7 +109,8 @@ export function cardSpeechText(card, code) {
 
 // v10.40+ (Lot 3) : « whenFr » = le mot ne vaut que si la carte porte encore ce mot français.
 // La carte « Thérapeute » se traduit ; si le parent y a écrit un prénom, le prénom reste.
-function lexiconApplies(card, code) {
+export function lexiconApplies(card, code) {
+  if (card?.lexicon?.legacy && card.fr !== card.lexicon.legacyFr) return false;
   const entry = localeEntry(code, card.id);
   return !(entry && typeof entry === 'object' && entry.whenFr && entry.whenFr !== card.fr);
 }

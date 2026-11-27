@@ -237,6 +237,18 @@ async function main() {
     assert.equal(catalog.isConceptHidden({ fr: 'Pomme' }), false);
   });
 
+  await check('Pépite 2 : le filtre de relecture exclut les brouillons et garde le parent en préparation', () => {
+    const cards = [
+      { id: 'w-test-brouillon', fr: 'Marqueur brouillon', cat: 'test', hidden: false, lexicon: { owned: true, status: 'brouillon', relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '' } },
+      { id: 'w-test-langue', fr: 'Marqueur langue', cat: 'test', hidden: false, lexicon: { owned: true, status: 'relu-langue', relecteurFr: '', relecteurDr: 'DD', dateRevision: '', secondVoice: '' } },
+    ];
+    assert.deepEqual(widgets.setPlayableCards(cards, { onlyReviewed: true }).map((card) => card.id), ['w-test-langue']);
+    assert.equal(catalog.isConceptHidden({ fr: 'Marqueur brouillon' }), true);
+    assert.equal(widgets.isChoiceHidden({ label: 'Marqueur brouillon' }), true);
+    assert.deepEqual(widgets.setPlayableCards(cards, { parent: true, onlyReviewed: true }).map((card) => card.id), ['w-test-brouillon', 'w-test-langue']);
+    widgets.setPlayableCards([]);
+  });
+
   // 3. Pépite 2 : Nombre de choix réduit si pas assez de cartes, jamais d'écran vide
   await check('Pépite 2 : Nombre de choix réduit automatiquement si pas assez de cartes, jamais d’écran vide', () => {
     widgets.setPlayableCards([]);
