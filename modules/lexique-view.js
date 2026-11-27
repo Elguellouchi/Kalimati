@@ -29,7 +29,7 @@ function categoryLabel(id, lang = 'fr') {
 export function lexiqueScreen(nav, self) {
   const shell = h('section', { id: 'lexique', class: 'card-box lexique-box' }, h('h3', {}, '📖 Lexique relu'));
   const report = h('div', { id: 'lexique-report', class: 'stack', role: 'status' });
-  const revision = h('p', { class: 'note' });
+  const revision = h('p', { class: 'note lexique-revision' });
   const counts = h('div', { class: 'lexique-stats' });
   const categories = h('div', { class: 'lexique-stats' });
   const planCounts = h('div', { class: 'lexique-stats' });
@@ -138,7 +138,8 @@ export function lexiqueScreen(nav, self) {
 
   const paint = (cards) => {
     const stats = computeLexiqueStats(LEXIQUE.words, cards, allCategories);
-    revision.textContent = `Révision ${LEXIQUE.revision || 'non renseignée'} · ${LEXIQUE.words.length} mot${LEXIQUE.words.length > 1 ? 's' : ''}.`;
+    const revisionLabel = LEXIQUE.revision ? String(LEXIQUE.revision).slice(0, 8) : 'non renseignée';
+    revision.textContent = `Révision ${revisionLabel} · ${LEXIQUE.words.length} mot${LEXIQUE.words.length > 1 ? 's' : ''}.`;
     counts.replaceChildren(
       stat('Total', 'total', stats.total),
       ...Object.entries(stats.byStatus).map(([key, value]) => stat(STATUS_LABELS[key], `status-${key}`, value)),

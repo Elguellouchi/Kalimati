@@ -773,6 +773,60 @@ test('7 — voix : parent prioritaire, MP3 exacts, texte modifié et repli local
   expect(await protectedSnapshot(page)).toEqual(before);
 });
 
+test('8 — Lexique iPhone : largeur 390 px, révision courte et six teintes contenues', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'iphone-13-webkit', 'rendu mobile : WebKit iPhone 13 seulement');
+  test.setTimeout(90_000);
+  const revision = '0123456789abcdef'.repeat(4);
+  const words = fixture().words;
+  words[0] = { ...words[0], revision };
+  await routeLexique(page, () => fixture(words));
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  await openParentLexique(page);
+  await expect(page.locator('[data-stat="category-base"]')).toBeVisible();
+  for (const label of ['Relu en langue', 'Relu cliniquement', 'Palier 4', 'Essentiel']) {
+    await expect(page.locator('.lexique-stat span').filter({ hasText: label })).toHaveCount(1);
+  }
+  const tones = page.locator('.lexique-tone-choices input[type="radio"]');
+  await expect(tones).toHaveCount(6);
+  for (let index = 0; index < 6; index += 1) await expect(tones.nth(index)).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const fits = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.left >= 0 && rect.right <= window.innerWidth;
+    };
+    const view = document.querySelector('#view');
+    return {
+      innerWidth: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewClientWidth: view.clientWidth,
+      viewScrollWidth: view.scrollWidth,
+      grids: [...document.querySelectorAll('#lexique .lexique-stats')].map((grid) => ({
+        columns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
+        outside: [...grid.querySelectorAll('.lexique-stat')].filter((item) => !fits(item)).map((item) => item.textContent.trim()),
+      })),
+      tonesOutside: [...document.querySelectorAll('.lexique-tone-choices label.check')]
+        .filter((choice) => !fits(choice)).map((choice) => choice.textContent.trim()),
+    };
+  });
+  expect.soft(geometry.innerWidth).toBe(390);
+  expect.soft(geometry.scrollWidth).toBeLessThanOrEqual(geometry.innerWidth);
+  expect.soft(geometry.viewScrollWidth).toBeLessThanOrEqual(geometry.viewClientWidth);
+  for (const grid of geometry.grids) {
+    expect.soft(grid.columns).toBeLessThanOrEqual(2);
+    expect.soft(grid.outside).toEqual([]);
+  }
+  expect.soft(geometry.tonesOutside).toEqual([]);
+
+  const revisionLine = page.locator('#lexique > p.note').first();
+  const revisionText = await revisionLine.textContent();
+  expect.soft(revisionText).toContain(`Révision ${revision.slice(0, 8)} ·`);
+  expect.soft(revisionText).not.toContain(revision);
+  expect.soft(await revisionLine.evaluate((element) => getComputedStyle(element).overflowWrap)).toBe('anywhere');
+});
+
 test('9 — hors ligne : six modules précachés, Lexique chargé, aucun rechargement automatique', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'pixel-5-chromium',
     'service workers : Chromium seulement (décision D-2)');
