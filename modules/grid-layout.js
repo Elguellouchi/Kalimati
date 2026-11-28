@@ -185,8 +185,11 @@ export async function layoutFingerprintMismatch(cards, stored) {
 }
 
 export function mergeCardLayout(local = {}, remote = {}) {
+  if (!local.id) return { ...remote };
   const merged = { ...local, ...remote };
-  merged.positions = { ...(local.positions || {}), ...(remote.positions || {}) };
-  merged.wordId = remote.wordId || local.wordId || merged.id;
+  for (const field of ['positions', 'wordId', 'gridRow', 'gridCol', 'order']) {
+    if (Object.hasOwn(local, field)) merged[field] = local[field];
+    else delete merged[field];
+  }
   return merged;
 }

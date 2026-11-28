@@ -131,11 +131,11 @@ assert.equal(copying.copies.find((copy) => copy.file === VOICE).response, cached
 assert.equal(copying.copies.find((copy) => copy.file === SECOND_VOICE).response, cachedSecondVoice, 'la seconde voix vient aussi de l’ancien cache');
 assert.equal(copying.copies.find((copy) => copy.file === IMAGE).response, cachedImage, 'l’image vient de l’ancien cache sans nouveau téléchargement');
 assert.equal(copying.copies.find((copy) => copy.file === SECOND_IMAGE).response, cachedSecondImage, 'la seconde image vient aussi de l’ancien cache');
-assert.deepEqual(copying.opened, ['kalimati-v10-52'], 'le worker principal installe son cache v10.52');
+assert.deepEqual(copying.opened, ['kalimati-v10-53'], 'le worker principal installe son cache v10.53');
 
 const trialInstalling = runInstall({ pathname: '/Kalimati/essai/sw.js' });
 await trialInstalling.install;
-assert.deepEqual(trialInstalling.opened, ['kalimati-essai-v10-52'], 'le worker d’essai installe son cache séparé v10.52');
+assert.deepEqual(trialInstalling.opened, ['kalimati-essai-v10-53'], 'le worker d’essai installe son cache séparé v10.53');
 
 const fallbackDownloads = [];
 const fallback = runInstall({
@@ -193,9 +193,9 @@ function activateWorker(pathname, keys) {
 }
 
 const mainKeys = [
-  'kalimati-v10-52',
+  'kalimati-v10-53',
   'kalimati-v10-46',
-  'kalimati-essai-v10-52',
+  'kalimati-essai-v10-53',
   'kalimati-essai-v10-46',
   'kalimati-amazigh-voices-fr',
   'autre-cache',
@@ -204,9 +204,9 @@ const main = await activateWorker('/Kalimati/sw.js', mainKeys);
 assert.deepEqual(main.deleted, ['kalimati-v10-46'], 'la version principale conserve le cache d’essai, les voix amazighes et les caches étrangers');
 
 const trialKeys = [
-  'kalimati-essai-v10-52',
+  'kalimati-essai-v10-53',
   'kalimati-essai-v10-46',
-  'kalimati-v10-52',
+  'kalimati-v10-53',
   'kalimati-v10-46',
   'kalimati-essai-amazigh-voices-fr',
   'autre-cache',

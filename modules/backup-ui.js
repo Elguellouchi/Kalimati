@@ -2,8 +2,7 @@
 // Code déplacé tel quel depuis app.js (v10.42, Lot 4.1) : aucun comportement ne change.
 // Les fonctions encore dans app.js sont lues au moment de l’appel (app.<nom>).
 import * as db from '../db.js';
-import { BACKUP_PASSWORD_MIN, buildBackupFile, deliverBackup, encryptBackupFile, readBackup } from '../backup.js';
-import { foldLegacyAudio } from '../data.js';
+import { BACKUP_PASSWORD_MIN, buildBackupFile, deliverBackup, encryptBackupFile, mergeBackupCards, mergeBackupSetting, readBackup } from '../backup.js';
 import { SPEECH_SETTING_KEY, setCloudSpeechAllowed, speak, unlockAudio } from '../speech.js';
 import { loadContext } from './aba.js';
 import { UPPERCASE_SETTING_KEY, applyUppercase } from './about.js';
@@ -322,7 +321,11 @@ export function createBackupUi(app) {
         // une synchro suivante pourrait les remplacer par un paquet plus ancien.
         const now = Date.now();
         const incoming = backup.cards.map((c) => ({ ...c, updatedAt: now }));
-        const cards = assignPositions(mergeBackupCards(localCards, incoming), state.cols);
+        const merged = mergeBackupCards(localCards, incoming);
+        const mergedById = new Map(merged.map((card) => [card.id, card]));
+        const existingIds = new Set(localCards.map((card) => card.id));
+        const positioned = assignPositions(merged, state.cols);
+        const cards = positioned.map((card) => existingIds.has(card.id) ? mergedById.get(card.id) : card);
         await db.putCards(cards);
         if (backup.trials.length) await db.putTrials(backup.trials);
         if (backup.visuals.length) {
@@ -355,57 +358,6 @@ export function createBackupUi(app) {
     // Au chargement du panneau adulte : vérifie la date de la dernière sauvegarde.
     refreshBackupReminder().catch(() => {});
     refreshFallbackBanner();
-  }
-
-  // ---------- v10.3.2 : restauration par fusion (rien n'est effacé, le plus récent du téléphone est gardé) ----------
-  // Cartes : celles de la sauvegarde sont ajoutées ou mises à jour ; les cartes créées depuis restent.
-  // Une photo, une vidéo ou une voix déjà sur le téléphone n'est pas perdue si la sauvegarde n'en a pas.
-  function mergeBackupCards(localCards, backupCards) {
-    const byId = new Map(localCards.map((c) => [c.id, c]));
-    for (const card of backupCards) {
-      const local = byId.get(card.id);
-      if (!local) { byId.set(card.id, card); continue; }
-      const merged = { ...local, ...card };
-      // Lot 2 : les places déjà fixées dans le téléphone ne sont jamais écrasées par la sauvegarde.
-      // La sauvegarde complète seulement les tailles encore absentes sur cet appareil.
-      merged.positions = { ...(card.positions || {}), ...(local.positions || {}) };
-      // L2-09 : l'identifiant stable ne manque jamais, même pour une carte d'une sauvegarde plus ancienne.
-      merged.wordId = typeof local.wordId === 'string' && local.wordId ? local.wordId : (typeof card.wordId === 'string' && card.wordId ? card.wordId : merged.id);
-      const fromBackup = foldLegacyAudio(card);
-      const keptLocal = foldLegacyAudio(local);
-      for (const field of ['photo', 'video']) merged[field] = card[field] || local[field] || null;
-      // v10.21 (Lot 1) : les voix se gardent par langue dans audios[code] ; la sauvegarde fait foi, le téléphone complète.
-      const audios = { ...(keptLocal.audios || {}) };
-      for (const [code, blob] of Object.entries(fromBackup.audios || {})) if (blob) audios[code] = blob;
-      merged.audios = audios;
-      delete merged.audioFr;
-      delete merged.audioDr;
-      byId.set(card.id, merged);
-    }
-    return [...byId.values()];
-  }
-
-  const LIST_SETTINGS = ['stories', 'atecHistory', 'atec_history'];
-  const itemKey = (item) => (item && typeof item === 'object' ? (item.id || `${item.day || ''}-${item.ts || ''}`) : JSON.stringify(item));
-  function mergeBackupSetting(key, local, incoming) {
-    if (local === undefined || local === null) return incoming;
-    // Listes (histoires, bilans ATEC) : on additionne ; en cas de doublon, la version du téléphone gagne.
-    if (LIST_SETTINGS.includes(key) && Array.isArray(local) && Array.isArray(incoming)) {
-      const map = new Map(incoming.filter(Boolean).map((item) => [itemKey(item), item]));
-      for (const item of local.filter(Boolean)) map.set(itemKey(item), item);
-      return [...map.values()];
-    }
-    // Suggestions de mots : on garde le plus grand compteur de chaque mot.
-    if (key === 'aacHistory' && typeof local === 'object' && typeof incoming === 'object') {
-      const out = { uni: { ...(incoming.uni || {}) }, bi: { ...(incoming.bi || {}) } };
-      for (const part of ['uni', 'bi']) for (const [k, v] of Object.entries(local[part] || {})) out[part][k] = Math.max(Number(v) || 0, Number(out[part][k]) || 0);
-      return out;
-    }
-    // Plannings et réglages en objet : on ajoute ce qui manque, le téléphone garde ses valeurs.
-    if (['customSchedules', 'scheduleTempOverrides', 'levels'].includes(key) && typeof local === 'object' && typeof incoming === 'object' && !Array.isArray(local)) {
-      return { ...incoming, ...local };
-    }
-    return incoming;
   }
 
   return { applyLangDir, setupParentBar, setLang, openLangPicker };

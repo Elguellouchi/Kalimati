@@ -2,6 +2,8 @@
 // Les enregistrements de la voix de l'enfant ne sont jamais mis dans la sauvegarde : ils restent dans le téléphone.
 // v9.8 : la sauvegarde garde aussi le journal des comportements (ABC) et le journal d'orthophonie (texte seulement).
 import { blobToDataUrl, dataUrlToBlob } from './media.js';
+import { foldLegacyAudio } from './data.js';
+import { mergeLexicalCard, sanitizeLexiconMetadata } from './modules/lexique-core.js';
 
 // v10.21 (Lot 1) : les voix se gardent par langue dans card.audios[code] ; photo et vidéo gardent leur champ.
 const BLOB_FIELDS = ['photo', 'video'];
@@ -81,6 +83,11 @@ export async function buildBackupFile({ cards, trials = [], settings = {}, visua
   const parts = [JSON.stringify(head).slice(0, -1), ',"cards":['];
   for (let i = 0; i < cards.length; i += 1) {
     const copy = { ...cards[i] };
+    if (copy.lexicon) {
+      const lexicon = sanitizeLexiconMetadata(copy.lexicon);
+      if (lexicon) copy.lexicon = lexicon;
+      else delete copy.lexicon;
+    }
     for (const field of BLOB_FIELDS) copy[field] = includeMedia && cards[i][field] ? await blobToDataUrl(cards[i][field]) : null;
     // v10.21 (Lot 1) : voix par langue. Les anciens champs audioFr/audioDr restent lus pour les cartes non migrées.
     const voiceSource = { ...{ fr: cards[i].audioFr, dr: cards[i].audioDr }, ...(cards[i].audios || {}) };
@@ -164,6 +171,81 @@ function cleanPositions(value) {
   return out;
 }
 
+export function mergeBackupCards(localCards, backupCards) {
+  const byId = new Map(localCards.map((card) => [card.id, card]));
+  for (const incoming of backupCards) {
+    const local = byId.get(incoming.id);
+    if (!local) {
+      byId.set(incoming.id, incoming);
+      continue;
+    }
+    const family = local.id.startsWith('u-');
+    const legacy = local.lexicon?.legacy === true || incoming.lexicon?.legacy === true;
+    if (!family && !legacy && (local.lexicon?.owned === true || incoming.lexicon?.owned === true)) {
+      const merged = incoming.lexicon?.owned ? mergeLexicalCard(local, incoming) : null;
+      if (merged) byId.set(incoming.id, merged);
+      continue;
+    }
+    const merged = { ...local, ...incoming };
+    merged.positions = { ...(incoming.positions || {}), ...(local.positions || {}) };
+    merged.wordId = typeof local.wordId === 'string' && local.wordId ? local.wordId
+      : (typeof incoming.wordId === 'string' && incoming.wordId ? incoming.wordId : merged.id);
+    for (const field of ['gridRow', 'gridCol']) {
+      if (Object.hasOwn(local, field)) merged[field] = local[field];
+    }
+    const fromBackup = foldLegacyAudio(incoming);
+    const keptLocal = foldLegacyAudio(local);
+    for (const field of ['photo', 'video']) merged[field] = incoming[field] || local[field] || null;
+    const audios = { ...(keptLocal.audios || {}) };
+    for (const [code, blob] of Object.entries(fromBackup.audios || {})) if (blob) audios[code] = blob;
+    merged.audios = audios;
+    delete merged.audioFr;
+    delete merged.audioDr;
+    if (legacy) {
+      const lexical = incoming.lexicon?.owned ? mergeLexicalCard(local, incoming) : null;
+      const source = lexical || local;
+      merged.fr = source.fr;
+      merged.dr = source.dr;
+      merged.ar = source.ar;
+      if (source.lexicon) merged.lexicon = source.lexicon;
+      else delete merged.lexicon;
+    }
+    byId.set(incoming.id, merged);
+  }
+  return [...byId.values()];
+}
+
+export function mergeBackupSetting(key, local, incoming) {
+  if (local === undefined || local === null) return incoming;
+  if (key === 'onlyReviewed' || key === 'emojiSkinTone') return local;
+
+  const listSettings = ['stories', 'atecHistory', 'atec_history'];
+  if (listSettings.includes(key) && Array.isArray(local) && Array.isArray(incoming)) {
+    const itemKey = (item) => (item && typeof item === 'object' ? (item.id || `${item.day || ''}-${item.ts || ''}`) : JSON.stringify(item));
+    const map = new Map(incoming.filter(Boolean).map((item) => [itemKey(item), item]));
+    for (const item of local.filter(Boolean)) map.set(itemKey(item), item);
+    return [...map.values()];
+  }
+
+  if (key === 'aacHistory' && typeof local === 'object' && typeof incoming === 'object') {
+    const out = { uni: { ...(incoming.uni || {}) }, bi: { ...(incoming.bi || {}) } };
+    for (const part of ['uni', 'bi']) {
+      for (const [key, value] of Object.entries(local[part] || {})) {
+        out[part][key] = Math.max(Number(value) || 0, Number(out[part][key]) || 0);
+      }
+    }
+    return out;
+  }
+
+  if (['customSchedules', 'scheduleTempOverrides', 'levels'].includes(key)
+      && typeof local === 'object' && typeof incoming === 'object'
+      && !Array.isArray(local)) {
+    return { ...incoming, ...local };
+  }
+
+  return incoming;
+}
+
 function cleanTrial(raw) {
   if (!raw || typeof raw.id !== 'string' || typeof raw.goalId !== 'string' || !Number.isFinite(raw.ts)) return null;
   if (!['plus', 'prompt', 'minus', 'log'].includes(raw.result)) return null;
@@ -217,7 +299,7 @@ export async function readBackup(file, passphrase = '') {
     const card = {
       id: raw.id, wordId: typeof raw.wordId === 'string' && raw.wordId ? raw.wordId.slice(0, 120) : raw.id,
       cat: raw.cat, fr: raw.fr.slice(0, 40), sub: cleanText(raw.sub, 30), dr: cleanText(raw.dr, 40), ar: cleanText(raw.ar, 40),
-      emoji: cleanText(raw.emoji, 8), order: Number(raw.order) || 0,
+      emoji: cleanText(raw.emoji, 32), order: Number(raw.order) || 0,
       gram: GRAMS.includes(raw.gram) ? raw.gram : 'noun', hidden: raw.hidden === true,
       gridRow: cleanPos(raw.gridRow), gridCol: cleanPos(raw.gridCol), positions: cleanPositions(raw.positions),
       visualKey: cleanKey(raw.visualKey), sayFr: cleanText(raw.sayFr, 60), sayAr: cleanText(raw.sayAr, 60),
@@ -230,6 +312,8 @@ export async function readBackup(file, passphrase = '') {
     if (isDataUrl(raw.audioFr, 'audio') && !audios.fr) audios.fr = await dataUrlToBlob(raw.audioFr);
     if (isDataUrl(raw.audioDr, 'audio') && !audios.dr) audios.dr = await dataUrlToBlob(raw.audioDr);
     card.audios = audios;
+    const lexicon = sanitizeLexiconMetadata(raw.lexicon);
+    if (lexicon) card.lexicon = lexicon;
     cards.push(card);
   }
   const trials = Array.isArray(parsed.trials) ? parsed.trials.map(cleanTrial).filter(Boolean) : [];

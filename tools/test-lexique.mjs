@@ -705,4 +705,319 @@ function memoryLocal(values = {}) {
   console.log('test-lexique 20 voix : OK');
 }
 
-console.log('test-lexique groupes 1-20 : OK');
+// 21. Sauvegarde : liste blanche lexicale, emoji ZWJ, réglages et champs locaux protégés.
+{
+  const { readBackup, mergeBackupCards, mergeBackupSetting } = await import('../backup.js');
+  const { sanitizeLexiconMetadata } = await import('../modules/lexique-core.js');
+  const { dataUrlToBlob } = await import('../media.js');
+  const decodedPhoto = await dataUrlToBlob('data:image/png;base64,cGhvdG8=');
+  assert.equal(decodedPhoto.type, 'image/png', 'le décodage local ne conserve pas le marqueur base64 dans le type MIME');
+  assert.equal(await decodedPhoto.text(), 'photo', 'les octets base64 sont restaurés sans fetch');
+  const decodedText = await dataUrlToBlob('data:text/plain;charset=utf-8,Texte%20neutre');
+  assert.equal(decodedText.type, 'text/plain;charset=utf-8', 'les paramètres MIME utiles sont conservés');
+  assert.equal(await decodedText.text(), 'Texte neutre', 'les données texte percent-encodées sont restaurées');
+  const emoji = '👩🏽‍🤝‍👨🏻';
+  assert.ok(emoji.length > 8 && emoji.length <= 32, 'la fixture dépasse l’ancienne limite de 8 unités');
+  const metadata = {
+    owned: true, legacy: false, customized: false, wordId: 'w-restauration', revision: 'a'.repeat(64),
+    niveau: 'noyau', palier: 2, fonction: 'question', sourceCategory: 'base', role: 'social',
+    arStandard: 'نص مصدر', legacyFr: '', relecteurFr: 'RF', relecteurDr: 'DD',
+    dateRevision: '2026-11-20', secondVoice: 'ZZ', status: 'brouillon',
+  };
+  const rawCard = {
+    id: 'w-restauration', wordId: 'w-restauration', cat: 'base', fr: 'Texte source', dr: 'Source', ar: 'مصدر',
+    emoji, gram: 'social', sub: '', sayFr: '', sayAr: '', hidden: false, order: 1,
+    positions: { 4: { row: 1, col: 1 } }, gridRow: 1, gridCol: 1,
+    lexicon: {
+      ...metadata,
+      note: 'note privée', url: 'https://example.invalid/photo', email: 'fixture@example.invalid',
+      phone: '+33 1 23 45 67 89', unknown: 'clé inconnue',
+    },
+  };
+  const backup = await readBackup(new File([JSON.stringify({
+    format: 'kalimati-backup-v4', cards: [rawCard], settings: { onlyReviewed: true, emojiSkinTone: '5' },
+  })], 'fixture.json', { type: 'application/json' }));
+  assert.equal(backup.cards[0].emoji, emoji, 'la séquence ZWJ n’est pas tronquée');
+  assert.deepEqual(backup.cards[0].lexicon, { ...metadata, status: 'relu-clinique' }, 'seuls les champs lexicaux définis survivent');
+  for (const field of ['note', 'url', 'email', 'phone', 'unknown']) {
+    assert.equal(Object.hasOwn(backup.cards[0].lexicon, field), false, field);
+  }
+  const unsafeMetadata = sanitizeLexiconMetadata({
+    ...metadata, legacyFr: 'https://example.invalid', arStandard: 'fixture@example.invalid', relecteurFr: 'RF 0123456789',
+  });
+  assert.equal(unsafeMetadata.legacyFr, '', 'un chemin ou une URL dans le texte source est ignoré');
+  assert.equal(unsafeMetadata.arStandard, '', 'un e-mail dans le texte source est ignoré');
+  assert.equal(unsafeMetadata.relecteurFr, '', 'un code de relecture avec coordonnées est ignoré');
+  assert.equal(unsafeMetadata.status, 'relu-langue', 'le statut est recalculé depuis les preuves assainies');
+
+  const local = {
+    id: 'w-restauration', wordId: 'w-restauration', cat: 'base', fr: 'Texte parent local', dr: 'Darija local', ar: 'عربي محلي',
+    emoji: '👩🏽‍⚕️', gram: 'person', sub: 'sous-titre local', sayFr: 'voix indexée locale', sayAr: 'صوت محلي',
+    hidden: true, order: 4, positions: { 2: { row: 3, col: 1 } }, gridRow: 3, gridCol: 1, visualKey: 'local:cle',
+    photo: new Blob(['photo locale'], { type: 'image/png' }), video: new Blob(['vidéo locale'], { type: 'video/webm' }),
+    audios: { fr: new Blob(['voix locale'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['ancienne voix fr'], { type: 'audio/webm' }), audioDr: new Blob(['ancienne voix dr'], { type: 'audio/webm' }),
+    updatedAt: 500,
+    lexicon: {
+      ...metadata, revision: 'b'.repeat(64), fonction: 'commentaire', palier: 1, customized: true,
+      relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '', status: 'brouillon',
+    },
+  };
+  const incoming = {
+    ...backup.cards[0], fr: 'Texte distant', dr: 'Darija distant', ar: 'عربي بعيد', emoji: '🙂', gram: 'noun',
+    sub: 'sous-titre distant', sayFr: 'voix indexée distante', sayAr: 'صوت بعيد', hidden: false, order: 99,
+    positions: { 2: { row: 9, col: 2 }, 3: { row: 8, col: 1 }, 4: { row: 7, col: 2 }, 5: { row: 6, col: 1 } },
+    gridRow: 9, gridCol: 2, visualKey: 'remote:cle', updatedAt: 100,
+    photo: new Blob(['photo distante'], { type: 'image/png' }), video: new Blob(['vidéo distante'], { type: 'video/webm' }),
+    audios: { fr: new Blob(['voix distante'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['ancienne voix distante'], { type: 'audio/webm' }), audioDr: new Blob(['ancienne voix dr distante'], { type: 'audio/webm' }),
+    lexicon: { ...metadata, revision: 'c'.repeat(64), fonction: 'question', palier: 4, customized: false },
+  };
+  const sparseLocal = {
+    id: 'w-restauration-absent', cat: 'base', fr: 'Texte local absent', dr: '', ar: '', emoji: '🙂', gram: 'noun',
+    lexicon: { ...metadata, wordId: 'w-restauration-absent', customized: true, relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '' },
+  };
+  const sparseIncoming = {
+    ...incoming, id: sparseLocal.id, wordId: sparseLocal.id,
+    lexicon: { ...incoming.lexicon, wordId: sparseLocal.id },
+  };
+  const newIncoming = {
+    ...incoming, id: 'w-restauration-neuf', wordId: 'w-restauration-neuf',
+    lexicon: { ...incoming.lexicon, wordId: 'w-restauration-neuf' },
+  };
+  const family = { id: 'u-famille-fixture', cat: 'base', fr: 'Carte familiale', positions: { 4: { row: 20, col: 4 } } };
+  const restored = mergeBackupCards([local, sparseLocal, family], [incoming, sparseIncoming, newIncoming]);
+  const merged = restored.find((card) => card.id === local.id);
+  for (const field of [
+    'id', 'wordId', 'positions', 'gridRow', 'gridCol', 'order', 'visualKey', 'emoji', 'gram', 'cat', 'sub',
+    'sayFr', 'sayAr', 'hidden', 'photo', 'video', 'audios', 'audioFr', 'audioDr',
+  ]) {
+    assert.deepEqual(merged[field], local[field], `${field} local conservé exactement`);
+  }
+  assert.equal(merged.fr, local.fr, 'le texte personnalisé local gagne');
+  assert.equal(merged.dr, local.dr);
+  assert.equal(merged.ar, local.ar);
+  assert.equal(merged.lexicon.revision, incoming.lexicon.revision, 'le snapshot relu le plus élevé est retenu');
+  assert.equal(merged.lexicon.fonction, 'question');
+  assert.equal(merged.lexicon.arStandard, metadata.arStandard, 'le texte source accompagne les preuves du même snapshot');
+  assert.equal(merged.lexicon.relecteurFr, 'RF');
+  assert.equal(merged.lexicon.status, 'relu-clinique');
+  assert.equal(merged.lexicon.customized, true, 'customized est la réunion logique');
+  assert.equal(merged.updatedAt, 500, 'la date maximale est conservée');
+
+  const sparse = restored.find((card) => card.id === sparseLocal.id);
+  for (const field of ['wordId', 'positions', 'gridRow', 'gridCol', 'order', 'visualKey', 'photo', 'video', 'audios', 'audioFr', 'audioDr']) {
+    assert.equal(Object.hasOwn(sparse, field), false, `${field} absent localement reste absent`);
+  }
+  assert.equal(Object.hasOwn(sparse, 'hidden'), Object.hasOwn(sparseLocal, 'hidden'), 'la présence de hidden reste locale');
+  assert.deepEqual(sparse.hidden, sparseLocal.hidden, 'hidden absent localement reste absent');
+  assert.deepEqual(restored.find((card) => card.id === newIncoming.id), newIncoming, 'seule une carte entièrement nouvelle reçoit layout et médias distants');
+  assert.deepEqual(restored.find((card) => card.id === family.id), family, 'aucune carte familiale n’est supprimée ou modifiée');
+
+  assert.equal(mergeBackupSetting('onlyReviewed', false, true), false, 'false local explicitement défini gagne');
+  assert.equal(mergeBackupSetting('emojiSkinTone', '3', '5'), '3', 'la teinte locale définie gagne');
+  assert.equal(mergeBackupSetting('onlyReviewed', undefined, true), true, 'une valeur locale absente est remplie');
+  assert.equal(mergeBackupSetting('emojiSkinTone', null, '5'), '5', 'une valeur locale nulle est absente');
+  assert.equal(mergeBackupSetting('cols', 2, 5), 5, 'la fusion des autres réglages reste inchangée');
+  console.log('test-lexique 21 sauvegarde : OK');
+}
+
+// 22. Restauration sans lexique : les médias et le texte reviennent, les places locales restent prioritaires.
+{
+  const { mergeBackupCards } = await import('../backup.js');
+  const localCards = Array.from({ length: 93 }, (_, index) => {
+    const number = index + 1;
+    const id = `c-test-restauration-${String(number).padStart(2, '0')}`;
+    const positions = {};
+    for (const size of [2, 3, 4, 5]) {
+      positions[String(size)] = { row: Math.floor(index / size) + 1, col: (index % size) + 1 };
+    }
+    return {
+      id, wordId: id, cat: 'base', fr: `Marqueur ${number}`, dr: '', ar: '', emoji: '🧪', gram: 'noun',
+      hidden: false, order: number, gridRow: positions['4'].row, gridCol: positions['4'].col, positions,
+    };
+  });
+  const target = localCards[0];
+  const incoming = {
+    id: target.id, wordId: 'w-test-restauration-distant', cat: 'base', fr: 'Texte restauré', dr: 'Darija restaurée', ar: 'نص محايد',
+    emoji: '🙂', gram: 'noun', sub: 'sous-titre restauré', sayFr: 'voix fr distante', sayAr: 'صوت بعيد',
+    hidden: true, order: 99, gridRow: 20, gridCol: 4, visualKey: 'visuel-restaure',
+    positions: { 2: { row: 20, col: 2 }, 3: { row: 20, col: 3 }, 4: { row: 20, col: 4 }, 5: { row: 20, col: 5 } },
+    photo: new Blob(['photo restaurée'], { type: 'image/png' }), video: new Blob(['vidéo restaurée'], { type: 'video/webm' }),
+    audios: { fr: new Blob(['voix fr restaurée'], { type: 'audio/webm' }), dr: new Blob(['voix dr restaurée'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['ancienne voix fr restaurée'], { type: 'audio/webm' }),
+    audioDr: new Blob(['ancienne voix dr restaurée'], { type: 'audio/webm' }),
+  };
+  const restored = mergeBackupCards(localCards, [incoming]);
+  const merged = restored.find((card) => card.id === target.id);
+  assert.equal(restored.length, 93, 'restauration sans lexique : aucune des 93 cartes n’est perdue');
+  assert.deepEqual(restored[1], localCards[1], 'restauration sans lexique : les autres cartes ne bougent pas');
+  assert.equal(merged.fr, incoming.fr, 'le texte de la sauvegarde revient');
+  assert.equal(merged.dr, incoming.dr);
+  assert.equal(merged.ar, incoming.ar);
+  assert.equal(merged.hidden, true, 'hidden revient de la sauvegarde');
+  assert.equal(merged.order, 99, 'order revient de la sauvegarde');
+  assert.equal(await merged.photo.text(), 'photo restaurée', 'la photo de la sauvegarde revient');
+  assert.equal(await merged.video.text(), 'vidéo restaurée', 'la vidéo de la sauvegarde revient');
+  assert.equal(await merged.audios.fr.text(), 'voix fr restaurée', 'la voix française revient');
+  assert.equal(await merged.audios.dr.text(), 'voix dr restaurée', 'la voix darija revient');
+  assert.equal(Object.hasOwn(merged, 'audioFr'), false, 'les anciens champs vocaux sont repliés puis retirés');
+  assert.equal(Object.hasOwn(merged, 'audioDr'), false);
+  assert.deepEqual(merged.positions, target.positions, 'les positions locales restent prioritaires dans toutes les tailles');
+  assert.equal(merged.gridRow, target.gridRow, 'la ligne locale reste prioritaire');
+  assert.equal(merged.gridCol, target.gridCol, 'la colonne locale reste prioritaire');
+  assert.equal(merged.wordId, target.wordId, 'le wordId local reste prioritaire');
+
+  const localComplement = {
+    id: 'c-test-complement', wordId: 'c-test-complement', cat: 'base', fr: 'Texte local', hidden: false,
+    gridRow: 2, gridCol: 1, positions: { 4: { row: 2, col: 1 } },
+    photo: new Blob(['photo locale conservée'], { type: 'image/png' }),
+    audios: { ar: new Blob(['voix arabe locale'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['voix fr locale legacy'], { type: 'audio/webm' }),
+  };
+  const sparseIncoming = {
+    id: localComplement.id, wordId: 'w-test-complement-distant', cat: 'base', fr: 'Texte complété', hidden: true,
+    gridRow: 9, gridCol: 2, positions: { 2: { row: 9, col: 2 } },
+    audios: { fr: new Blob(['voix fr sauvegarde'], { type: 'audio/webm' }) },
+  };
+  const completed = mergeBackupCards([localComplement], [sparseIncoming])[0];
+  assert.equal(completed.fr, sparseIncoming.fr);
+  assert.equal(completed.hidden, true);
+  assert.equal(await completed.photo.text(), 'photo locale conservée', 'le téléphone complète les médias absents de la sauvegarde');
+  assert.equal(await completed.audios.ar.text(), 'voix arabe locale', 'une langue absente de la sauvegarde reste locale');
+  assert.equal(await completed.audios.fr.text(), 'voix fr sauvegarde', 'la voix de la sauvegarde remplace la langue présente');
+  assert.deepEqual(completed.positions, { 2: { row: 9, col: 2 }, 4: { row: 2, col: 1 } }, 'les tailles manquantes sont complétées sans déplacer les places locales');
+  assert.equal(completed.gridRow, 2);
+  assert.equal(completed.gridCol, 1);
+  assert.equal(completed.wordId, localComplement.wordId);
+
+  const lexicalLocal = {
+    id: 'w-test-lexique-local', wordId: 'w-test-lexique-local', cat: 'base', fr: 'Texte lexical local', hidden: true,
+    positions: { 4: { row: 3, col: 2 } }, gridRow: 3, gridCol: 2,
+    photo: new Blob(['photo lexicale locale'], { type: 'image/png' }),
+    lexicon: { owned: true, wordId: 'w-test-lexique-local' },
+  };
+  const lexicalIncoming = { id: lexicalLocal.id, cat: 'base', fr: 'Texte distant sans lexique', hidden: false, photo: null };
+  assert.deepEqual(mergeBackupCards([lexicalLocal], [lexicalIncoming])[0], lexicalLocal, 'une carte lexicale existante conserve la règle actuelle même si le paquet n’a pas de lexique');
+  const familyLocal = {
+    id: 'u-test-backup-family', wordId: 'u-test-backup-family', cat: 'test-zone', fr: 'Texte familial local', hidden: false,
+    order: 9, gridRow: 8, gridCol: 1, positions: { 2: { row: 20, col: 1 }, 4: { row: 8, col: 1 } },
+    photo: new Blob(['photo familiale locale'], { type: 'image/png' }),
+  };
+  const familyIncoming = {
+    id: familyLocal.id, cat: 'base', fr: 'Texte distant', hidden: true, order: 99,
+    positions: { 3: { row: 7, col: 3 }, 5: { row: 5, col: 5 } }, photo: null,
+  };
+  const restoredFamily = mergeBackupCards([familyLocal], [familyIncoming])[0];
+  assert.equal(restoredFamily.fr, familyIncoming.fr, 'le texte familial revient de la sauvegarde');
+  assert.equal(restoredFamily.hidden, true, 'hidden familial revient de la sauvegarde');
+  assert.equal(restoredFamily.order, 99, 'order familial revient de la sauvegarde');
+  assert.equal(await restoredFamily.photo.text(), 'photo familiale locale', 'le téléphone complète une photo familiale absente de la sauvegarde');
+  assert.deepEqual(restoredFamily.positions, {
+    2: familyLocal.positions[2], 3: familyIncoming.positions[3], 4: familyLocal.positions[4], 5: familyIncoming.positions[5],
+  }, 'les places familiales locales restent prioritaires et les tailles absentes sont complétées');
+  assert.equal(restoredFamily.gridRow, familyLocal.gridRow);
+  assert.equal(restoredFamily.gridCol, familyLocal.gridCol);
+  assert.equal(restoredFamily.wordId, familyLocal.wordId);
+  console.log('test-lexique 22 restauration sans lexique : OK');
+}
+
+// 23. Carte familiale sans média : la restauration rend la photo, la vidéo et les voix.
+{
+  const { mergeBackupCards } = await import('../backup.js');
+  const local = {
+    id: 'u-test-restauration-medias', wordId: 'u-test-restauration-medias', cat: 'base',
+    fr: 'Texte familial local', dr: '', ar: '', emoji: '🧪', gram: 'noun', hidden: false, order: 4,
+    positions: { 2: { row: 4, col: 1 }, 4: { row: 2, col: 2 } }, gridRow: 2, gridCol: 2,
+  };
+  const incoming = {
+    id: local.id, wordId: 'w-test-famille-distant', cat: 'base', fr: 'Texte familial restauré', hidden: true, order: 9,
+    positions: { 2: { row: 9, col: 2 }, 3: { row: 7, col: 3 }, 4: { row: 6, col: 4 }, 5: { row: 5, col: 5 } },
+    gridRow: 6, gridCol: 4,
+    photo: new Blob(['photo familiale restaurée'], { type: 'image/png' }),
+    video: new Blob(['vidéo familiale restaurée'], { type: 'video/webm' }),
+    audios: {
+      fr: new Blob(['voix fr familiale restaurée'], { type: 'audio/webm' }),
+      dr: new Blob(['voix dr familiale restaurée'], { type: 'audio/webm' }),
+    },
+  };
+  const [restored] = mergeBackupCards([local], [incoming]);
+  assert.equal(await restored.photo.text(), 'photo familiale restaurée', 'la photo distante restaure une carte u-* sans photo');
+  assert.equal(await restored.video.text(), 'vidéo familiale restaurée');
+  assert.equal(await restored.audios.fr.text(), 'voix fr familiale restaurée');
+  assert.equal(await restored.audios.dr.text(), 'voix dr familiale restaurée');
+  assert.equal(restored.fr, incoming.fr);
+  assert.equal(restored.hidden, true);
+  assert.equal(restored.order, 9);
+  assert.deepEqual(restored.positions, {
+    2: local.positions[2], 3: incoming.positions[3], 4: local.positions[4], 5: incoming.positions[5],
+  });
+  assert.equal(restored.gridRow, 2);
+  assert.equal(restored.gridCol, 2);
+  assert.equal(restored.wordId, local.wordId);
+  console.log('test-lexique 23 restauration familiale : OK');
+}
+
+// 24. Carte de départ legacy : médias et hidden distants, texte et lexique selon la règle lexicale.
+{
+  const { mergeBackupCards } = await import('../backup.js');
+  const baseline = base.find((card) => card.id === 'c-base-je-veux');
+  const wordId = 'w-je-veux';
+  const local = {
+    ...baseline,
+    wordId: baseline.id,
+    fr: 'Texte parent legacy', dr: 'Darija parent legacy', ar: 'عربي محلي',
+    hidden: false, order: 7,
+    positions: { 2: { row: 4, col: 1 }, 4: { row: 2, col: 2 } }, gridRow: 2, gridCol: 2,
+    lexicon: {
+      owned: true, legacy: true, customized: true, wordId, revision: 'revision-locale', niveau: 'noyau', palier: 1,
+      fonction: '', sourceCategory: 'base', role: 'person', arStandard: '', legacyFr: baseline.fr,
+      relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '', status: 'brouillon',
+    },
+  };
+  const incoming = {
+    id: baseline.id, wordId, cat: 'base', fr: 'Texte source distant', dr: 'Darija distante', ar: 'عربي بعيد',
+    emoji: '🙂', gram: 'noun', sub: 'sous-titre distant', sayFr: 'voix fr distante', sayAr: 'صوت بعيد',
+    hidden: true, order: 9, updatedAt: 900,
+    positions: { 2: { row: 9, col: 2 }, 3: { row: 7, col: 3 }, 4: { row: 6, col: 4 }, 5: { row: 5, col: 5 } },
+    gridRow: 6, gridCol: 4,
+    photo: new Blob(['photo legacy restaurée'], { type: 'image/png' }),
+    video: new Blob(['vidéo legacy restaurée'], { type: 'video/webm' }),
+    audios: {
+      fr: new Blob(['voix fr legacy restaurée'], { type: 'audio/webm' }),
+      dr: new Blob(['voix dr legacy restaurée'], { type: 'audio/webm' }),
+    },
+    lexicon: {
+      ...local.lexicon, customized: false, revision: 'revision-distante', niveau: 'frange', palier: 4,
+      fonction: 'question', relecteurFr: 'RF', relecteurDr: 'RD', dateRevision: '2026-11-27',
+      secondVoice: 'ZZ', status: 'relu-clinique',
+    },
+  };
+  const [restored] = mergeBackupCards([local], [incoming]);
+  assert.equal(await restored.photo.text(), 'photo legacy restaurée', 'la photo distante restaure une carte legacy');
+  assert.equal(await restored.video.text(), 'vidéo legacy restaurée');
+  assert.equal(await restored.audios.fr.text(), 'voix fr legacy restaurée');
+  assert.equal(await restored.audios.dr.text(), 'voix dr legacy restaurée');
+  assert.equal(restored.hidden, true, 'hidden suit le chemin normal pour une carte legacy');
+  assert.equal(restored.emoji, incoming.emoji, 'les champs non textuels suivent le chemin normal');
+  assert.equal(restored.sub, incoming.sub);
+  assert.equal(restored.order, 9);
+  assert.equal(restored.updatedAt, 900);
+  assert.equal(restored.fr, local.fr, 'le texte français personnalisé local reste prioritaire');
+  assert.equal(restored.dr, local.dr);
+  assert.equal(restored.ar, local.ar);
+  assert.equal(restored.lexicon.revision, incoming.lexicon.revision, 'le snapshot lexical le plus relu est retenu');
+  assert.equal(restored.lexicon.fonction, 'question');
+  assert.equal(restored.lexicon.customized, true);
+  assert.equal(restored.lexicon.legacy, true);
+  assert.equal(restored.lexicon.status, 'relu-clinique');
+  assert.deepEqual(restored.positions, {
+    2: local.positions[2], 3: incoming.positions[3], 4: local.positions[4], 5: incoming.positions[5],
+  });
+  assert.equal(restored.gridRow, 2);
+  assert.equal(restored.gridCol, 2);
+  assert.equal(restored.wordId, local.wordId);
+  console.log('test-lexique 24 restauration legacy : OK');
+}
+
+console.log('test-lexique groupes 1-24 : OK');
