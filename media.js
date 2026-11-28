@@ -206,6 +206,22 @@ export function blobToDataUrl(blob) {
 }
 
 export async function dataUrlToBlob(dataUrl) {
-  const response = await fetch(dataUrl);
-  return response.blob();
+  const value = String(dataUrl);
+  const comma = value.indexOf(',');
+  if (!value.startsWith('data:') || comma < 0) throw new Error('Adresse de donnée invalide.');
+  const header = value.slice(5, comma);
+  const match = /^([^;]*)((?:;[^;]*)*)$/.exec(header);
+  if (!match) throw new Error('Adresse de donnée invalide.');
+  const type = match[1] || 'text/plain';
+  const parameters = match[2];
+  const payload = value.slice(comma + 1);
+  const isBase64 = /;base64(?:;|$)/i.test(parameters);
+  const mimeParameters = isBase64 ? parameters.replace(/;base64(?=;|$)/ig, '') : parameters;
+  if (isBase64) {
+    const binary = atob(payload.replace(/\s/g, ''));
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return new Blob([bytes], { type: `${type}${mimeParameters}` });
+  }
+  return new Blob([new TextEncoder().encode(decodeURIComponent(payload))], { type: `${type}${mimeParameters}` });
 }

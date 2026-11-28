@@ -13,6 +13,7 @@ import { profile, clinic } from './aba.js';
 import { blobToDataUrl, dataUrlToBlob } from '../media.js';
 import { isTeamMode, requireTeamMode } from './network-policy.js';
 import { mergeCardLayout } from './grid-layout.js';
+import { mergeLexicalCard, sanitizeLexiconMetadata } from './lexique-core.js';
 import { logDiagnostic } from './error-log.js';
 import './storage.js';
 
@@ -37,6 +38,7 @@ const SHARED_SETTING_KEYS = [
   'cols', 'toiletReminder', 'levels', 'stories',
   'atec_history', 'atecHistory', 'aacHistory', 'touch',
   'visualStyle', 'hideFriends', 'friendsAlbum', 'morphAuto', 'childGender',
+  'onlyReviewed', 'emojiSkinTone',
 ];
 
 function bufToB64(buf) {
@@ -300,6 +302,11 @@ export async function buildLocalSyncPayload({ includeMedia = false } = {}) {
   const serializedCards = [];
   for (const c of cards) {
     const copy = { ...c };
+    if (copy.lexicon) {
+      const lexicon = sanitizeLexiconMetadata(copy.lexicon);
+      if (lexicon) copy.lexicon = lexicon;
+      else delete copy.lexicon;
+    }
     if (includeMedia) {
       for (const f of ['photo', 'video']) copy[f] = c[f] instanceof Blob ? await blobToDataUrl(c[f]) : null;
       // v10.21 (Lot 1) : voix par langue ; les anciens champs audioFr/audioDr sont repris pour les cartes non migrées.
@@ -364,6 +371,11 @@ function cleanRecord(raw, { maxStr = 2000, media = false } = {}) {
       continue;
     }
     if (media && MEDIA_FIELDS.includes(k)) { out[k] = cleanMedia(v); continue; }
+    if (k === 'lexicon') {
+      const lexicon = sanitizeLexiconMetadata(v);
+      if (lexicon) out.lexicon = lexicon;
+      continue;
+    }
     if (typeof v === 'string') out[k] = v.slice(0, maxStr);
     else if (typeof v === 'number' || typeof v === 'boolean' || v === null) out[k] = v;
     else if (typeof v === 'object') { try { out[k] = JSON.parse(JSON.stringify(v)); } catch { /* ignoré */ } }
@@ -406,11 +418,37 @@ export async function mergeRemoteSyncPayload(remote) {
   ]);
 
   const localCardMap = new Map(localCards.map((c) => [c.id, c]));
+  const lexiconOwners = new Map();
+  for (const card of localCards) {
+    const wordId = card.lexicon?.wordId;
+    if (!wordId || String(card.id).startsWith('u-')) continue;
+    if (!lexiconOwners.has(wordId)) lexiconOwners.set(wordId, new Set());
+    lexiconOwners.get(wordId).add(card.id);
+  }
   let newOrUpdatedCards = 0;
   for (const rc of cleanList(remote.cards, { maxStr: 400, media: true })) {
     const lc = localCardMap.get(rc.id);
-    // v10.10 : une modification locale plus récente n'est jamais écrasée par un paquet plus ancien
-    // (avant, Papa renommait une carte hors ligne puis la synchro de Maman l'effaçait).
+    const remoteWordId = rc.lexicon?.wordId;
+    if (remoteWordId) {
+      const owners = lexiconOwners.get(remoteWordId) || new Set();
+      if ([...owners].some((id) => id !== lc?.id)) continue;
+    }
+    if (lc && (lc.lexicon?.wordId || rc.lexicon)) {
+      const next = mergeLexicalCard(lc, rc);
+      if (!next) continue;
+      const localLexicon = lc.lexicon || {};
+      const nextLexicon = next.lexicon || {};
+      const fields = new Set([...Object.keys(localLexicon), ...Object.keys(nextLexicon)]);
+      const metadataChanged = [...fields].some((field) => Object.hasOwn(localLexicon, field) !== Object.hasOwn(nextLexicon, field)
+        || localLexicon[field] !== nextLexicon[field]);
+      if (metadataChanged || lc.fr !== next.fr || lc.dr !== next.dr || lc.ar !== next.ar) newOrUpdatedCards += 1;
+      localCardMap.set(rc.id, next);
+      if (nextLexicon.wordId) {
+        if (!lexiconOwners.has(nextLexicon.wordId)) lexiconOwners.set(nextLexicon.wordId, new Set());
+        lexiconOwners.get(nextLexicon.wordId).add(next.id);
+      }
+      continue;
+    }
     if (lc && isNewer(lc, rc)) continue;
     const hydrated = { ...rc };
     for (const f of ['photo', 'video']) {
@@ -422,7 +460,6 @@ export async function mergeRemoteSyncPayload(remote) {
         hydrated[f] = null;
       }
     }
-    // v10.21 (Lot 1) : voix par langue ; le téléphone complète les langues absentes du paquet distant.
     const localAudios = { ...{ fr: lc && lc.audioFr, dr: lc && lc.audioDr }, ...((lc && lc.audios) || {}) };
     const audios = {};
     for (const code of new Set([...Object.keys(rc.audios || {}), ...Object.keys(localAudios)])) {
@@ -436,11 +473,13 @@ export async function mergeRemoteSyncPayload(remote) {
     if (!lc || lc.fr !== hydrated.fr || lc.dr !== hydrated.dr || lc.ar !== hydrated.ar || lc.hidden !== hydrated.hidden) {
       newOrUpdatedCards += 1;
     }
-    // Lot 2 (L2-13) : les places par taille et wordId voyagent par taille : le paquet distant ne
-    // remplace que les tailles qu'il transporte, le téléphone garde ses places pour les autres tailles.
     const next = mergeCardLayout(lc || {}, hydrated);
     if (!Number(next.updatedAt)) next.updatedAt = Number(rc.updatedAt) || Date.now();
     localCardMap.set(rc.id, next);
+    if (remoteWordId) {
+      if (!lexiconOwners.has(remoteWordId)) lexiconOwners.set(remoteWordId, new Set());
+      lexiconOwners.get(remoteWordId).add(next.id);
+    }
   }
   await db.putCards(Array.from(localCardMap.values()));
 
@@ -495,6 +534,9 @@ export async function mergeRemoteSyncPayload(remote) {
         const localAlbum = (await db.getSetting('friendsAlbum')) || { unlocked: ['nour'], history: [] };
         const unlocked = Array.from(new Set([...(localAlbum.unlocked || []), ...(val.unlocked || [])]));
         await db.setSetting('friendsAlbum', { unlocked, history: val.history || localAlbum.history || [] });
+      } else if (k === 'onlyReviewed' || k === 'emojiSkinTone') {
+        const localValue = await db.getSetting(k);
+        if (localValue === undefined || localValue === null) await db.setSetting(k, val);
       } else {
         await db.setSetting(k, val);
       }

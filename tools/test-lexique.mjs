@@ -705,4 +705,121 @@ function memoryLocal(values = {}) {
   console.log('test-lexique 20 voix : OK');
 }
 
-console.log('test-lexique groupes 1-20 : OK');
+// 21. Sauvegarde : liste blanche lexicale, emoji ZWJ, réglages et champs locaux protégés.
+{
+  const { readBackup, mergeBackupCards, mergeBackupSetting } = await import('../backup.js');
+  const { sanitizeLexiconMetadata } = await import('../modules/lexique-core.js');
+  const { dataUrlToBlob } = await import('../media.js');
+  const decodedPhoto = await dataUrlToBlob('data:image/png;base64,cGhvdG8=');
+  assert.equal(decodedPhoto.type, 'image/png', 'le décodage local ne conserve pas le marqueur base64 dans le type MIME');
+  assert.equal(await decodedPhoto.text(), 'photo', 'les octets base64 sont restaurés sans fetch');
+  const decodedText = await dataUrlToBlob('data:text/plain;charset=utf-8,Texte%20neutre');
+  assert.equal(decodedText.type, 'text/plain;charset=utf-8', 'les paramètres MIME utiles sont conservés');
+  assert.equal(await decodedText.text(), 'Texte neutre', 'les données texte percent-encodées sont restaurées');
+  const emoji = '👩🏽‍🤝‍👨🏻';
+  assert.ok(emoji.length > 8 && emoji.length <= 32, 'la fixture dépasse l’ancienne limite de 8 unités');
+  const metadata = {
+    owned: true, legacy: false, customized: false, wordId: 'w-restauration', revision: 'a'.repeat(64),
+    niveau: 'noyau', palier: 2, fonction: 'question', sourceCategory: 'base', role: 'social',
+    arStandard: 'نص مصدر', legacyFr: '', relecteurFr: 'RF', relecteurDr: 'DD',
+    dateRevision: '2026-11-20', secondVoice: 'ZZ', status: 'brouillon',
+  };
+  const rawCard = {
+    id: 'w-restauration', wordId: 'w-restauration', cat: 'base', fr: 'Texte source', dr: 'Source', ar: 'مصدر',
+    emoji, gram: 'social', sub: '', sayFr: '', sayAr: '', hidden: false, order: 1,
+    positions: { 4: { row: 1, col: 1 } }, gridRow: 1, gridCol: 1,
+    lexicon: {
+      ...metadata,
+      note: 'note privée', url: 'https://example.invalid/photo', email: 'fixture@example.invalid',
+      phone: '+33 1 23 45 67 89', unknown: 'clé inconnue',
+    },
+  };
+  const backup = await readBackup(new File([JSON.stringify({
+    format: 'kalimati-backup-v4', cards: [rawCard], settings: { onlyReviewed: true, emojiSkinTone: '5' },
+  })], 'fixture.json', { type: 'application/json' }));
+  assert.equal(backup.cards[0].emoji, emoji, 'la séquence ZWJ n’est pas tronquée');
+  assert.deepEqual(backup.cards[0].lexicon, { ...metadata, status: 'relu-clinique' }, 'seuls les champs lexicaux définis survivent');
+  for (const field of ['note', 'url', 'email', 'phone', 'unknown']) {
+    assert.equal(Object.hasOwn(backup.cards[0].lexicon, field), false, field);
+  }
+  const unsafeMetadata = sanitizeLexiconMetadata({
+    ...metadata, legacyFr: 'https://example.invalid', arStandard: 'fixture@example.invalid', relecteurFr: 'RF 0123456789',
+  });
+  assert.equal(unsafeMetadata.legacyFr, '', 'un chemin ou une URL dans le texte source est ignoré');
+  assert.equal(unsafeMetadata.arStandard, '', 'un e-mail dans le texte source est ignoré');
+  assert.equal(unsafeMetadata.relecteurFr, '', 'un code de relecture avec coordonnées est ignoré');
+  assert.equal(unsafeMetadata.status, 'relu-langue', 'le statut est recalculé depuis les preuves assainies');
+
+  const local = {
+    id: 'w-restauration', wordId: 'w-restauration', cat: 'base', fr: 'Texte parent local', dr: 'Darija local', ar: 'عربي محلي',
+    emoji: '👩🏽‍⚕️', gram: 'person', sub: 'sous-titre local', sayFr: 'voix indexée locale', sayAr: 'صوت محلي',
+    hidden: true, order: 4, positions: { 2: { row: 3, col: 1 } }, gridRow: 3, gridCol: 1, visualKey: 'local:cle',
+    photo: new Blob(['photo locale'], { type: 'image/png' }), video: new Blob(['vidéo locale'], { type: 'video/webm' }),
+    audios: { fr: new Blob(['voix locale'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['ancienne voix fr'], { type: 'audio/webm' }), audioDr: new Blob(['ancienne voix dr'], { type: 'audio/webm' }),
+    updatedAt: 500,
+    lexicon: {
+      ...metadata, revision: 'b'.repeat(64), fonction: 'commentaire', palier: 1, customized: true,
+      relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '', status: 'brouillon',
+    },
+  };
+  const incoming = {
+    ...backup.cards[0], fr: 'Texte distant', dr: 'Darija distant', ar: 'عربي بعيد', emoji: '🙂', gram: 'noun',
+    sub: 'sous-titre distant', sayFr: 'voix indexée distante', sayAr: 'صوت بعيد', hidden: false, order: 99,
+    positions: { 2: { row: 9, col: 2 }, 3: { row: 8, col: 1 }, 4: { row: 7, col: 2 }, 5: { row: 6, col: 1 } },
+    gridRow: 9, gridCol: 2, visualKey: 'remote:cle', updatedAt: 100,
+    photo: new Blob(['photo distante'], { type: 'image/png' }), video: new Blob(['vidéo distante'], { type: 'video/webm' }),
+    audios: { fr: new Blob(['voix distante'], { type: 'audio/webm' }) },
+    audioFr: new Blob(['ancienne voix distante'], { type: 'audio/webm' }), audioDr: new Blob(['ancienne voix dr distante'], { type: 'audio/webm' }),
+    lexicon: { ...metadata, revision: 'c'.repeat(64), fonction: 'question', palier: 4, customized: false },
+  };
+  const sparseLocal = {
+    id: 'w-restauration-absent', cat: 'base', fr: 'Texte local absent', dr: '', ar: '', emoji: '🙂', gram: 'noun',
+    lexicon: { ...metadata, wordId: 'w-restauration-absent', customized: true, relecteurFr: '', relecteurDr: '', dateRevision: '', secondVoice: '' },
+  };
+  const sparseIncoming = {
+    ...incoming, id: sparseLocal.id, wordId: sparseLocal.id,
+    lexicon: { ...incoming.lexicon, wordId: sparseLocal.id },
+  };
+  const newIncoming = {
+    ...incoming, id: 'w-restauration-neuf', wordId: 'w-restauration-neuf',
+    lexicon: { ...incoming.lexicon, wordId: 'w-restauration-neuf' },
+  };
+  const family = { id: 'u-famille-fixture', cat: 'base', fr: 'Carte familiale', positions: { 4: { row: 20, col: 4 } } };
+  const restored = mergeBackupCards([local, sparseLocal, family], [incoming, sparseIncoming, newIncoming]);
+  const merged = restored.find((card) => card.id === local.id);
+  for (const field of [
+    'id', 'wordId', 'positions', 'gridRow', 'gridCol', 'order', 'visualKey', 'emoji', 'gram', 'cat', 'sub',
+    'sayFr', 'sayAr', 'hidden', 'photo', 'video', 'audios', 'audioFr', 'audioDr',
+  ]) {
+    assert.deepEqual(merged[field], local[field], `${field} local conservé exactement`);
+  }
+  assert.equal(merged.fr, local.fr, 'le texte personnalisé local gagne');
+  assert.equal(merged.dr, local.dr);
+  assert.equal(merged.ar, local.ar);
+  assert.equal(merged.lexicon.revision, incoming.lexicon.revision, 'le snapshot relu le plus élevé est retenu');
+  assert.equal(merged.lexicon.fonction, 'question');
+  assert.equal(merged.lexicon.arStandard, metadata.arStandard, 'le texte source accompagne les preuves du même snapshot');
+  assert.equal(merged.lexicon.relecteurFr, 'RF');
+  assert.equal(merged.lexicon.status, 'relu-clinique');
+  assert.equal(merged.lexicon.customized, true, 'customized est la réunion logique');
+  assert.equal(merged.updatedAt, 500, 'la date maximale est conservée');
+
+  const sparse = restored.find((card) => card.id === sparseLocal.id);
+  for (const field of ['wordId', 'positions', 'gridRow', 'gridCol', 'order', 'visualKey', 'photo', 'video', 'audios', 'audioFr', 'audioDr']) {
+    assert.equal(Object.hasOwn(sparse, field), false, `${field} absent localement reste absent`);
+  }
+  assert.equal(Object.hasOwn(sparse, 'hidden'), Object.hasOwn(sparseLocal, 'hidden'), 'la présence de hidden reste locale');
+  assert.deepEqual(sparse.hidden, sparseLocal.hidden, 'hidden absent localement reste absent');
+  assert.deepEqual(restored.find((card) => card.id === newIncoming.id), newIncoming, 'seule une carte entièrement nouvelle reçoit layout et médias distants');
+  assert.deepEqual(restored.find((card) => card.id === family.id), family, 'aucune carte familiale n’est supprimée ou modifiée');
+
+  assert.equal(mergeBackupSetting('onlyReviewed', false, true), false, 'false local explicitement défini gagne');
+  assert.equal(mergeBackupSetting('emojiSkinTone', '3', '5'), '3', 'la teinte locale définie gagne');
+  assert.equal(mergeBackupSetting('onlyReviewed', undefined, true), true, 'une valeur locale absente est remplie');
+  assert.equal(mergeBackupSetting('emojiSkinTone', null, '5'), '5', 'une valeur locale nulle est absente');
+  assert.equal(mergeBackupSetting('cols', 2, 5), 5, 'la fusion des autres réglages reste inchangée');
+  console.log('test-lexique 21 sauvegarde : OK');
+}
+
+console.log('test-lexique groupes 1-21 : OK');

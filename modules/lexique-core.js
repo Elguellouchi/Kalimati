@@ -270,6 +270,79 @@ function lexiconMetadata(word, card, revision, baseline) {
   };
 }
 
+const cleanLexiconText = (value, max) => {
+  if (typeof value !== 'string' || textProblem(value, [])) return '';
+  return value.slice(0, max);
+};
+
+export function sanitizeLexiconMetadata(raw) {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  const wordId = typeof raw.wordId === 'string' && /^w-[a-z0-9]+(?:-[a-z0-9]+)*$/.test(raw.wordId) && raw.wordId.length <= 80
+    ? raw.wordId : '';
+  if (!wordId) return null;
+  const relecteurFr = typeof raw.relecteurFr === 'string' && /^[A-Z]{2,4}$/.test(raw.relecteurFr) ? raw.relecteurFr : '';
+  const relecteurDr = typeof raw.relecteurDr === 'string' && /^[A-Z]{2,4}$/.test(raw.relecteurDr) ? raw.relecteurDr : '';
+  const secondVoice = typeof raw.secondVoice === 'string' && /^[A-Z]{2,4}$/.test(raw.secondVoice) ? raw.secondVoice : '';
+  const dateRevision = typeof raw.dateRevision === 'string' && dateError(raw.dateRevision, '9999-12-31') === '' ? raw.dateRevision : '';
+  const metadata = {
+    owned: raw.owned === true,
+    legacy: raw.legacy === true,
+    customized: raw.customized === true,
+    wordId,
+    revision: typeof raw.revision === 'string' && /^[\w.:-]{1,80}$/.test(raw.revision) ? raw.revision : '',
+    niveau: LEVELS.includes(raw.niveau) ? raw.niveau : 'noyau',
+    palier: Number.isInteger(Number(raw.palier)) && Number(raw.palier) >= 1 && Number(raw.palier) <= 4 ? Number(raw.palier) : 1,
+    fonction: FUNCTIONS.includes(raw.fonction) ? raw.fonction : '',
+    sourceCategory: typeof raw.sourceCategory === 'string' && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(raw.sourceCategory) && raw.sourceCategory.length <= 80
+      ? raw.sourceCategory : '',
+    role: ROLES.includes(raw.role) ? raw.role : 'noun',
+    arStandard: cleanLexiconText(raw.arStandard, 40),
+    legacyFr: cleanLexiconText(raw.legacyFr, 40),
+    relecteurFr,
+    relecteurDr,
+    dateRevision,
+    secondVoice,
+  };
+  return { ...metadata, status: computeReviewStatus(metadata) };
+}
+
+export function mergeLexicalCard(local, incoming, { defaultCards: defaults = defaultCards() } = {}) {
+  const remoteLexicon = sanitizeLexiconMetadata(incoming?.lexicon);
+  if (!local?.id || local.id !== incoming?.id || String(local.id).startsWith('u-') || !remoteLexicon?.owned) return null;
+  if (local.cat !== incoming.cat || local.cat !== remoteLexicon.sourceCategory) return null;
+  const localWordId = typeof local.lexicon?.wordId === 'string' ? local.lexicon.wordId : '';
+  const localLexicon = localWordId ? sanitizeLexiconMetadata(local.lexicon) : null;
+  if (localWordId && (!localLexicon || localWordId !== remoteLexicon.wordId)) return null;
+  if (!localWordId) {
+    const legacyId = `c-${remoteLexicon.wordId.slice(2)}`;
+    const word = { wordId: remoteLexicon.wordId, legacyId, categorie: remoteLexicon.sourceCategory };
+    if (!remoteLexicon.legacy || !matchesHistoricalCard(local, word, defaults)) return null;
+  }
+  const baseline = defaults.find((card) => card.id === local.id);
+  const customized = localLexicon?.customized === true || remoteLexicon.customized === true
+    || isLexicallyCustomized(local, baseline) || isLexicallyCustomized(incoming, baseline);
+  const localRank = localLexicon ? ['brouillon', 'relu-langue', 'relu-clinique'].indexOf(computeReviewStatus(localLexicon)) : -1;
+  const remoteRank = ['brouillon', 'relu-langue', 'relu-clinique'].indexOf(computeReviewStatus(remoteLexicon));
+  const source = remoteRank > localRank ? { card: incoming, lexicon: remoteLexicon } : { card: local, lexicon: localLexicon };
+  const next = { ...local };
+  if (!customized) {
+    next.fr = source.card.fr;
+    next.dr = source.card.dr;
+    next.ar = source.card.ar;
+  }
+  next.lexicon = {
+    ...source.lexicon,
+    customized,
+    status: computeReviewStatus(source.lexicon),
+  };
+  const localUpdatedAt = Number(local.updatedAt);
+  const remoteUpdatedAt = Number(incoming.updatedAt);
+  if (Number.isFinite(localUpdatedAt) || Number.isFinite(remoteUpdatedAt)) {
+    next.updatedAt = Math.max(Number.isFinite(localUpdatedAt) ? localUpdatedAt : 0, Number.isFinite(remoteUpdatedAt) ? remoteUpdatedAt : 0);
+  }
+  return next;
+}
+
 function validPlace(place, cols, maxRows = Infinity) {
   return Boolean(place) && Number.isInteger(place.row) && Number.isInteger(place.col)
     && place.row >= 1 && place.row <= maxRows && place.col >= 1 && place.col <= cols;

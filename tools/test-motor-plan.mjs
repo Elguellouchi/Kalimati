@@ -219,7 +219,7 @@ assert.deepEqual(swapped.positions['3'], afterDelete.find((card) => card.id === 
   const local = { id: 'c-base-a', wordId: 'mot-a', positions: { '2': { row: 1, col: 1 }, '3': { row: 2, col: 2 } } };
   const remote = { id: 'c-base-a', positions: { '3': { row: 3, col: 1 }, '5': { row: 1, col: 1 } } };
   const merged = layout.mergeCardLayout(local, remote);
-  assert.deepEqual(merged.positions, { '2': { row: 1, col: 1 }, '3': { row: 3, col: 1 }, '5': { row: 1, col: 1 } }, 'synchro : les tailles absentes du paquet distant restent locales');
+  assert.deepEqual(merged.positions, local.positions, 'synchro : toutes les places locales restent exactes, sans ajout ni remplacement distant');
   assert.equal(merged.wordId, 'mot-a', 'synchro : wordId local est conservé si le paquet ne le transporte pas');
 }
 
