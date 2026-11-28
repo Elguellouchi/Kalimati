@@ -900,7 +900,7 @@ test('9 — hors ligne : six modules précachés, Lexique chargé, aucun recharg
   await context.setOffline(false);
 });
 
-test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, positions et médias locaux protégés', async ({ page }, testInfo) => {
+test('10 — sauvegarde/restauration (Spec E2E 8) : lexique protégé, carte familiale restaurée, positions locales', async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   const withMedia = testInfo.project.name !== 'iphone-13-webkit';
   await routeLexique(page, () => fixture([], CATEGORY));
@@ -938,8 +938,7 @@ test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, position
       id: 'u-test-backup-family', wordId: 'u-test-backup-family', updatedAt: 300, cat: category.id,
       fr: 'Carte familiale test', dr: '', ar: '', emoji: '🧪', gram: 'noun', sub: '', sayFr: '', sayAr: '',
       hidden: false, order: 9, positions: { 2: { row: 20, col: 1 }, 4: { row: 8, col: 1 } }, gridRow: 8, gridCol: 1,
-      visualKey: null, photo: withMedia ? new Blob(['photo-famille-fixture'], { type: 'image/png' }) : null,
-      audios: withMedia ? { fr: new Blob(['voix-famille-fixture'], { type: 'audio/webm' }) } : {},
+      visualKey: null, photo: null, video: null, audios: {},
     };
     const cards = [local, sparse, family];
     await db.putCards(cards);
@@ -1009,8 +1008,10 @@ test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, position
   });
   const incomingFamily = payload.cards.find((card) => card.id === 'u-test-backup-family');
   Object.assign(incomingFamily, {
-    cat: 'base', fr: 'Texte distant', positions: remotePositions, gridRow: 6, gridCol: 4, order: 99,
-    visualKey: 'visuel-distant', emoji: '🙂', hidden: true, photo: remotePhoto, audios: remoteAudios,
+    cat: 'base', fr: 'Texte distant', dr: 'Darija familiale distante', ar: 'نص عائلي بعيد',
+    positions: remotePositions, gridRow: 6, gridCol: 4, order: 99,
+    visualKey: 'visuel-distant', emoji: '🙂', hidden: true,
+    photo: remotePhoto, video: remoteVideo, audios: remoteAudios,
   });
   payload.cards.push({
     id: 'w-test-backup-neuf', wordId: 'w-test-backup-neuf', updatedAt: 400, cat: CATEGORY.id,
@@ -1056,12 +1057,25 @@ test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, position
 
   const after = await backupCardSnapshot(page);
   const afterById = new Map(after.map((card) => [card.id, card]));
-  for (const id of beforeById.keys()) {
+  for (const id of ['w-test-backup-local', 'w-test-backup-absent']) {
     expect(afterById.get(id).fields, `${id} : champs locaux protégés`).toEqual(beforeById.get(id).fields);
     expect(afterById.get(id).updatedAt).toBeGreaterThanOrEqual(beforeById.get(id).updatedAt);
   }
+  const beforeFamily = beforeById.get('u-test-backup-family');
+  const afterFamily = afterById.get('u-test-backup-family');
+  for (const field of ['order', 'visualKey', 'emoji', 'gram', 'cat', 'sub', 'sayFr', 'sayAr', 'hidden']) {
+    expect(afterFamily.fields[field].value, `carte familiale : ${field} restauré`).toBe(incomingFamily[field]);
+  }
+  expect(afterFamily.fields.positions.value).toEqual({
+    2: beforeFamily.fields.positions.value[2], 3: remotePositions[3],
+    4: beforeFamily.fields.positions.value[4], 5: remotePositions[5],
+  });
+  expect(afterFamily.fields.gridRow.value).toBe(beforeFamily.fields.gridRow.value);
+  expect(afterFamily.fields.gridCol.value).toBe(beforeFamily.fields.gridCol.value);
+  expect(afterFamily.wordId).toBe(beforeFamily.wordId);
+  expect(afterFamily.text).toEqual({ fr: 'Texte distant', dr: 'Darija familiale distante', ar: 'نص عائلي بعيد' });
+  expect(afterFamily.updatedAt).toBeGreaterThanOrEqual(beforeFamily.updatedAt);
   expect(afterById.get('w-test-backup-local').text).toEqual(beforeById.get('w-test-backup-local').text);
-  expect(afterById.get('u-test-backup-family').text).toEqual(beforeById.get('u-test-backup-family').text);
   expect(afterById.get('w-test-backup-local').lexicon).toMatchObject({
     customized: true, revision: 'revision-distante', niveau: 'frange', palier: 4, fonction: 'question', role: 'person',
     arStandard: 'نص بعيد محايد', legacyFr: 'Texte source distant', relecteurFr: 'RF', relecteurDr: 'RD',
@@ -1077,14 +1091,24 @@ test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, position
   if (withMedia) {
     const media = await page.evaluate(async () => {
       const db = await import('/db.js');
-      const card = (await db.getAllCards()).find((entry) => entry.id === 'w-test-backup-neuf');
+      const cards = await db.getAllCards();
+      const readMedia = async (id) => {
+        const card = cards.find((entry) => entry.id === id);
+        return {
+          photo: card.photo instanceof Blob ? await card.photo.text() : null,
+          video: card.video instanceof Blob ? await card.video.text() : null,
+          audio: card.audios?.fr instanceof Blob ? await card.audios.fr.text() : null,
+        };
+      };
       return {
-        photo: card.photo instanceof Blob ? await card.photo.text() : null,
-        video: card.video instanceof Blob ? await card.video.text() : null,
-        audio: card.audios?.fr instanceof Blob ? await card.audios.fr.text() : null,
+        newCard: await readMedia('w-test-backup-neuf'),
+        family: await readMedia('u-test-backup-family'),
       };
     });
-    expect(media).toEqual({ photo: 'photo distante', video: 'video distante', audio: 'voix distante' });
+    expect(media).toEqual({
+      newCard: { photo: 'photo distante', video: 'video distante', audio: 'voix distante' },
+      family: { photo: 'photo distante', video: 'video distante', audio: 'voix distante' },
+    });
   }
 });
 

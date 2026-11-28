@@ -179,13 +179,11 @@ export function mergeBackupCards(localCards, backupCards) {
       byId.set(incoming.id, incoming);
       continue;
     }
-    if (incoming.lexicon?.owned) {
-      const merged = mergeLexicalCard(local, incoming);
+    const family = local.id.startsWith('u-');
+    const legacy = local.lexicon?.legacy === true || incoming.lexicon?.legacy === true;
+    if (!family && !legacy && (local.lexicon?.owned === true || incoming.lexicon?.owned === true)) {
+      const merged = incoming.lexicon?.owned ? mergeLexicalCard(local, incoming) : null;
       if (merged) byId.set(incoming.id, merged);
-      continue;
-    }
-    if (local.lexicon || incoming.lexicon || local.id.startsWith('u-')) {
-      byId.set(incoming.id, { ...local });
       continue;
     }
     const merged = { ...local, ...incoming };
@@ -203,6 +201,15 @@ export function mergeBackupCards(localCards, backupCards) {
     merged.audios = audios;
     delete merged.audioFr;
     delete merged.audioDr;
+    if (legacy) {
+      const lexical = incoming.lexicon?.owned ? mergeLexicalCard(local, incoming) : null;
+      const source = lexical || local;
+      merged.fr = source.fr;
+      merged.dr = source.dr;
+      merged.ar = source.ar;
+      if (source.lexicon) merged.lexicon = source.lexicon;
+      else delete merged.lexicon;
+    }
     byId.set(incoming.id, merged);
   }
   return [...byId.values()];
