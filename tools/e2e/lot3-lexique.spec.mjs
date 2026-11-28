@@ -7,6 +7,7 @@ const LEXIQUE_MODULES = [
   'modules/lexique-init.js',
   'modules/lexique-view.js',
   'modules/lexique-data.js',
+  'modules/emoji-skin-tone.js',
 ];
 
 // D-2 : Playwright WebKit ne persiste pas les Blob ; Chromium vérifie les médias, WebKit les autres protections.
@@ -479,7 +480,346 @@ test('5 — personnalisation parent : texte local conservé après une révision
   expect(card.lexicon.customized).toBe(true);
 });
 
-test('9 — hors ligne : cinq modules précachés, Lexique chargé, aucun rechargement automatique', async ({ page, context }, testInfo) => {
+test('6 — teintes : six choix, personnes et ZWJ rendus sans mutation ni asset non teinté', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
+  const withMedia = testInfo.project.name !== 'iphone-13-webkit';
+  await routeLexique(page, () => fixture([], CATEGORY));
+  const seeded = await seedBeforeApp(page, async ({ category, withMedia }) => {
+    const db = await import('/db.js');
+    const { layoutFingerprint } = await import('/modules/grid-layout.js');
+    const positionsFor = (index) => {
+      const positions = {};
+      for (const cols of [2, 3, 4, 5]) positions[String(cols)] = { row: Math.floor((index - 1) / cols) + 1, col: (index - 1) % cols + 1 };
+      return positions;
+    };
+    const make = (id, index, overrides = {}) => {
+      const positions = positionsFor(index);
+      return {
+        id, wordId: id, cat: category.id, fr: `Carte ${index}`, dr: '', ar: '', emoji: '🙂', gram: 'noun',
+        sub: '', sayFr: '', sayAr: '', hidden: false, order: index, positions,
+        gridRow: positions['4'].row, gridCol: positions['4'].col, visualKey: null,
+        photo: null, audios: {}, ...overrides,
+      };
+    };
+    const cards = [
+      make('u-test-person', 1, { fr: 'Dormir', emoji: '👩🏽‍⚕️', gram: 'person' }),
+      make('u-test-zwj', 2, { fr: 'Groupe test', emoji: '👩🏽‍🤝‍👨🏻', gram: 'person' }),
+      make('u-test-non-compatible', 3, { fr: 'Sourire test', emoji: '🙂', gram: 'person' }),
+      make('u-test-hors-personne', 4, { fr: 'Rôle test', emoji: '👩🏽‍⚕️', gram: 'noun', lexicon: { role: 'noun' } }),
+      make('u-test-role-personne', 5, { fr: 'Rôle personne test', emoji: '👩🏻‍⚕️', gram: 'noun', lexicon: { role: 'person' } }),
+      make('u-test-photo', 6, {
+        fr: 'Personne photo test', emoji: '👩🏽‍⚕️', gram: 'person', visualKey: 'obj:personne-photo-test',
+        photo: withMedia ? new Blob(['photo-personne'], { type: 'image/png' }) : null,
+      }),
+      make('u-test-illustration', 7, { fr: 'Illustration test', emoji: '👩🏽‍⚕️', gram: 'person', visualKey: 'person:therapist' }),
+    ];
+    if (withMedia) await db.putVisualOverride('obj:personne-photo-test', new Blob(['photo-partagee'], { type: 'image/png' }));
+    await db.putCards(cards);
+    await db.setSetting('cols', 4);
+    await db.setSetting('lang', 'fr');
+    await db.setSetting('onlyReviewed', false);
+    await db.setSetting('emojiSkinTone', '3');
+    await db.setSetting('visualStyle', 'system');
+    await db.setSetting('seeded', true);
+    await db.setSetting('v2migrated', true);
+    await db.setSetting('v3migrated', true);
+    await db.setSetting('v7migrated', true);
+    await db.setSetting('v92migrated', true);
+    await db.setSetting('v10.20migrated', true);
+    await db.setSetting('layoutFingerprint', await layoutFingerprint(cards));
+    return cards.length;
+  }, { category: CATEGORY, withMedia });
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  expect(await seeded()).toBe(7);
+  const before = await protectedSnapshot(page);
+
+  await openParentLexique(page);
+  const choices = [
+    ['default', 'Jaune par défaut', '👩‍⚕️'],
+    ['1', 'Claire', '👩🏻‍⚕️'],
+    ['2', 'Moyennement claire', '👩🏼‍⚕️'],
+    ['3', 'Moyenne', '👩🏽‍⚕️'],
+    ['4', 'Moyennement foncée', '👩🏾‍⚕️'],
+    ['5', 'Foncée', '👩🏿‍⚕️'],
+  ];
+  const toneChoices = page.locator('input[name="emoji-skin-tone"]');
+  await expect(toneChoices).toHaveCount(6);
+  for (const [value, label] of choices) await expect(page.getByRole('radio', { name: label, exact: true })).toHaveValue(value);
+  await expect(page.getByRole('radio', { name: 'Moyenne', exact: true })).toBeChecked();
+
+  const card = (id) => page.locator(`main .grid button.card[data-card-id="${id}"]`);
+  const modifiers = { default: '', 1: '🏻', 2: '🏼', 3: '🏽', 4: '🏾', 5: '🏿' };
+  const expectRenderedTone = async (tone, system = true) => {
+    await expect(card('u-test-person').locator('.visual > .emoji')).toHaveText(choices.find(([value]) => value === tone)[2]);
+    await expect(card('u-test-zwj').locator('.visual > .emoji')).toHaveText(`👩${modifiers[tone]}‍🤝‍👨${modifiers[tone]}`);
+    await expect(card('u-test-role-personne').locator('.visual > .emoji')).toHaveText(choices.find(([value]) => value === tone)[2]);
+    if (system) {
+      await expect(card('u-test-non-compatible').locator('.visual > .emoji')).toHaveText('🙂');
+      await expect(card('u-test-hors-personne').locator('.visual > .emoji')).toHaveText('👩🏽‍⚕️');
+    }
+  };
+
+  await openTalkCategory(page);
+  await expectRenderedTone('3');
+  const illustration = card('u-test-illustration').locator('.visual-art');
+  const illustrationBefore = await illustration.innerHTML();
+  const photo = card('u-test-photo').locator('img.visual-photo');
+  if (withMedia) {
+    await expect(photo).toBeVisible();
+    await expect(card('u-test-photo').locator('.visual > .emoji')).toHaveCount(0);
+  }
+  const photoBefore = withMedia ? await photo.getAttribute('src') : null;
+
+  for (const [tone, label] of choices) {
+    await page.locator('.space-btn').filter({ hasText: 'Progrès' }).click();
+    await expect(page.locator('#lexique')).toBeVisible();
+    await page.getByRole('radio', { name: label, exact: true }).check();
+    await expect.poll(() => page.evaluate(async () => (await (await import('/db.js')).getSetting('emojiSkinTone')))).toBe(tone);
+    await openTalkCategory(page);
+    await expectRenderedTone(tone);
+    await expect(card('u-test-person').locator('.visual > img')).toHaveCount(0);
+    expect(await illustration.innerHTML()).toBe(illustrationBefore);
+    if (withMedia) {
+      await expect(photo).toBeVisible();
+      expect(await photo.getAttribute('src')).toBe(photoBefore);
+    }
+  }
+  expect(await protectedSnapshot(page)).toEqual(before);
+
+  await page.evaluate(async () => {
+    await (await import('/db.js')).setSetting('visualStyle', 'mulberry');
+    for (const registration of await navigator.serviceWorker.getRegistrations()) await registration.unregister();
+    if (window.caches) for (const key of await caches.keys()) await caches.delete(key);
+  });
+  await page.reload();
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  await openTalkCategory(page);
+  await expectRenderedTone('5', false);
+  await expect(card('u-test-person').locator('.visual > img')).toHaveCount(0);
+  await expect(card('u-test-non-compatible').locator('.visual')).toHaveAttribute('data-rendered-emoji', '🙂');
+  if (withMedia) await expect(photo).toBeVisible();
+  expect(await protectedSnapshot(page)).toEqual(before);
+});
+
+test('7 — voix : parent prioritaire, MP3 exacts, texte modifié et repli local', async ({ page }, testInfo) => {
+  test.setTimeout(90_000);
+  const withMedia = testInfo.project.name !== 'iphone-13-webkit';
+  const requests = [];
+  page.on('request', (request) => {
+    if (/^https?:/.test(request.url())) requests.push(request.url());
+  });
+  await page.route('**/voix/index.json', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify({
+        fr: {
+          'w-voix-lexique': 'Texte indexé de fixture',
+          'w-voix-historique': 'Ancien texte indexé de fixture',
+        },
+        dr: {},
+      }),
+    });
+  });
+  await page.route('**/voix/**/*.mp3', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'audio/mpeg', body: '' });
+  });
+  await page.addInitScript(() => {
+    const observed = window.__voiceFixture = { media: [], speech: [], indexFetches: 0 };
+    const nativeFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const value = typeof input === 'string' ? input : input instanceof Request ? input.url : String(input);
+      if (new URL(value, location.href).pathname.endsWith('/voix/index.json')) observed.indexFetches += 1;
+      return nativeFetch(input, init);
+    };
+    HTMLMediaElement.prototype.play = function play() {
+      observed.media.push(this.getAttribute('src') || this.src);
+      queueMicrotask(() => {
+        if (this.onplaying) this.onplaying(new Event('playing'));
+        if (this.onended) this.onended(new Event('ended'));
+      });
+      return Promise.resolve();
+    };
+    Object.defineProperty(window, 'speechSynthesis', {
+      configurable: true,
+      value: {
+        speaking: false,
+        pending: false,
+        getVoices: () => [],
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        resume: () => {},
+        cancel: () => {},
+        speak: (utterance) => {
+          if (utterance.text !== ' ') observed.speech.push(utterance.text);
+          queueMicrotask(() => {
+            if (utterance.onend) utterance.onend(new Event('end'));
+          });
+        },
+      },
+    });
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      configurable: true,
+      value: class SpeechSynthesisUtterance {
+        constructor(text) {
+          this.text = String(text || '');
+          this.lang = '';
+          this.voice = null;
+          this.rate = 1;
+          this.volume = 1;
+          this.onend = null;
+          this.onerror = null;
+        }
+      },
+    });
+  });
+  await routeLexique(page, () => fixture([], CATEGORY));
+  const seeded = await seedBeforeApp(page, async ({ category, withMedia }) => {
+    const db = await import('/db.js');
+    const { layoutFingerprint } = await import('/modules/grid-layout.js');
+    const positionsFor = (index) => {
+      const positions = {};
+      for (const cols of [2, 3, 4, 5]) positions[String(cols)] = { row: Math.floor((index - 1) / cols) + 1, col: (index - 1) % cols + 1 };
+      return positions;
+    };
+    const make = (id, index, overrides = {}) => {
+      const positions = positionsFor(index);
+      return {
+        id, wordId: '', cat: category.id, fr: `Carte vocale ${index}`, dr: '', ar: '', emoji: '🙂', gram: 'noun',
+        sub: '', sayFr: '', sayAr: '', hidden: false, order: index, positions,
+        gridRow: positions['4'].row, gridCol: positions['4'].col, visualKey: null,
+        photo: null, audios: {}, ...overrides,
+      };
+    };
+    const cards = [
+      make('u-voix-parent', 1, {
+        lexicon: { wordId: 'w-voix-lexique' }, wordId: 'w-voix-historique', sayFr: 'Texte indexé de fixture',
+        audios: withMedia ? { fr: new Blob(['voix-parent-fixture'], { type: 'audio/webm' }) } : {},
+      }),
+      make('u-voix-mp3', 2, { lexicon: { wordId: 'w-voix-lexique' }, wordId: 'w-voix-historique', sayFr: 'Texte indexé de fixture' }),
+      make('u-voix-historique', 3, { wordId: 'w-voix-historique', sayFr: 'Ancien texte indexé de fixture' }),
+      make('u-voix-modifie', 4, { lexicon: { wordId: 'w-voix-lexique' }, wordId: 'w-voix-historique', sayFr: 'Texte personnalisé de fixture' }),
+      make('u-voix-local', 5, { sayFr: 'Texte local de fixture' }),
+    ];
+    await db.putCards(cards);
+    await db.setSetting('cols', 4);
+    await db.setSetting('lang', 'fr');
+    await db.setSetting('onlyReviewed', false);
+    await db.setSetting('emojiSkinTone', 'default');
+    await db.setSetting('visualStyle', 'system');
+    await db.setSetting('seeded', true);
+    await db.setSetting('v2migrated', true);
+    await db.setSetting('v3migrated', true);
+    await db.setSetting('v7migrated', true);
+    await db.setSetting('v92migrated', true);
+    await db.setSetting('v10.20migrated', true);
+    await db.setSetting('layoutFingerprint', await layoutFingerprint(cards));
+    return cards.length;
+  }, { category: CATEGORY, withMedia });
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  expect(await seeded()).toBe(5);
+  await expect.poll(() => page.evaluate(() => window.__voiceFixture?.indexFetches)).toBe(1);
+  const before = await protectedSnapshot(page);
+  await openTalkCategory(page);
+  const card = (id) => page.locator(`main .grid button.card[data-card-id="${id}"]`);
+  const reset = () => page.evaluate(() => {
+    window.__voiceFixture.media = [];
+    window.__voiceFixture.speech = [];
+  });
+  const observed = () => page.evaluate(() => ({
+    media: window.__voiceFixture.media,
+    speech: window.__voiceFixture.speech,
+  }));
+
+  for (const [id, src] of [
+    ['u-voix-mp3', './voix/fr/w-voix-lexique.mp3'],
+    ['u-voix-historique', './voix/fr/w-voix-historique.mp3'],
+  ]) {
+    await reset();
+    await card(id).click();
+    await expect.poll(observed).toEqual({ media: [src], speech: [] });
+  }
+  for (const [id, text] of [
+    ['u-voix-modifie', 'Texte personnalisé de fixture'],
+    ['u-voix-local', 'Texte local de fixture'],
+  ]) {
+    await reset();
+    await card(id).click();
+    await expect.poll(observed).toEqual({ media: [], speech: [text] });
+  }
+
+  await reset();
+  await page.evaluate(async () => {
+    const db = await import('/db.js');
+    const { sayCard } = await import('/speech.js');
+    const card = (await db.getAllCards()).find((entry) => entry.id === 'u-voix-parent');
+    if (!card.audios?.fr) card.audios = { fr: new Blob(['voix-parent-fixture'], { type: 'audio/webm' }) };
+    await sayCard(card, 'fr');
+  });
+  await expect.poll(observed).toEqual({ media: [expect.stringMatching(/^blob:/)], speech: [] });
+  expect(await page.evaluate(() => window.__voiceFixture.indexFetches)).toBe(1);
+  const origin = new URL(page.url()).origin;
+  expect(requests.filter((url) => new URL(url).origin !== origin), 'aucune nouvelle requête externe').toEqual([]);
+  expect(await protectedSnapshot(page)).toEqual(before);
+});
+
+test('8 — Lexique iPhone : largeur 390 px, révision courte et six teintes contenues', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== 'iphone-13-webkit', 'rendu mobile : WebKit iPhone 13 seulement');
+  test.setTimeout(90_000);
+  const revision = '0123456789abcdef'.repeat(4);
+  const words = fixture().words;
+  words[0] = { ...words[0], revision };
+  await routeLexique(page, () => fixture(words));
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  await openParentLexique(page);
+  await expect(page.locator('[data-stat="category-base"]')).toBeVisible();
+  for (const label of ['Relu en langue', 'Relu cliniquement', 'Palier 4', 'Essentiel']) {
+    await expect(page.locator('.lexique-stat span').filter({ hasText: label })).toHaveCount(1);
+  }
+  const tones = page.locator('.lexique-tone-choices input[type="radio"]');
+  await expect(tones).toHaveCount(6);
+  for (let index = 0; index < 6; index += 1) await expect(tones.nth(index)).toBeVisible();
+
+  const geometry = await page.evaluate(() => {
+    const fits = (element) => {
+      const rect = element.getBoundingClientRect();
+      return rect.left >= 0 && rect.right <= window.innerWidth;
+    };
+    const view = document.querySelector('#view');
+    return {
+      innerWidth: window.innerWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+      viewClientWidth: view.clientWidth,
+      viewScrollWidth: view.scrollWidth,
+      grids: [...document.querySelectorAll('#lexique .lexique-stats')].map((grid) => ({
+        columns: getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length,
+        outside: [...grid.querySelectorAll('.lexique-stat')].filter((item) => !fits(item)).map((item) => item.textContent.trim()),
+      })),
+      tonesOutside: [...document.querySelectorAll('.lexique-tone-choices label.check')]
+        .filter((choice) => !fits(choice)).map((choice) => choice.textContent.trim()),
+    };
+  });
+  expect.soft(geometry.innerWidth).toBe(390);
+  expect.soft(geometry.scrollWidth).toBeLessThanOrEqual(geometry.innerWidth);
+  expect.soft(geometry.viewScrollWidth).toBeLessThanOrEqual(geometry.viewClientWidth);
+  for (const grid of geometry.grids) {
+    expect.soft(grid.columns).toBeLessThanOrEqual(2);
+    expect.soft(grid.outside).toEqual([]);
+  }
+  expect.soft(geometry.tonesOutside).toEqual([]);
+
+  const revisionLine = page.locator('#lexique > p.note').first();
+  const revisionText = await revisionLine.textContent();
+  expect.soft(revisionText).toContain(`Révision ${revision.slice(0, 8)} ·`);
+  expect.soft(revisionText).not.toContain(revision);
+  expect.soft(await revisionLine.evaluate((element) => getComputedStyle(element).overflowWrap)).toBe('anywhere');
+});
+
+test('9 — hors ligne : six modules précachés, Lexique chargé, aucun rechargement automatique', async ({ page, context }, testInfo) => {
   test.skip(testInfo.project.name !== 'pixel-5-chromium',
     'service workers : Chromium seulement (décision D-2)');
   test.setTimeout(90_000);
@@ -507,7 +847,7 @@ test('9 — hors ligne : cinq modules précachés, Lexique chargé, aucun rechar
     const cache = await caches.open(name);
     return Promise.all(modules.map(async (module) => Boolean(await cache.match(new URL(`./${module}`, location.href).href))));
   }, LEXIQUE_MODULES);
-  expect(cachedModules, 'les cinq modules du Lexique doivent être précachés').toEqual(Array(5).fill(true));
+  expect(cachedModules, 'les six modules du Lexique doivent être précachés').toEqual(Array(6).fill(true));
 
   await context.setOffline(true);
   await page.reload();

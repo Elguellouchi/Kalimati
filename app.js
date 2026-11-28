@@ -61,6 +61,7 @@ import { createBackupUi } from './modules/backup-ui.js';
 import { allCategories, cardPassesReviewFilter } from './modules/lexique-rules.js';
 import { lexiconBadge } from './modules/lexique-view.js';
 import { initLexiqueSettings } from './modules/lexique-init.js';
+import { setEmojiSkinTone } from './modules/emoji-skin-tone.js';
 
 // Lot 1, L1-04 : départ du chronomètre au tout début du script (les imports ES sont déjà chargés ici).
 markStartupStart();
@@ -104,7 +105,7 @@ function cardVisual(card) {
   // Une photo partagée (éditeur, « Nos vraies photos », miroir magique) passe toujours en premier.
   const url = hasPhoto(key) ? null : photoUrl(card);
   if (url) return h('img', { src: url, alt: '' });
-  return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔', label: card.fr }, { button: false });
+  return renderVisual({ visualKey: visualKeyOf(card), emoji: card.emoji || '❔', label: card.fr, gram: card.gram, lexicon: card.lexicon }, { button: false });
 }
 
 // v10.7 : en amazigh « tifinagh + latin », le mot en lettres latines, puis le tifinagh en dessous (plus lisible sur petit écran).
@@ -498,6 +499,7 @@ async function loadInitialState() {
   const lexiqueSettings = await initLexiqueSettings({ db, localStorage, rawChildren: globalThis.KalimatiStorage.getItem('kalimati-children') });
   state.onlyReviewed = lexiqueSettings.onlyReviewed;
   state.emojiSkinTone = lexiqueSettings.emojiSkinTone;
+  setEmojiSkinTone(state.emojiSkinTone);
   state.lang = langInfo((await db.getSetting('lang')) || 'fr').code;
   setActiveLang(state.lang);
   state.twin = await loadTwin(); // v10.23 (pépite 1) : deux langues simultanées, si le parent les a choisies

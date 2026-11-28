@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE_VERSION = 'v10-51';
+const CACHE_VERSION = 'v10-52';
 const TRIAL = /(^|\/)essai(?:\/|$)/.test(self.location.pathname);
 const CACHE = TRIAL ? `kalimati-essai-${CACHE_VERSION}` : `kalimati-${CACHE_VERSION}`;
 const FILES = [
@@ -30,6 +30,7 @@ const FILES = [
   './modules/lexique-init.js',
   './modules/lexique-view.js',
   './modules/lexique-data.js',
+  './modules/emoji-skin-tone.js',
   // Lot 1 (L1-09) : alerte parent et inventaire anonyme des gros médias
   './modules/storage-warning.js',
   // v10.18 : migration des cartes sans identifiant historique en dur

@@ -3,6 +3,7 @@ import { h, btn } from './util.js';
 import { LEXIQUE, allCategories, planLexiqueApplication, computeLexiqueStats } from './lexique-rules.js';
 import { layoutFingerprint } from './grid-layout.js';
 import { categoryName } from './languages.js';
+import { SKIN_TONES, SKIN_TONE_LABELS, setEmojiSkinTone } from './emoji-skin-tone.js';
 
 const STATUS_LABELS = {
   brouillon: '⚪ Brouillon',
@@ -28,7 +29,7 @@ function categoryLabel(id, lang = 'fr') {
 export function lexiqueScreen(nav, self) {
   const shell = h('section', { id: 'lexique', class: 'card-box lexique-box' }, h('h3', {}, '📖 Lexique relu'));
   const report = h('div', { id: 'lexique-report', class: 'stack', role: 'status' });
-  const revision = h('p', { class: 'note' });
+  const revision = h('p', { class: 'note lexique-revision' });
   const counts = h('div', { class: 'lexique-stats' });
   const categories = h('div', { class: 'lexique-stats' });
   const planCounts = h('div', { class: 'lexique-stats' });
@@ -90,6 +91,33 @@ export function lexiqueScreen(nav, self) {
       reviewToggle.disabled = false;
     }
   };
+  const selectedTone = SKIN_TONES.includes(nav.state.emojiSkinTone) ? nav.state.emojiSkinTone : 'default';
+  const toneStatus = h('p', { class: 'note', role: 'status' });
+  const toneChoices = SKIN_TONES.map((tone) => h('label', { class: 'check' },
+    h('input', {
+      type: 'radio',
+      name: 'emoji-skin-tone',
+      value: tone,
+      checked: tone === selectedTone,
+      onchange: async (event) => {
+        const input = event.currentTarget;
+        const previous = nav.state.emojiSkinTone;
+        toneChoices.forEach((choice) => { choice.querySelector('input').disabled = true; });
+        try {
+          await db.setSetting('emojiSkinTone', tone);
+          nav.state.emojiSkinTone = tone;
+          setEmojiSkinTone(tone);
+          nav.renderAllTalk();
+          toneStatus.textContent = 'Teinte enregistrée. Les photos, les voix et les places ne changent pas.';
+        } catch (error) {
+          input.checked = tone === previous;
+          toneChoices.forEach((choice) => { choice.querySelector('input').checked = choice.querySelector('input').value === previous; });
+          toneStatus.textContent = `La teinte n’a pas pu être enregistrée : ${String(error?.message || error)}`;
+        } finally {
+          toneChoices.forEach((choice) => { choice.querySelector('input').disabled = false; });
+        }
+      },
+    }), ` ${SKIN_TONE_LABELS[tone]}`));
   shell.append(
     revision,
     h('h4', {}, 'Mots et relecture'),
@@ -97,6 +125,8 @@ export function lexiqueScreen(nav, self) {
     h('h4', {}, 'Paliers et catégories'),
     categories,
     h('label', { class: 'check' }, reviewToggle, ' Afficher seulement les mots relus'),
+    h('h4', {}, 'Teinte des emojis de personnes'),
+    h('fieldset', { class: 'lexique-tone-choices' }, h('legend', { class: 'note' }, 'Choisir la teinte affichée'), ...toneChoices, toneStatus),
     h('h4', {}, 'Application sur ce téléphone'),
     planCounts,
     apply,
@@ -108,7 +138,8 @@ export function lexiqueScreen(nav, self) {
 
   const paint = (cards) => {
     const stats = computeLexiqueStats(LEXIQUE.words, cards, allCategories);
-    revision.textContent = `Révision ${LEXIQUE.revision || 'non renseignée'} · ${LEXIQUE.words.length} mot${LEXIQUE.words.length > 1 ? 's' : ''}.`;
+    const revisionLabel = LEXIQUE.revision ? String(LEXIQUE.revision).slice(0, 8) : 'non renseignée';
+    revision.textContent = `Révision ${revisionLabel} · ${LEXIQUE.words.length} mot${LEXIQUE.words.length > 1 ? 's' : ''}.`;
     counts.replaceChildren(
       stat('Total', 'total', stats.total),
       ...Object.entries(stats.byStatus).map(([key, value]) => stat(STATUS_LABELS[key], `status-${key}`, value)),
