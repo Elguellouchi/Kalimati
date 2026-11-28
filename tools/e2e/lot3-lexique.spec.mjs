@@ -641,44 +641,36 @@ test('7 — voix : parent prioritaire, MP3 exacts, texte modifié et repli local
       });
       return Promise.resolve();
     };
-    if (!window.speechSynthesis) {
-      Object.defineProperty(window, 'speechSynthesis', {
-        configurable: true,
-        value: {
-          speaking: false,
-          pending: false,
-          getVoices: () => [],
-          addEventListener: () => {},
-          removeEventListener: () => {},
-          resume: () => {},
-          cancel: () => {},
-          speak: () => {},
-        },
-      });
-    }
-    if (!window.SpeechSynthesisUtterance) {
-      Object.defineProperty(window, 'SpeechSynthesisUtterance', {
-        configurable: true,
-        value: class SpeechSynthesisUtterance {
-          constructor(text) {
-            this.text = String(text || '');
-            this.lang = '';
-            this.voice = null;
-            this.rate = 1;
-            this.volume = 1;
-            this.onend = null;
-            this.onerror = null;
-          }
-        },
-      });
-    }
-    Object.defineProperty(window.speechSynthesis, 'speak', {
+    Object.defineProperty(window, 'speechSynthesis', {
       configurable: true,
-      value: (utterance) => {
-        if (utterance.text !== ' ') observed.speech.push(utterance.text);
-        queueMicrotask(() => {
-          if (utterance.onend) utterance.onend(new Event('end'));
-        });
+      value: {
+        speaking: false,
+        pending: false,
+        getVoices: () => [],
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        resume: () => {},
+        cancel: () => {},
+        speak: (utterance) => {
+          if (utterance.text !== ' ') observed.speech.push(utterance.text);
+          queueMicrotask(() => {
+            if (utterance.onend) utterance.onend(new Event('end'));
+          });
+        },
+      },
+    });
+    Object.defineProperty(window, 'SpeechSynthesisUtterance', {
+      configurable: true,
+      value: class SpeechSynthesisUtterance {
+        constructor(text) {
+          this.text = String(text || '');
+          this.lang = '';
+          this.voice = null;
+          this.rate = 1;
+          this.volume = 1;
+          this.onend = null;
+          this.onerror = null;
+        }
       },
     });
   });
