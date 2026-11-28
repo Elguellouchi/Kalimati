@@ -2,6 +2,7 @@
 // Les enregistrements de la voix de l'enfant ne sont jamais mis dans la sauvegarde : ils restent dans le téléphone.
 // v9.8 : la sauvegarde garde aussi le journal des comportements (ABC) et le journal d'orthophonie (texte seulement).
 import { blobToDataUrl, dataUrlToBlob } from './media.js';
+import { foldLegacyAudio } from './data.js';
 import { mergeLexicalCard, sanitizeLexiconMetadata } from './modules/lexique-core.js';
 
 // v10.21 (Lot 1) : les voix se gardent par langue dans card.audios[code] ; photo et vidéo gardent leur champ.
@@ -183,7 +184,26 @@ export function mergeBackupCards(localCards, backupCards) {
       if (merged) byId.set(incoming.id, merged);
       continue;
     }
-    byId.set(incoming.id, { ...local });
+    if (local.lexicon || incoming.lexicon || local.id.startsWith('u-')) {
+      byId.set(incoming.id, { ...local });
+      continue;
+    }
+    const merged = { ...local, ...incoming };
+    merged.positions = { ...(incoming.positions || {}), ...(local.positions || {}) };
+    merged.wordId = typeof local.wordId === 'string' && local.wordId ? local.wordId
+      : (typeof incoming.wordId === 'string' && incoming.wordId ? incoming.wordId : merged.id);
+    for (const field of ['gridRow', 'gridCol']) {
+      if (Object.hasOwn(local, field)) merged[field] = local[field];
+    }
+    const fromBackup = foldLegacyAudio(incoming);
+    const keptLocal = foldLegacyAudio(local);
+    for (const field of ['photo', 'video']) merged[field] = incoming[field] || local[field] || null;
+    const audios = { ...(keptLocal.audios || {}) };
+    for (const [code, blob] of Object.entries(fromBackup.audios || {})) if (blob) audios[code] = blob;
+    merged.audios = audios;
+    delete merged.audioFr;
+    delete merged.audioDr;
+    byId.set(incoming.id, merged);
   }
   return [...byId.values()];
 }

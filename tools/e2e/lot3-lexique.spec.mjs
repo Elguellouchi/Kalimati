@@ -1087,3 +1087,115 @@ test('10 — sauvegarde/restauration (Spec E2E 8) : réglages, lexique, position
     expect(media).toEqual({ photo: 'photo distante', video: 'video distante', audio: 'voix distante' });
   }
 });
+
+test('11 — restauration sans lexique : 93 cartes, photo et voix restaurées, positions locales inchangées', async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name === 'iphone-13-webkit', 'La persistance exacte des Blobs est vérifiée sur Chromium.');
+  test.setTimeout(120_000);
+  const targetId = 'c-test-restauration-01';
+  const seeded = await seedBeforeApp(page, async () => {
+    const db = await import('/db.js');
+    const { layoutFingerprint } = await import('/modules/grid-layout.js');
+    const cards = Array.from({ length: 93 }, (_, index) => {
+      const number = index + 1;
+      const id = `c-test-restauration-${String(number).padStart(2, '0')}`;
+      const positions = {};
+      for (const size of [2, 3, 4, 5]) {
+        positions[String(size)] = { row: Math.floor(index / size) + 1, col: (index % size) + 1 };
+      }
+      return {
+        id, wordId: id, updatedAt: 100, cat: 'base', fr: `Marqueur ${number}`, dr: '', ar: '',
+        emoji: '🧪', gram: 'noun', hidden: false, order: number,
+        gridRow: positions['4'].row, gridCol: positions['4'].col, positions,
+      };
+    });
+    await db.putCards(cards);
+    await db.setSetting('cols', 4);
+    await db.setSetting('lang', 'fr');
+    await db.setSetting('seeded', true);
+    await db.setSetting('v2migrated', true);
+    await db.setSetting('v3migrated', true);
+    await db.setSetting('v7migrated', true);
+    await db.setSetting('v92migrated', true);
+    await db.setSetting('v10.20migrated', true);
+    await db.setSetting('layoutFingerprint', await layoutFingerprint(cards));
+    return cards.length;
+  });
+  await page.goto('/');
+  await expect(page.locator(HOME_TILE_TALK)).toBeVisible();
+  expect(await seeded()).toBe(93);
+  const before = await backupCardSnapshot(page);
+  const beforeById = new Map(before.map((card) => [card.id, card]));
+  expect(beforeById.get(targetId).fields.photo.value).toBeNull();
+  expect(beforeById.get(targetId).fields.audios.value).toBeNull();
+
+  const dataUrl = (type, text) => `data:${type};base64,${Buffer.from(text, 'utf8').toString('base64')}`;
+  const photoBytes = 'photo-restauration-fixture';
+  const audioFrBytes = 'voix-fr-restauration-fixture';
+  const audioDrBytes = 'voix-dr-restauration-fixture';
+  const payload = {
+    format: 'kalimati-backup-v4',
+    cards: [{
+      id: targetId, wordId: 'w-test-restauration-distant', cat: 'base', fr: 'Texte restauré', dr: 'Darija restaurée', ar: 'نص محايد',
+      emoji: '🙂', gram: 'noun', sub: 'sous-titre restauré', sayFr: 'voix fr distante', sayAr: 'صوت بعيد',
+      hidden: true, order: 99, gridRow: 20, gridCol: 4, visualKey: 'visuel-restaure',
+      positions: { 2: { row: 20, col: 2 }, 3: { row: 20, col: 3 }, 4: { row: 20, col: 4 }, 5: { row: 20, col: 5 } },
+      photo: dataUrl('image/png', photoBytes),
+      audios: { fr: dataUrl('audio/webm', audioFrBytes), dr: dataUrl('audio/webm', audioDrBytes) },
+    }],
+    settings: {},
+  };
+
+  await openParentLexique(page);
+  const dialogs = [];
+  page.on('dialog', async (dialog) => {
+    dialogs.push({ type: dialog.type(), message: dialog.message() });
+    await dialog.accept();
+  });
+  await page.locator('#import').setInputFiles({
+    name: 'sauvegarde-sans-lexique.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(payload)),
+  });
+  await expect.poll(() => dialogs.length).toBeGreaterThan(0);
+  expect(dialogs[0].type).toBe('confirm');
+  await expect.poll(async () => page.evaluate(async (id) => {
+    const db = await import('/db.js');
+    const cards = await db.getAllCards();
+    const card = cards.find((entry) => entry.id === id);
+    return {
+      count: cards.length,
+      photo: card?.photo instanceof Blob ? await card.photo.text() : null,
+      audioFr: card?.audios?.fr instanceof Blob ? await card.audios.fr.text() : null,
+      audioDr: card?.audios?.dr instanceof Blob ? await card.audios.dr.text() : null,
+    };
+  }, targetId)).toEqual({ count: 93, photo: photoBytes, audioFr: audioFrBytes, audioDr: audioDrBytes });
+
+  const restoredBytes = await page.evaluate(async (id) => {
+    const db = await import('/db.js');
+    const card = (await db.getAllCards()).find((entry) => entry.id === id);
+    const bytes = async (blob) => (blob instanceof Blob ? Array.from(new Uint8Array(await blob.arrayBuffer())) : null);
+    return { photo: await bytes(card.photo), audioFr: await bytes(card.audios?.fr), audioDr: await bytes(card.audios?.dr) };
+  }, targetId);
+  expect(restoredBytes).toEqual({
+    photo: [...Buffer.from(photoBytes, 'utf8')],
+    audioFr: [...Buffer.from(audioFrBytes, 'utf8')],
+    audioDr: [...Buffer.from(audioDrBytes, 'utf8')],
+  });
+
+  const after = await backupCardSnapshot(page);
+  const afterById = new Map(after.map((card) => [card.id, card]));
+  expect(after).toHaveLength(93);
+  expect([...afterById.keys()].sort()).toEqual([...beforeById.keys()].sort());
+  for (const card of before) {
+    if (card.id !== targetId) {
+      expect(afterById.get(card.id).fields.positions.value, `${card.id} : place inchangée`).toEqual(card.fields.positions.value);
+    }
+  }
+  const restored = afterById.get(targetId);
+  expect(restored.fields.positions.value).toEqual(beforeById.get(targetId).fields.positions.value);
+  expect(restored.fields.gridRow.value).toBe(beforeById.get(targetId).fields.gridRow.value);
+  expect(restored.fields.gridCol.value).toBe(beforeById.get(targetId).fields.gridCol.value);
+  expect(restored.fields.wordId.value).toBe(targetId);
+  expect(restored.fields.hidden.value).toBe(true);
+  expect(restored.fields.order.value).toBe(99);
+  expect(restored.text).toEqual({ fr: 'Texte restauré', dr: 'Darija restaurée', ar: 'نص محايد' });
+  expect(restored.updatedAt).toBeGreaterThanOrEqual(beforeById.get(targetId).updatedAt);
+});
