@@ -8,7 +8,8 @@ import { GRID_SIZES } from './modules/grid-layout.js';
 // v10.36 : un enfant = une base. Le premier enfant garde « kalimati » (données d'origine intactes).
 const DB_NAME = activeDbName();
 // v11 (Lot 2) : chaque carte garde une place par taille de grille (2, 3, 4, 5 colonnes).
-const DB_VERSION = 11;
+// v12 (Lot 4) : journal local des mots dits, sans texte ni média.
+const DB_VERSION = 12;
 
 let dbPromise = null;
 
@@ -74,6 +75,11 @@ function upgrade(db, transaction, oldVersion) {
   // les autres tailles seront calculées une seule fois à leur première utilisation (modules/grid-layout.js).
   // (transaction absente uniquement dans le faux IndexedDB de test-storage-persist.mjs : rien à migrer.)
   if (oldVersion < 11 && transaction) upgradeToV11(transaction);
+  if (!db.objectStoreNames.contains('utterance_log')) {
+    const logs = db.createObjectStore('utterance_log', { keyPath: 'id' });
+    logs.createIndex('day', 'day');
+    logs.createIndex('ts', 'ts');
+  }
 }
 
 // Place d'une carte pour la taille `cols` au moment de la migration v10 → v11 : la place actuelle
@@ -206,6 +212,25 @@ export function putCards(cards) {
 // Réglages
 export const getSetting = (key) => run('settings', 'readonly', (s) => s.get(key));
 export const setSetting = (key, value) => run('settings', 'readwrite', (s) => s.put(value, key));
+
+// Journal local des mots dits (Lot 4). Le texte des mots et les médias ne sont jamais stockés ici.
+export function putUtteranceLogs(entries) {
+  return run('utterance_log', 'readwrite', (s) => { entries.forEach((entry) => s.put(entry)); return null; });
+}
+export const getAllUtteranceLogs = () => run('utterance_log', 'readonly', (s) => s.getAll());
+export const clearUtteranceLogs = () => run('utterance_log', 'readwrite', (s) => s.clear());
+export function purgeUtteranceLogsBefore(day) {
+  return run('utterance_log', 'readwrite', (s) => {
+    const request = s.index('day').openCursor(IDBKeyRange.upperBound(day, true));
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (!cursor) return;
+      cursor.delete();
+      cursor.continue();
+    };
+    return null;
+  });
+}
 
 // Objectifs du PEI : amorcés à la première utilisation, sans ralentir l'ouverture des cartes.
 let goalsReady = null;

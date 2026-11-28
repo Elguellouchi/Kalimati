@@ -22,10 +22,13 @@ export default defineConfig({
   projects: [
     {
       name: 'iphone-13-webkit',
+      testIgnore: '**/lot4-migration.spec.mjs',
       use: { ...devices['iPhone 13'], browserName: 'webkit' },
+      grepInvert: /latence/,
     },
     {
       name: 'pixel-5-chromium',
+      testIgnore: '**/lot4-migration.spec.mjs',
       use: { ...devices['Pixel 5'] },
     },
     {

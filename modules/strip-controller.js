@@ -3,6 +3,7 @@
 // Les fonctions encore dans app.js sont lues au moment de l’appel (app.<nom>).
 import { sayCards, sayNaturalSentence, setCardCatalog, stopSpeaking, unlockAudio } from '../speech.js';
 import { clearConfirmNeeded, echoPracticeEnabled, suggestionsFor } from './aac-plus.js';
+import { isFallbackMode } from './db-fallback.js';
 import { logOrtho } from './ex-ortho.js';
 import { unlockFriendSticker } from './friends.js';
 import { isAmazighLang, isExtraLang, langInfo, zhClassifierAt } from './languages.js';
@@ -10,6 +11,7 @@ import { getTense, inflectStrip, setTense } from './morphology.js';
 import { cardPassesReviewFilter } from './lexique-rules.js';
 import { showsCoach, showsHints } from './talk-modes.js';
 import { twinOf, twinSwap } from './twin-language.js';
+import { recordUtterance } from './utterance-log.js';
 import { h } from './util.js';
 
 export function createStripController(app) {
@@ -163,8 +165,10 @@ export function createStripController(app) {
       : (amzActive || lang === 'dr' ? `FR · ${inflected.sentenceFr}` : '');
     const speakCoach = async () => {
       unlockAudio();
-      const said = await sayNaturalSentence(sentences);
-      if (!said) sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
+      const natural = sayNaturalSentence(sentences);
+      if (!state.parent && !isFallbackMode()) recordUtterance({ cards: state.strip.map((item) => item.card), source: 'enfant', mode: 'phrase', lang, page: 'phrase' });
+      const said = await natural;
+      if (!said) await sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
     };
     const tenses = COACH_TENSES[lang] || COACH_TENSES.fr;
     return h('div', { class: 'coach' },
@@ -217,7 +221,11 @@ export function createStripController(app) {
     if (!state.parent) state.model = state.model.filter((item) => passesChildFilter(item.card));
     line.replaceChildren(h('span', { class: 'suggest-label' }, '🧑‍🏫 Je montre :'),
       ...state.model.map((item) => cardElement(item.card, { small: true, lang: item.lang })),
-      state.model.length ? h('button', { type: 'button', class: 'strip-btn play', 'aria-label': 'Redire', onclick: () => sayCards(state.model) }, '▶') : null);
+      state.model.length ? h('button', { type: 'button', class: 'strip-btn play', 'aria-label': 'Redire', onclick: () => {
+        const speaking = sayCards(state.model);
+        if (!state.parent && !isFallbackMode()) recordUtterance({ cards: state.model.map((item) => item.card), source: 'modele', mode: 'phrase', lang: state.lang, page: 'phrase' });
+        return speaking;
+      } }, '▶') : null);
   }
 
   // Mesure discrète pour le dossier orthophonique : longueur de chaque phrase dite dans Parler (une même phrase redite tout de suite ne compte qu'une fois).
@@ -237,7 +245,9 @@ export function createStripController(app) {
       // v9.12 : une phrase d'au moins 2 mots dite par l'enfant réveille Nour dans l'Album (sans bruit ni écran en plus).
       if (state.strip.length >= 2 && !state.parent) unlockFriendSticker('nour').catch(() => {});
       noteUtterance();
-      await sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
+      const speaking = sayCards(state.strip, { onStep: (i) => { state.playing = i; renderStrip(); } });
+      if (!state.parent && !isFallbackMode()) recordUtterance({ cards: state.strip.map((item) => item.card), source: state.modeling ? 'modele' : 'enfant', mode: 'phrase', lang: state.lang, page: 'phrase' });
+      await speaking;
       // v10.15 (pépite 11) : mode écho — « À toi ! » 2,5 s après la phrase, l'enfant imite.
       if (echoPracticeEnabled() && state.strip.length && !state.modeling) showEchoCue();
     };

@@ -33,7 +33,7 @@ for (const key of ['daily', 'verbs', 'stop', 'signs', 'life', 'pain', 'draw', 'u
 }
 has('modules/clinique.js', /MATRICES/, 'les matrices Verbe + 3 compléments doivent exister');
 has('modules/clinique.js', /startListening/, 'la séance du jour doit écouter la voix localement');
-has('db.js', /DB_VERSION = 11/, 'db.js doit être en version 11 (life_book + followups + plan moteur)');
+has('db.js', /DB_VERSION = 12/, 'db.js doit être en version 12 (life_book + followups + plan moteur + journal)');
 has('db.js', /createObjectStore\('life_book'/, 'le store life_book doit être créé');
 has('db.js', /putLifeBook|getAllLifeBook/, 'les accès au cahier de vie doivent exister');
 lacks('db.js', /life_book[\s\S]{0,200}?sync/i, 'le cahier de vie ne doit jamais être synchronisé');

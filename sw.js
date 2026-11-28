@@ -1,5 +1,5 @@
 // Garde l'application disponible sans internet.
-const CACHE_VERSION = 'v10-53';
+const CACHE_VERSION = 'v10-54';
 const TRIAL = /(^|\/)essai(?:\/|$)/.test(self.location.pathname);
 const CACHE = TRIAL ? `kalimati-essai-${CACHE_VERSION}` : `kalimati-${CACHE_VERSION}`;
 const FILES = [
@@ -14,7 +14,7 @@ const FILES = [
   './modules/ex-coop.js', './modules/ex-visual.js', './modules/ex-receptive.js', './modules/ex-imitation.js',
   './modules/ex-verbal.js', './modules/ex-social.js', './modules/ex-academic.js', './modules/ex-writing.js',
   './modules/ex-autonomy.js', './modules/ex-hygiene.js', './modules/ex-abc.js', './modules/ex-ortho.js', './modules/ortho-report.js', './modules/atec.js', './modules/admin-beta.js', './modules/core-vocabulary-plan.js',
-  './modules/ui-icons.js', './modules/about.js', './modules/rewards-kids.js', './modules/darija-lexicon.js', './modules/friends.js', './modules/morphology.js', './modules/cloud-sync.js', './modules/eye-and-packs.js', './modules/version.js', './modules/network-policy.js', './modules/team-mode.js',
+  './modules/ui-icons.js', './modules/about.js', './modules/rewards-kids.js', './modules/darija-lexicon.js', './modules/friends.js', './modules/morphology.js', './modules/cloud-sync.js', './modules/eye-and-packs.js', './modules/version.js', './modules/network-policy.js', './modules/team-mode.js', './modules/utterance-log.js',
   './modules/section-i18n.js', './modules/section-i18n-dr.js',
   // v10.24 : darija en lettres arabes et arabe standard, hors ligne eux aussi
   './modules/section-i18n-dr-ar.js', './modules/section-i18n-ar.js', './modules/clinic-i18n-dr-ar.js', './modules/clinic-i18n-ar.js',

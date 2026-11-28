@@ -56,6 +56,7 @@ import { startAppUpdateWatch } from './modules/app-update.js';
 import { migrateCards, stripNew, planPersonRename } from './modules/card-migration.js';
 import { createTalkTools } from './modules/talk-tools.js';
 import { createStripController } from './modules/strip-controller.js';
+import { initUtteranceLog, recordUtterance, purgeExpiredUtteranceLogs } from './modules/utterance-log.js';
 import { createViews } from './modules/views.js';
 import { createBackupUi } from './modules/backup-ui.js';
 import { allCategories, cardPassesReviewFilter } from './modules/lexique-rules.js';
@@ -174,6 +175,18 @@ function playCardVideo(card) {
   closeBtn.focus();
 }
 
+// Les cartes extra du catalogue n'ont pas d'identifiant de carte locale : elles n'entrent pas au journal.
+function stableJournalCard(card) {
+  return card && !card.extra && typeof card.id === 'string' ? card : null;
+}
+
+function journalPage() {
+  const place = String(state.place || '');
+  if (place.startsWith('scene:') || place.startsWith('explore:')) return `scene:${place.slice(place.indexOf(':') + 1)}`;
+  if (place && place !== 'pick' && place !== 'intent' && !place.startsWith('video:')) return `place:${place}`;
+  return `base:${state.cat}`;
+}
+
 // v10.23 (Sprint 1) : appui trop court, doigt qui glisse, double toucher — tout est décidé une seule fois,
 // dans modules/tap-engine.js, pour la grille, la barre de mots rapides et les suggestions.
 // Mode « Je montre » : l'adulte montre les mots sans remplir la phrase de l'enfant.
@@ -185,6 +198,8 @@ function onCardTap(card, element) {
   tapFeedback(element);
   stopSpeaking();
   sayCard(card, state.lang);
+  const journalCard = isFallbackMode() ? null : stableJournalCard(card);
+  if (journalCard) recordUtterance({ cards: [journalCard], source: state.modeling ? 'modele' : 'enfant', mode: 'carte', lang: state.lang, page: journalPage() });
   if (state.modeling) {
     state.model = [...state.model, { card, lang: state.lang }].slice(-MAX_STRIP);
     element.classList.add('modeled');
@@ -301,8 +316,10 @@ function setupToilet() {
     stopSpeaking();
     const card = state.cards.find((c) => c.id === TOILET_CARD_ID);
     // v10.42 (Lot 4.2) : sans carte Toilettes, le mot est dit dans la langue choisie (plus jamais la darija pour l'espagnol).
-    if (card) sayCard(card, state.lang);
-    else if (isExtraLang(state.lang)) speak(cardSpeechText({ id: 'c-besoins-toilettes', fr: 'Toilettes', gram: 'social' }, state.lang), { lang: state.lang });
+    if (card) {
+      sayCard(card, state.lang);
+      if (!state.parent && !isFallbackMode()) recordUtterance({ cards: [card], source: 'enfant', mode: 'carte', lang: state.lang, page: 'toilet' });
+    } else if (isExtraLang(state.lang)) speak(cardSpeechText({ id: 'c-besoins-toilettes', fr: 'Toilettes', gram: 'social' }, state.lang), { lang: state.lang });
     else speak(state.lang === 'dr' ? 'بيت الما' : 'Toilettes', { lang: state.lang === 'dr' ? 'ar' : 'fr' });
     await recordTrial('X.1', 'plus', { item: 'spontanee', meta: { source: 'bouton' } });
     $('#toilet').classList.add('pressed');
@@ -577,6 +594,7 @@ async function init() {
     state.cards = getFallbackCards();
   }
   // L1-07 : le mode secours n'interrompt jamais l'interface : l'enfant garde ses cartes et sa voix.
+  await initUtteranceLog();
   setupLock(); setupParentBar(); setupParentPanel(); setupStrip(); setupToilet();
   // Safari (iPhone) ne compte comme « geste » que la fin du toucher ou le clic, pas le début.
   ['touchend', 'click'].forEach((type) => { document.addEventListener(type, unlockAudio); document.addEventListener(type, unlockSounds); });
@@ -605,6 +623,7 @@ async function init() {
   });
   document.addEventListener('visual-changed', () => { if (['talk', 'home'].includes(state.space)) renderView(); renderStrip(); });
   renderAll();
+  void purgeExpiredUtteranceLogs();
   // v10.7.3 : l'arrivée des voix amazighes part dès que l'écran est affiché (avant, elle attendait la fin
   // du démarrage, qui pouvait rester bloquée sur iPhone : « elles arrivent dans un instant » sans fin).
   setTimeout(() => { if (isAmazighLang(state.lang)) autoInstallAmazighVoicePack(state.lang); }, 800);

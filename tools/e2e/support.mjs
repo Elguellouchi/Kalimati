@@ -40,7 +40,7 @@ export const openTrialTalkGrid = (page) => openTalkGrid(page, '/essai/');
 
 export async function trialCacheName(page) {
   return page.evaluate(async () =>
-    (await caches.keys()).find((name) => name === 'kalimati-essai-v10-53') || null);
+    (await caches.keys()).find((name) => name === 'kalimati-essai-v10-54') || null);
 }
 
 export async function installMainWorkerFixture(page, source, label = 'main') {
